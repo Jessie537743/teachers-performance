@@ -3,9 +3,15 @@ set -e
 
 # Railway injects $PORT at runtime; default to 80 for local docker.
 export PORT="${PORT:-80}"
+echo "[entrypoint] Binding nginx to port: $PORT"
 
 # Render nginx config with the runtime port.
 envsubst '${PORT}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
+echo "[entrypoint] Rendered nginx config:"
+grep -E 'listen|server_name' /etc/nginx/conf.d/default.conf || true
+
+# Fail fast if nginx config is invalid.
+nginx -t
 
 cd /var/www
 
