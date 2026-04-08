@@ -1,0 +1,107 @@
+@startuml
+title Teachers Performance Evaluation System - Conceptual Framework
+top to bottom direction
+skinparam shadowing false
+skinparam ArrowColor #2F4F6F
+skinparam rectangle {
+  BorderColor #2F4F6F
+  BackgroundColor #F7FAFF
+}
+skinparam diamond {
+  BackgroundColor #FFF7E6
+  BorderColor #B7791F
+}
+
+actor Student
+actor Faculty
+actor "Dean/Head" as DeanHead
+actor Admin
+actor "HR Officer" as HR
+
+rectangle "1) Access and Authentication" as S1 {
+  [Open System]
+  [Login using Student ID as Username\n(default password: Student ID)]
+  [Change Password on First Login]
+}
+
+[Credentials Valid?] as D1
+
+rectangle "2) Student Profile Context" as S2 {
+  [Load Student Profile]
+  [Read Course, Year Level, Section]
+  [Read Current Evaluation Period\n(Semester, School Year)]
+}
+
+rectangle "3) Subject and Faculty Matching" as S3 {
+  [Load Assigned Subjects]
+  [Filter by Student Course, Year Level, Section]
+  [Display Only Matching Subjects and Faculty]
+}
+
+[Evaluation Period Open?] as D2
+[Already Evaluated this Faculty/Subject?] as D3
+
+rectangle "4) Evaluation Proper" as S4 {
+  [Show Student Evaluation Criteria and Questions]
+  [Submit Ratings and Comment]
+  [Save Evaluation Answers and Feedback]
+}
+
+rectangle "5) Computation and Classification" as S5 {
+  [Compute Total Average]
+  [Classify Performance Level]
+  [Analyze Comment Sentiment\n(positive/neutral/negative)]
+}
+
+rectangle "6) Dashboards and Reports" as S6 {
+  [Update Student Dashboard Status\n(Completed/Pending)]
+  [Update Faculty/Dean/Admin/HR Views]
+  [Generate Printable Comments Report]
+  [Generate Performance Certificates]
+}
+
+rectangle "7) Continuous Improvement / AI Support" as S7 {
+  [Aggregate Historical Evaluation Data]
+  [Train Random Forest Model\n(by Semester and School Year)]
+  [Store Metrics and Feature Importance]
+  [Use Predictions for Administrative Decision-Making]
+}
+
+Student --> S1
+Faculty --> S6
+DeanHead --> S6
+Admin --> S6
+HR --> S6
+
+S1 --> D1
+D1 --> S2 : Yes
+D1 --> S1 : No (retry)
+
+S2 --> S3
+S3 --> D2
+D2 --> S4 : Yes
+D2 --> S6 : No (closed status)
+
+S4 --> D3
+D3 --> S4 : No (continue)
+D3 --> S6 : Yes (show completed)
+
+S4 --> S5
+S5 --> S6
+S6 --> S7
+S7 --> S6 : insights feed back
+
+note right of S1
+  Student authentication uses:
+  - username: student_id
+  - default password: student_id
+  - must_change_password after first login
+end note
+
+note right of S3
+  Subject visibility rule:
+  Show only subjects matching
+  student course + year level + section.
+end note
+
+@enduml

@@ -1,0 +1,84 @@
+@startuml
+title Teachers Performance Evaluation System - IPO Diagram
+left to right direction
+skinparam shadowing false
+skinparam rectangle {
+  BorderColor #2F4F6F
+  BackgroundColor #F7FAFF
+}
+skinparam ArrowColor #2F4F6F
+
+rectangle "INPUT" as INPUT {
+  rectangle "Master Data" {
+    [Departments]
+    [Courses]
+    [Subjects]
+    [Evaluation Criteria and Questions]
+    [Role and Permission Setup]
+    [Evaluation Period]
+  }
+
+  rectangle "User and Transaction Data" {
+    [Faculty Profiles]
+    [Student Profiles]
+    [Subject Assignments]
+    [Student Subject Assignments]
+    [Student/Peer/Self/Dean Ratings and Comments]
+  }
+
+  rectangle "AI Inputs" {
+    [Historical Evaluation Records]
+    [Term Filter: Semester and School Year]
+  }
+}
+
+rectangle "PROCESS" as PROCESS {
+  rectangle "Authentication and Access Control" {
+    [Login]
+    [Role-based Permission Check]
+    [Change Password]
+  }
+
+  rectangle "Evaluation Workflow" {
+    [Filter Student Subjects\nby Course, Year Level, Section]
+    [Display Faculty to Evaluate]
+    [Submit Evaluations]
+    [Validate One Evaluation per Period]
+  }
+
+  rectangle "Computation and Classification" {
+    [Compute Averages and Weighted Scores]
+    [Determine Performance Level]
+    [Sentiment Analysis of Comments]
+  }
+
+  rectangle "AI Model Workflow" {
+    [Train Random Forest Model]
+    [Save Metrics and Feature Importance]
+    [Predict Faculty Performance]
+  }
+
+  rectangle "Administration and Reporting" {
+    [Manage Records and Settings]
+    [Generate Employee Comments Report]
+    [Generate Performance Certificates]
+    [View Dashboards and Analytics]
+  }
+}
+
+rectangle "OUTPUT" as OUTPUT {
+  [Student Dashboard]
+  [Faculty Dashboard]
+  [Dean Dashboard]
+  [Admin Dashboard]
+  [HR Dashboard]
+  [Evaluation Status and Results]
+  [Classified Comments Report]
+  [Printable Performance Certificate]
+  [AI Metrics and Predictions]
+}
+
+INPUT --> PROCESS
+PROCESS --> OUTPUT
+
+@enduml

@@ -1,0 +1,248 @@
+@startuml
+title Teachers Performance Evaluation System - ERD
+hide methods
+hide stereotypes
+skinparam shadowing false
+skinparam linetype ortho
+
+entity "departments" as departments {
+  * id : bigint
+  --
+  name : string
+  department_type : enum
+}
+
+entity "users" as users {
+  * id : bigint
+  --
+  department_id : bigint FK
+  role : string
+  name : string
+  username : string
+  email : string
+}
+
+entity "faculty_profiles" as faculty_profiles {
+  * id : bigint
+  --
+  user_id : bigint FK
+  department_id : bigint FK
+}
+
+entity "student_profiles" as student_profiles {
+  * id : bigint
+  --
+  user_id : bigint FK
+  department_id : bigint FK
+  student_id : string
+  course : string
+  year_level : int
+  section : string
+}
+
+entity "courses" as courses {
+  * id : bigint
+  --
+  department_id : bigint FK
+  course_code : string
+}
+
+entity "subjects" as subjects {
+  * id : bigint
+  --
+  department_id : bigint FK
+  course : string
+  year_level : int
+  section : string
+  semester : string
+  school_year : string
+}
+
+entity "subject_assignments" as subject_assignments {
+  * id : bigint
+  --
+  subject_id : bigint FK
+  faculty_id : bigint FK
+}
+
+entity "student_subject_assignments" as student_subject_assignments {
+  * id : bigint
+  --
+  student_profile_id : bigint FK
+  subject_id : bigint FK
+}
+
+entity "evaluation_periods" as evaluation_periods {
+  * id : bigint
+  --
+  semester : string
+  school_year : string
+  is_open : boolean
+}
+
+entity "criteria" as criteria {
+  * id : bigint
+  --
+  name : string
+}
+
+entity "criterion_evaluator_groups" as criterion_evaluator_groups {
+  * id : bigint
+  --
+  criterion_id : bigint FK
+  evaluator_group : string
+}
+
+entity "criterion_personnel_types" as criterion_personnel_types {
+  * id : bigint
+  --
+  criterion_id : bigint FK
+  personnel_type : string
+}
+
+entity "questions" as questions {
+  * id : bigint
+  --
+  criteria_id : bigint FK
+  question_text : text
+  response_type : string
+}
+
+entity "evaluation_answers" as evaluation_answers {
+  * id : bigint
+  --
+  student_id : bigint FK
+  faculty_id : bigint FK
+  subject_id : bigint FK
+  question_id : bigint FK
+  rating : int
+}
+
+entity "evaluation_feedback" as evaluation_feedback {
+  * id : bigint
+  --
+  student_id : bigint FK
+  faculty_id : bigint FK
+  subject_id : bigint FK
+  semester : string
+  school_year : string
+  total_average : decimal
+  performance_level : string
+}
+
+entity "dean_evaluation_answers" as dean_evaluation_answers {
+  * id : bigint
+  --
+  dean_user_id : bigint FK
+  faculty_id : bigint FK
+  question_id : bigint FK
+  rating : int
+}
+
+entity "dean_evaluation_feedback" as dean_evaluation_feedback {
+  * id : bigint
+  --
+  dean_user_id : bigint FK
+  faculty_id : bigint FK
+  semester : string
+  school_year : string
+  total_average : decimal
+}
+
+entity "faculty_peer_evaluation_answers" as faculty_peer_evaluation_answers {
+  * id : bigint
+  --
+  evaluator_faculty_id : bigint FK
+  evaluatee_faculty_id : bigint FK
+  question_id : bigint FK
+  evaluation_type : string
+  rating : int
+}
+
+entity "faculty_peer_evaluation_feedback" as faculty_peer_evaluation_feedback {
+  * id : bigint
+  --
+  evaluator_faculty_id : bigint FK
+  evaluatee_faculty_id : bigint FK
+  evaluation_type : string
+  total_average : decimal
+}
+
+entity "self_evaluation_results" as self_evaluation_results {
+  * id : bigint
+  --
+  faculty_id : bigint FK
+  semester : string
+  school_year : string
+  total_average : decimal
+}
+
+entity "role_permissions" as role_permissions {
+  * id : bigint
+  --
+  role : string
+  permission : string
+  allowed : boolean
+}
+
+entity "ai_model_metrics" as ai_model_metrics {
+  * id : bigint
+  --
+  model_name : string
+  accuracy : decimal
+  semester : string
+  school_year : string
+}
+
+entity "ai_feature_importance" as ai_feature_importance {
+  * id : bigint
+  --
+  metric_id : bigint FK
+  feature_name : string
+  importance : decimal
+}
+
+departments ||--o{ users
+departments ||--o{ faculty_profiles
+departments ||--o{ student_profiles
+departments ||--o{ courses
+departments ||--o{ subjects
+
+users ||--o| faculty_profiles
+users ||--o| student_profiles
+
+faculty_profiles ||--o{ subject_assignments
+subjects ||--o{ subject_assignments
+
+student_profiles ||--o{ student_subject_assignments
+subjects ||--o{ student_subject_assignments
+
+criteria ||--o{ questions
+criteria ||--o{ criterion_evaluator_groups
+criteria ||--o{ criterion_personnel_types
+
+questions ||--o{ evaluation_answers
+questions ||--o{ dean_evaluation_answers
+questions ||--o{ faculty_peer_evaluation_answers
+
+users ||--o{ evaluation_answers : student_id
+faculty_profiles ||--o{ evaluation_answers : faculty_id
+subjects ||--o{ evaluation_answers
+
+users ||--o{ evaluation_feedback : student_id
+faculty_profiles ||--o{ evaluation_feedback : faculty_id
+subjects ||--o{ evaluation_feedback
+
+users ||--o{ dean_evaluation_answers : dean_user_id
+faculty_profiles ||--o{ dean_evaluation_answers : faculty_id
+
+users ||--o{ dean_evaluation_feedback : dean_user_id
+faculty_profiles ||--o{ dean_evaluation_feedback : faculty_id
+
+faculty_profiles ||--o{ faculty_peer_evaluation_answers : evaluator/evaluatee
+faculty_profiles ||--o{ faculty_peer_evaluation_feedback : evaluator/evaluatee
+faculty_profiles ||--o{ self_evaluation_results
+
+ai_model_metrics ||--o{ ai_feature_importance : metric_id
+
+@enduml

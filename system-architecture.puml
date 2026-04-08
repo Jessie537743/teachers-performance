@@ -1,0 +1,80 @@
+@startuml
+title Teachers Performance Evaluation System - System Architecture
+left to right direction
+skinparam shadowing false
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam ArrowColor #2F4F6F
+
+actor "Admin" as admin
+actor "Dean/Head" as dean
+actor "Faculty" as faculty
+actor "Student" as student
+actor "HR Officer" as hr
+
+cloud "Client Layer" {
+  node "Web Browser\n(Desktop/Mobile)" as browser
+}
+
+node "Docker Host" as dockerhost {
+  frame "Teachers Performance Stack (Docker Compose)" as stack {
+    node "Nginx Container" as nginx {
+      component "Reverse Proxy\nHTTP Routing" as reverseProxy
+    }
+
+    node "Laravel App Container (PHP)" as app {
+      component "Presentation Layer\nBlade + Controllers" as presentation
+      component "Business Logic Layer\nPolicies + Services" as logic
+      component "Data Access Layer\nEloquent ORM" as orm
+      component "Auth and RBAC\nRole/Permission Gates" as rbac
+      component "Reporting Module\nComments + Certificates" as reporting
+    }
+
+    node "ML API Container (FastAPI/Python)" as mlapi {
+      component "Training API\nRandom Forest Trainer" as trainer
+      component "Prediction API\nPerformance Prediction" as predictor
+      component "Model Registry\njoblib artifacts" as modelStore
+    }
+
+    database "MySQL Container" as mysql {
+      component "Core Tables\nusers, profiles, subjects,\ncriteria, evaluations" as coredb
+      component "AI Tables\nai_model_metrics,\nai_feature_importance,\nfaculty_predictions" as aidb
+    }
+  }
+}
+
+admin --> browser
+dean --> browser
+faculty --> browser
+student --> browser
+hr --> browser
+
+browser --> reverseProxy : HTTPS/HTTP Requests
+reverseProxy --> presentation : Route to Laravel
+
+presentation --> logic
+logic --> rbac
+logic --> orm
+logic --> reporting
+orm --> coredb : CRUD / Queries
+logic --> aidb : Metrics/Predictions storage
+
+logic --> trainer : Trigger model training\n(filtered semester/school year)
+logic --> predictor : Request predictions
+trainer --> coredb : Read historical evaluations
+trainer --> modelStore : Save trained model
+predictor --> modelStore : Load trained model
+predictor --> aidb : Save prediction outputs
+
+reporting --> coredb : Load comments/results
+reporting --> browser : Printable reports/certificates
+
+note bottom of stack
+  Deployment Notes:
+  - Services communicate over Docker network.
+  - Nginx is the public entrypoint.
+  - Laravel app handles authentication, permissions, evaluations, and reporting.
+  - FastAPI service handles ML training/prediction using MySQL historical data.
+end note
+
+@enduml

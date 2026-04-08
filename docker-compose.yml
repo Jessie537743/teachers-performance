@@ -1,0 +1,67 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tp-app
+    restart: unless-stopped
+    volumes:
+      - ./src:/var/www
+    networks:
+      - tp-network
+    depends_on:
+      db:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:alpine
+    container_name: tp-nginx
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    volumes:
+      - ./src:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - tp-network
+    depends_on:
+      - app
+
+  db:
+    image: mysql:8.0
+    container_name: tp-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: teachers_performance
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_USER: tp_user
+      MYSQL_PASSWORD: secret
+    ports:
+      - "3307:3306"
+    volumes:
+      - tp-db-data:/var/lib/mysql
+    networks:
+      - tp-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ml-api:
+    build:
+      context: ./ml_api
+      dockerfile: Dockerfile
+    container_name: tp-ml-api
+    restart: unless-stopped
+    ports:
+      - "8001:8000"
+    networks:
+      - tp-network
+
+networks:
+  tp-network:
+    driver: bridge
+
+volumes:
+  tp-db-data:

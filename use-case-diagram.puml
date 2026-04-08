@@ -1,0 +1,99 @@
+@startuml
+title Teachers Performance Evaluation System - Use Case Diagram
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam usecase {
+  BackgroundColor #F4F8FF
+  BorderColor #2F4F6F
+  ArrowColor #2F4F6F
+}
+
+actor Admin
+actor "Dean/Head" as DeanHead
+actor Faculty
+actor Student
+actor "HR Officer" as HROfficer
+
+rectangle "Teachers Performance Evaluation System" {
+  usecase "Login" as UC_Login
+  usecase "Change Password" as UC_ChangePassword
+
+  usecase "Manage Departments" as UC_ManageDepartments
+  usecase "Manage Courses" as UC_ManageCourses
+  usecase "Manage Faculty" as UC_ManageFaculty
+  usecase "Manage Students" as UC_ManageStudents
+  usecase "Bulk Upload Students (CSV)" as UC_BulkStudents
+  usecase "Manage Subjects" as UC_ManageSubjects
+  usecase "Bulk Upload Subjects (CSV)" as UC_BulkSubjects
+  usecase "Manage Evaluation Criteria and Questions" as UC_ManageCriteria
+  usecase "Manage Evaluation Periods" as UC_ManagePeriods
+  usecase "Manage Roles and Permissions" as UC_ManageRoles
+  usecase "Train AI Model (Random Forest)" as UC_TrainAI
+  usecase "View Analytics Dashboard" as UC_ViewAnalytics
+  usecase "Generate or Print Employee Comments Report" as UC_CommentsReport
+  usecase "Generate Performance Certificates" as UC_Certificates
+
+  usecase "Monitor Faculty Evaluation Status" as UC_MonitorFaculty
+  usecase "Submit Dean Evaluation" as UC_DeanEval
+  usecase "View Department Analytics" as UC_DeptAnalytics
+  usecase "View Students for Evaluation Monitoring" as UC_MonitorStudents
+
+  usecase "Submit Self Evaluation" as UC_SelfEval
+  usecase "Submit Peer Evaluation" as UC_PeerEval
+  usecase "View Personal Dashboard" as UC_FacultyDash
+
+  usecase "View Assigned Subjects\n(by course, year level, section)" as UC_AssignedSubjects
+  usecase "Submit Student Evaluation" as UC_StudentEval
+  usecase "View Student Dashboard" as UC_StudentDash
+
+  usecase "View HR Dashboard" as UC_HRDash
+  usecase "View Faculty Performance Results" as UC_HRResults
+}
+
+Admin -- UC_Login
+Admin -- UC_ChangePassword
+Admin -- UC_ManageDepartments
+Admin -- UC_ManageCourses
+Admin -- UC_ManageFaculty
+Admin -- UC_ManageStudents
+Admin -- UC_BulkStudents
+Admin -- UC_ManageSubjects
+Admin -- UC_BulkSubjects
+Admin -- UC_ManageCriteria
+Admin -- UC_ManagePeriods
+Admin -- UC_ManageRoles
+Admin -- UC_TrainAI
+Admin -- UC_ViewAnalytics
+Admin -- UC_CommentsReport
+Admin -- UC_Certificates
+
+DeanHead -- UC_Login
+DeanHead -- UC_ChangePassword
+DeanHead -- UC_MonitorFaculty
+DeanHead -- UC_DeanEval
+DeanHead -- UC_DeptAnalytics
+DeanHead -- UC_MonitorStudents
+
+Faculty -- UC_Login
+Faculty -- UC_ChangePassword
+Faculty -- UC_SelfEval
+Faculty -- UC_PeerEval
+Faculty -- UC_FacultyDash
+
+Student -- UC_Login
+Student -- UC_ChangePassword
+Student -- UC_AssignedSubjects
+Student -- UC_StudentEval
+Student -- UC_StudentDash
+
+HROfficer -- UC_Login
+HROfficer -- UC_ChangePassword
+HROfficer -- UC_HRDash
+HROfficer -- UC_HRResults
+
+UC_BulkStudents ..> UC_ManageStudents : <<include>>
+UC_BulkSubjects ..> UC_ManageSubjects : <<include>>
+UC_CommentsReport ..> UC_ViewAnalytics : <<include>>
+
+@enduml

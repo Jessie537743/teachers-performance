@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p departments faculty students subjects courses criteria evaluation-periods roles)",
+      "Bash(cp admin/departments/index.blade.php departments/index.blade.php)",
+      "Bash(cp admin/faculty/index.blade.php faculty/index.blade.php)",
+      "Bash(cp admin/students/index.blade.php students/index.blade.php)",
+      "Bash(cp admin/subjects/index.blade.php subjects/index.blade.php)"
+    ]
+  }
+}

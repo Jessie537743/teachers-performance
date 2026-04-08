@@ -1,0 +1,36 @@
+/*
+ * Minimal CSS — only what Tailwind CDN cannot do.
+ * All layout/component styling now uses Tailwind utility classes in Blade templates.
+ */
+
+/* Sidebar fixed width variables used by layout */
+.sidebar-w { width: 260px; min-width: 260px; }
+.main-ml { margin-left: 260px; }
+
+@media (max-width: 1024px) {
+    .main-ml { margin-left: 0; }
+    .sidebar-w { transform: translateX(-100%); }
+    body.sidebar-open .sidebar-w { transform: translateX(0); }
+    body.sidebar-open .sidebar-overlay-bg { opacity: 1; visibility: visible; }
+}
+
+/* User dropdown toggle (driven by JS .show class) */
+.user-dropdown.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+/* Turbo progress bar */
+.turbo-progress-bar {
+    height: 3px;
+    background: #2563eb;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+    }
+}
