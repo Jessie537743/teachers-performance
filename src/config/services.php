@@ -37,6 +37,7 @@ return [
 
     'ml_api' => [
         'url' => env('ML_API_URL', 'http://ml-api:8000'),
+        'token' => env('ML_API_TOKEN'),
     ],
 
 ];

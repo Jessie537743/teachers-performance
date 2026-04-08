@@ -1,51 +1,30 @@
 # ============================================================
-# Stage 1 – PHP-FPM + Laravel application
+# Stage 1 – Build Laravel app (composer + node assets)
 # ============================================================
 FROM php:8.4-fpm AS app
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    git \
-    curl \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    zip \
-    unzip \
-    libzip-dev \
+    git curl zip unzip \
+    libpng-dev libonig-dev libxml2-dev libzip-dev \
     tesseract-ocr \
+    nodejs npm \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip opcache \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Configure OPcache for performance
-RUN echo "opcache.enable=1\n\
-opcache.memory_consumption=128\n\
-opcache.interned_strings_buffer=8\n\
-opcache.max_accelerated_files=10000\n\
-opcache.revalidate_freq=2\n\
-opcache.fast_shutdown=1\n\
-opcache.enable_cli=1" > /usr/local/etc/php/conf.d/opcache.ini
-
-# PHP-FPM tuning
-RUN echo "pm.max_children = 20\n\
-pm.start_servers = 5\n\
-pm.min_spare_servers = 3\n\
-pm.max_spare_servers = 8\n\
-pm.max_requests = 500" > /usr/local/etc/php-fpm.d/zz-tuning.conf
-
-# Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
 WORKDIR /var/www
-
-# Copy application files
 COPY src/ /var/www/
 
-# Install dependencies (if vendor doesn't exist)
-RUN if [ -f composer.json ]; then composer install --no-interaction --optimize-autoloader; fi
+RUN if [ -f composer.json ]; then \
+        composer install --no-interaction --no-dev --optimize-autoloader --no-scripts; \
+    fi
 
-# Set permissions
+# Build frontend assets if package.json present
+RUN if [ -f package.json ]; then \
+        npm ci --no-audit --no-fund && npm run build && rm -rf node_modules; \
+    fi
+
 RUN chown -R www-data:www-data /var/www \
     && chmod -R 755 /var/www/storage 2>/dev/null || true \
     && chmod -R 755 /var/www/bootstrap/cache 2>/dev/null || true
@@ -55,19 +34,14 @@ RUN chown -R www-data:www-data /var/www \
 # ============================================================
 FROM php:8.4-fpm
 
-# Install nginx, supervisord, and runtime system dependencies
 RUN apt-get update && apt-get install -y \
-    nginx \
-    supervisor \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    libzip-dev \
+    nginx supervisor gettext-base \
+    libpng-dev libonig-dev libxml2-dev libzip-dev \
     tesseract-ocr \
     && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd zip opcache \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Configure OPcache
+# OPcache
 RUN echo "opcache.enable=1\n\
 opcache.memory_consumption=128\n\
 opcache.interned_strings_buffer=8\n\
@@ -83,22 +57,21 @@ pm.min_spare_servers = 3\n\
 pm.max_spare_servers = 8\n\
 pm.max_requests = 500" > /usr/local/etc/php-fpm.d/zz-tuning.conf
 
-# Copy built Laravel application from stage 1
+# Application code
 COPY --from=app /var/www /var/www
 
-# Copy nginx site configuration
-COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf
+# nginx + supervisord config (template substituted at runtime)
+COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf.template
+COPY docker/supervisord.conf   /etc/supervisor/conf.d/supervisord.conf
+COPY docker/entrypoint.sh      /usr/local/bin/entrypoint.sh
+RUN rm -f /etc/nginx/sites-enabled/default \
+    && rm -f /etc/nginx/conf.d/default.conf \
+    && mkdir -p /var/log/supervisor \
+    && chmod +x /usr/local/bin/entrypoint.sh
 
-# Remove the default nginx site
-RUN rm -f /etc/nginx/sites-enabled/default
+WORKDIR /var/www
 
-# Copy supervisord configuration
-COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
-
-# Ensure log directories exist
-RUN mkdir -p /var/log/supervisor
-
-# nginx listens on 80 (HTTP); PHP-FPM on 9000 (internal only)
+# Railway injects $PORT; default 80 for local docker compose.
 EXPOSE 80
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

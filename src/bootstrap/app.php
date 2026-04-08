@@ -11,6 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Railway / proxied environments: trust forwarded headers so APP_URL,
+        // HTTPS detection, and client IPs work correctly behind their edge.
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'role'                => \App\Http\Middleware\RoleMiddleware::class,
             'must.change.password' => \App\Http\Middleware\MustChangePassword::class,

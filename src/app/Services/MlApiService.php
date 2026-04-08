@@ -2,25 +2,39 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 
 class MlApiService
 {
     private string $baseUrl;
 
+    private ?string $token;
+
     public function __construct()
     {
         $this->baseUrl = config('services.ml_api.url', 'http://ml-api:8000');
+        $this->token   = config('services.ml_api.token');
+    }
+
+    /**
+     * Build an HTTP client with the shared-secret header attached when configured.
+     */
+    private function client(int $timeout = 10): PendingRequest
+    {
+        $client = Http::timeout($timeout)->acceptJson();
+
+        if (filled($this->token)) {
+            $client = $client->withHeaders(['X-ML-Token' => $this->token]);
+        }
+
+        return $client;
     }
 
     /**
      * Request a performance prediction from the ML API.
      *
-     * @param  float  $avgScore        Average evaluation score for the faculty member.
-     * @param  int    $responseCount   Number of evaluation responses collected.
-     * @param  float  $previousScore   Average score from the previous evaluation period.
-     * @param  float  $improvementRate Rate of score change between periods (decimal).
-     * @return array<string, mixed>    Decoded JSON response or an error array.
+     * @return array<string, mixed>
      */
     public function predict(
         float $avgScore,
@@ -28,7 +42,7 @@ class MlApiService
         float $previousScore   = 0.0,
         float $improvementRate = 0.0,
     ): array {
-        $response = Http::timeout(10)->post("{$this->baseUrl}/predict", [
+        $response = $this->client(10)->post("{$this->baseUrl}/predict", [
             'avg_score'        => $avgScore,
             'response_count'   => $responseCount,
             'previous_score'   => $previousScore,
@@ -46,25 +60,38 @@ class MlApiService
 
     /**
      * Trigger the ML API to train using historical data.
-     * Optional term filters can scope training to a specific semester/school year.
      *
-     * @param  string|null  $semester
-     * @param  string|null  $schoolYear
-     * @return array<string, mixed> Decoded JSON response or an error array.
+     * @return array<string, mixed>
      */
     public function trainCurrentTerm(?string $semester = null, ?string $schoolYear = null): array
     {
-        $query = array_filter([
+        $payload = array_filter([
             'semester'    => $semester,
             'school_year' => $schoolYear,
         ], fn ($value) => filled($value));
 
-        $response = Http::timeout(30)->get("{$this->baseUrl}/train-current-term", $query);
+        $response = $this->client(60)->post("{$this->baseUrl}/train-current-term", $payload);
 
         if ($response->failed()) {
             return [
                 'error' => $response->json('detail') ?? 'ML API unavailable',
             ];
+        }
+
+        return $response->json();
+    }
+
+    /**
+     * Lightweight health probe.
+     *
+     * @return array<string, mixed>
+     */
+    public function health(): array
+    {
+        $response = $this->client(5)->get("{$this->baseUrl}/health");
+
+        if ($response->failed()) {
+            return ['status' => 'down'];
         }
 
         return $response->json();
