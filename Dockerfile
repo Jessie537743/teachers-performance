@@ -20,9 +20,17 @@ RUN if [ -f composer.json ]; then \
         composer install --no-interaction --no-dev --optimize-autoloader --no-scripts; \
     fi
 
-# Build frontend assets if package.json present
+# Build frontend assets if package.json present. Prefer `npm ci` when a
+# lockfile exists, otherwise fall back to `npm install` so fresh clones
+# without package-lock.json still build.
 RUN if [ -f package.json ]; then \
-        npm ci --no-audit --no-fund && npm run build && rm -rf node_modules; \
+        if [ -f package-lock.json ]; then \
+            npm ci --no-audit --no-fund; \
+        else \
+            npm install --no-audit --no-fund; \
+        fi \
+        && npm run build \
+        && rm -rf node_modules; \
     fi
 
 RUN chown -R www-data:www-data /var/www \
