@@ -69,17 +69,22 @@ pm.max_requests = 500" > /usr/local/etc/php-fpm.d/zz-tuning.conf
 COPY --from=app /var/www /var/www
 
 # nginx + supervisord config (template substituted at runtime)
+# Cache-bust: force re-copy of config files on each deploy
+ARG CACHEBUST=1
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf.template
 COPY docker/supervisord.conf   /etc/supervisor/conf.d/supervisord.conf
 COPY docker/entrypoint.sh      /usr/local/bin/entrypoint.sh
 RUN rm -f /etc/nginx/sites-enabled/default \
     && rm -f /etc/nginx/conf.d/default.conf \
+    && rm -rf /var/www/html \
+    && rm -rf /etc/nginx/sites-enabled \
     && mkdir -p /var/log/supervisor \
-    && chmod +x /usr/local/bin/entrypoint.sh
+    && chmod +x /usr/local/bin/entrypoint.sh \
+    && sed -i '/include.*sites-enabled/d' /etc/nginx/nginx.conf
 
 WORKDIR /var/www
 
-# Railway injects $PORT; default 80 for local docker compose.
-EXPOSE 80
+# Railway injects $PORT at runtime (typically 8080).
+EXPOSE 8080
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-# Railway injects $PORT at runtime; default to 80 for local docker.
-export PORT="${PORT:-80}"
+# Railway injects $PORT at runtime; default to 8080.
+export PORT="${PORT:-8080}"
 echo "[entrypoint] Binding nginx to port: $PORT"
 
 # Render nginx config with the runtime port.
