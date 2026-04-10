@@ -12,7 +12,7 @@
     <div>
         <h1 class="text-2xl font-bold text-gray-900">Evaluate Faculty</h1>
         <p class="text-sm text-gray-500 mt-1">
-            Period: {{ $period->school_year }} &mdash; {{ $period->semester }}
+            Period: {{ $period->school_year }} &mdash; {{ format_semester($period->semester) }}
         </p>
     </div>
     <a href="{{ route('dashboard') }}" class="bg-gray-200 text-slate-900 px-4 py-2.5 rounded-xl font-semibold hover:bg-gray-300 transition">Back to Dashboard</a>
@@ -36,7 +36,7 @@
         <div class="p-5">
             <div class="text-xs uppercase tracking-wider text-gray-400 mb-1">Subject</div>
             <div class="text-lg font-bold text-gray-900">{{ $subject->title }}</div>
-            <div class="text-gray-400 text-sm">{{ $subject->code }} &bull; {{ $subject->semester }} {{ $subject->school_year }}</div>
+            <div class="text-gray-400 text-sm">{{ $subject->code }} &bull; {{ format_semester($subject->semester) }} {{ $subject->school_year }}</div>
         </div>
     </div>
 </div>

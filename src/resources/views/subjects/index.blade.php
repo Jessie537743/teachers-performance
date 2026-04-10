@@ -133,7 +133,7 @@
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle">{{ $subject->course }}</td>
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle">Year {{ $subject->year_level }}</td>
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle">{{ $subject->section }}</td>
-                    <td class="px-4 py-3.5 border-b border-gray-200 align-middle">{{ $subject->semester }}</td>
+                    <td class="px-4 py-3.5 border-b border-gray-200 align-middle">{{ format_semester($subject->semester) }}</td>
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle">
                         {{ $subject->assignments->first()?->faculty?->user?->name ?? '—' }}
                     </td>
@@ -319,8 +319,8 @@
                 <div class="mb-4">
                     <label class="block text-sm font-semibold text-slate-700 mb-1.5">Semester</label>
                     <select name="semester" id="esub_semester" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" required>
-                        <option value="1st">1st Semester</option>
-                        <option value="2nd">2nd Semester</option>
+                        <option value="1st Semester">1st Semester</option>
+                        <option value="2nd Semester">2nd Semester</option>
                         <option value="Summer">Summer</option>
                     </select>
                 </div>

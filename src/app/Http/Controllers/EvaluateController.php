@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Traits\LoadsFacultyPerformance;
+use App\Http\Controllers\Traits\NormalizesComparableValues;
 use App\Models\Criterion;
 use App\Models\DeanEvaluationAnswer;
 use App\Models\DeanEvaluationFeedback;
@@ -26,7 +27,7 @@ use Illuminate\View\View;
 
 class EvaluateController extends Controller
 {
-    use LoadsFacultyPerformance;
+    use LoadsFacultyPerformance, NormalizesComparableValues;
 
     /**
      * List evaluations available to the current user.
@@ -801,7 +802,7 @@ class EvaluateController extends Controller
         $period  = EvaluationService::getOpenEvaluationPeriod();
         $profile = $student->studentProfile;
 
-        if (!$profile) {
+        if (! $period || ! $profile) {
             return view('evaluate.student-index', [
                 'subjectItems' => collect(),
                 'period'       => $period,
@@ -809,19 +810,20 @@ class EvaluateController extends Controller
             ]);
         }
 
-        $assignments = $profile->subjectAssignments()
-            ->with(['subject.department'])
-            ->get()
-            ->filter(function ($assignment) use ($profile) {
-                if (! $assignment->subject) {
-                    return false;
-                }
-
-                return $this->subjectMatchesStudentProfile($assignment->subject, $profile);
+        // Show subjects scheduled for the open evaluation period that match
+        // the student's course AND year level (section gating is relaxed).
+        $subjects = Subject::with('department')
+            ->where(function ($q) use ($period) {
+                $q->where('semester', $period->semester)
+                  ->orWhereRaw('LOWER(TRIM(semester)) = ?', [strtolower(trim((string) $period->semester))]);
             })
-            ->values();
+            ->where('school_year', $period->school_year)
+            ->whereRaw('LOWER(TRIM(course)) = ?', [strtolower(trim((string) $profile->course))])
+            ->whereRaw('TRIM(year_level) = ?', [trim((string) $profile->year_level)])
+            ->orderBy('code')
+            ->get();
 
-        if ($assignments->isEmpty()) {
+        if ($subjects->isEmpty()) {
             return view('evaluate.student-index', [
                 'subjectItems' => collect(),
                 'period'       => $period,
@@ -829,30 +831,26 @@ class EvaluateController extends Controller
             ]);
         }
 
-        $subjectIds = $assignments->pluck('subject_id')->unique()->values();
+        $subjectIds = $subjects->pluck('id');
 
         $facultyAssignmentsBySubject = SubjectAssignment::with('faculty.user')
             ->whereIn('subject_id', $subjectIds)
             ->get()
             ->groupBy('subject_id');
 
-        $evaluatedKeys = collect();
-        if ($period) {
-            $evaluatedKeys = EvaluationFeedback::where('student_id', $student->id)
-                ->where('semester', $period->semester)
-                ->where('school_year', $period->school_year)
-                ->whereIn('subject_id', $subjectIds)
-                ->selectRaw('CONCAT(faculty_id, ":", subject_id) as lookup_key')
-                ->pluck('lookup_key')
-                ->flip();
-        }
+        $evaluatedKeys = EvaluationFeedback::where('student_id', $student->id)
+            ->where('semester', $period->semester)
+            ->where('school_year', $period->school_year)
+            ->whereIn('subject_id', $subjectIds)
+            ->selectRaw('CONCAT(faculty_id, ":", subject_id) as lookup_key')
+            ->pluck('lookup_key')
+            ->flip();
 
-        $subjectItems = $assignments->map(function ($assignment) use ($facultyAssignmentsBySubject, $evaluatedKeys) {
-            $subject    = $assignment->subject;
+        $subjectItems = $subjects->map(function (Subject $subject) use ($facultyAssignmentsBySubject, $evaluatedKeys) {
             $subjectFAs = $facultyAssignmentsBySubject->get($subject->id, collect());
 
             $facultyList = $subjectFAs
-                ->filter(fn($fa) => $fa->faculty !== null)
+                ->filter(fn ($fa) => $fa->faculty !== null)
                 ->map(function ($fa) use ($subject, $evaluatedKeys) {
                     $facultyProfile = $fa->faculty;
                     $lookupKey      = $facultyProfile->id . ':' . $subject->id;
@@ -869,70 +867,12 @@ class EvaluateController extends Controller
                 'subject'      => $subject,
                 'faculty_list' => $facultyList,
             ];
-        });
+        })
+        // Drop subjects with no faculty assigned — nothing to evaluate.
+        ->filter(fn (array $item) => $item['faculty_list']->isNotEmpty())
+        ->values();
 
         return view('evaluate.student-index', compact('subjectItems', 'period', 'student'));
-    }
-
-    private function subjectMatchesStudentProfile(Subject $subject, object $studentProfile): bool
-    {
-        $subjectCourse = $this->normalizeComparableValue($subject->course ?? '');
-        $profileCourse = $this->normalizeComparableValue($studentProfile->course ?? '');
-
-        if ($subjectCourse === '' || $profileCourse === '' || $subjectCourse !== $profileCourse) {
-            return false;
-        }
-
-        $subjectYearLevel = trim((string) ($subject->year_level ?? ''));
-        $profileYearLevel = trim((string) ($studentProfile->year_level ?? ''));
-        if ($subjectYearLevel === '' || $profileYearLevel === '' || $subjectYearLevel !== $profileYearLevel) {
-            return false;
-        }
-
-        return $this->sectionValuesOverlap(
-            (string) ($subject->section ?? ''),
-            (string) ($studentProfile->section ?? '')
-        );
-    }
-
-    private function normalizeComparableValue(string $value): string
-    {
-        return mb_strtolower(trim($value));
-    }
-
-    /**
-     * Supports values like "1", "2", and combined values like "1,2".
-     */
-    private function sectionValuesOverlap(string $left, string $right): bool
-    {
-        $leftNormalized = $this->normalizeComparableValue($left);
-        $rightNormalized = $this->normalizeComparableValue($right);
-
-        if ($leftNormalized === '' || $rightNormalized === '') {
-            return false;
-        }
-
-        $leftParts = $this->splitSectionParts($leftNormalized);
-        $rightParts = $this->splitSectionParts($rightNormalized);
-
-        if ($leftParts === [] || $rightParts === []) {
-            return $leftNormalized === $rightNormalized;
-        }
-
-        return count(array_intersect($leftParts, $rightParts)) > 0;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function splitSectionParts(string $value): array
-    {
-        $parts = preg_split('/[\s,\/;&|]+/', $value) ?: [];
-
-        return array_values(array_unique(array_filter(array_map(
-            fn (string $part): string => $this->normalizeSectionToken($part),
-            $parts
-        ))));
     }
 
     /**
@@ -970,28 +910,6 @@ class EvaluateController extends Controller
             ->all();
 
         return $filtered;
-    }
-
-    private function normalizeSectionToken(string $token): string
-    {
-        $value = $this->normalizeComparableValue($token);
-        if ($value === '') {
-            return '';
-        }
-
-        if (preg_match('/^section\s*([0-9]+)$/i', $value, $matches)) {
-            return (string) ((int) $matches[1]);
-        }
-
-        if (preg_match('/^[0-9]+$/', $value)) {
-            return (string) ((int) $value);
-        }
-
-        if (preg_match('/^[a-z]$/', $value)) {
-            return (string) (ord(strtoupper($value)) - ord('A') + 1);
-        }
-
-        return $value;
     }
 
     private function studentShow(int $facultyId, ?int $subjectId): View

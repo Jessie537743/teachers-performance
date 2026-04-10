@@ -21,13 +21,17 @@ mkdir -p storage/framework/cache/data \
          storage/framework/views \
          storage/logs \
          bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
-chmod -R ug+rwX storage bootstrap/cache
+touch storage/logs/laravel.log
 
 # Run migrations (idempotent). Set RUN_MIGRATIONS=false to skip.
 if [ "${RUN_MIGRATIONS:-true}" = "true" ] && [ -n "${DB_HOST:-}" ]; then
     echo "[entrypoint] Running migrations..."
-    php artisan migrate --force || echo "[entrypoint] Migration failed (continuing)."
+    php artisan migrate --force
+
+    if [ "${RUN_SEEDERS:-false}" = "true" ]; then
+        echo "[entrypoint] Running seeders..."
+        php artisan db:seed --force
+    fi
 fi
 
 # Cache config/routes/views for production performance.
@@ -36,6 +40,11 @@ if [ "${APP_ENV:-production}" = "production" ]; then
     php artisan route:cache   || true
     php artisan view:cache    || true
 fi
+
+# Fix ownership AFTER artisan commands so any files they created as root
+# get handed to www-data (which is what php-fpm workers run as).
+chown -R www-data:www-data storage bootstrap/cache
+chmod -R ug+rwX storage bootstrap/cache
 
 # Hand off to supervisord (php-fpm + nginx).
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf

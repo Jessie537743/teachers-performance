@@ -91,10 +91,20 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     Route::put('/roles', [Admin\RolePermissionController::class, 'update'])->name('roles.update');
     Route::post('/roles/reset', [Admin\RolePermissionController::class, 'reset'])->name('roles.reset');
 
+    // Permission delegations
+    Route::get('/roles/delegations', [Admin\PermissionDelegationController::class, 'index'])
+        ->name('roles.delegations.index');
+    Route::post('/roles/delegations', [Admin\PermissionDelegationController::class, 'store'])
+        ->name('roles.delegations.store');
+    Route::post('/roles/delegations/{delegation}/revoke', [Admin\PermissionDelegationController::class, 'revoke'])
+        ->name('roles.delegations.revoke');
+
     // Settings
     Route::get('/settings', [Admin\SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings/general', [Admin\SettingsController::class, 'updateGeneral'])->name('settings.update-general');
     Route::delete('/settings/logo', [Admin\SettingsController::class, 'removeLogo'])->name('settings.remove-logo');
+    Route::post('/settings/users/{user}/reset-password', [Admin\SettingsController::class, 'resetUserPassword'])
+        ->name('settings.users.reset-password');
 
     // AI Model Training (admin + dean)
     Route::get('/model-training', [Admin\ModelTrainingController::class, 'index'])->name('model-training.index');

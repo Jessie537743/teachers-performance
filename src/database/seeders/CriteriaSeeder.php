@@ -4,11 +4,27 @@ namespace Database\Seeders;
 
 use App\Models\Criterion;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class CriteriaSeeder extends Seeder
 {
     public function run(): void
     {
+        // Migrations may have pre-seeded criteria rows. Wipe the table (and
+        // any dependent pivots) before inserting so we can use explicit IDs
+        // without duplicate-key errors.
+        Schema::disableForeignKeyConstraints();
+        try {
+            foreach (['criterion_evaluator_groups', 'criterion_personnel_types', 'questions', 'criteria'] as $table) {
+                if (Schema::hasTable($table)) {
+                    DB::table($table)->truncate();
+                }
+            }
+        } finally {
+            Schema::enableForeignKeyConstraints();
+        }
+
         $criteria = [
             // ----------------------------------------------------------------
             // Student evaluator - Teaching personnel

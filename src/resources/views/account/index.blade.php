@@ -84,7 +84,7 @@
                         </div>
                         <div class="flex justify-between items-center py-2">
                             <span class="text-sm text-gray-400 font-medium">Semester</span>
-                            <span class="text-sm text-slate-800 font-semibold text-right">{{ $user->studentProfile->semester }}</span>
+                            <span class="text-sm text-slate-800 font-semibold text-right">{{ format_semester($user->studentProfile->semester) }}</span>
                         </div>
                         <div class="flex justify-between items-center py-2">
                             <span class="text-sm text-gray-400 font-medium">School Year</span>

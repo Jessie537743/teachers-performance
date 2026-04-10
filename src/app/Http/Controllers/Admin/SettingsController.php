@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
@@ -70,6 +71,28 @@ class SettingsController extends Controller
 
         return redirect()->route('settings.index', ['tab' => 'general'])
             ->with('success', 'Settings updated successfully.');
+    }
+
+    public function resetUserPassword(Request $request, User $user): RedirectResponse
+    {
+        Gate::authorize('manage-settings');
+
+        // Double-check: only admins may reset other users' passwords,
+        // even if a non-admin somehow holds the manage-settings permission.
+        abort_unless($request->user()->isAdmin(), 403, 'Only administrators can reset passwords.');
+
+        $validated = $request->validate([
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user->update([
+            'password'             => Hash::make($validated['password']),
+            'must_change_password' => true,
+        ]);
+
+        return redirect()
+            ->route('settings.index', ['tab' => 'users'])
+            ->with('success', "Password for {$user->name} has been reset. They will be asked to change it on next login.");
     }
 
     public function removeLogo(): RedirectResponse

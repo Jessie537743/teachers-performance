@@ -9,17 +9,26 @@ use App\Models\FacultyProfile;
 use App\Models\StudentSubjectAssignment;
 use App\Models\Subject;
 use App\Models\SubjectAssignment;
+use App\Http\Controllers\Traits\NormalizesComparableValues;
 use App\Models\User;
 use App\Services\EvaluationService;
 
 class EvaluationPolicy
 {
+    use NormalizesComparableValues;
     /**
      * Student can evaluate a faculty member for a specific subject if:
      * 1. Evaluation period is open
-     * 2. Student has the subject assigned (enrolled)
-     * 3. Faculty is assigned to teach that subject
-     * 4. Student hasn't already submitted this evaluation
+     * 2. The subject is scheduled for the open evaluation period
+     *    (matching semester + school year)
+     * 3. The subject's course matches the student's course
+     * 4. The subject's year level matches the student's year level
+     * 5. Faculty is assigned to teach that subject
+     * 6. Student hasn't already submitted this evaluation for this term
+     *
+     * Section gating is intentionally relaxed because section data is
+     * inconsistent across the dataset; course + year level is sufficient
+     * to scope the cohort.
      */
     public function submitStudentEvaluation(User $student, FacultyProfile $faculty, Subject $subject): bool
     {
@@ -28,26 +37,32 @@ class EvaluationPolicy
         $studentProfile = $student->studentProfile;
         if (!$studentProfile) return false;
 
-        $studentCourse = $this->normalizeComparableValue((string) $studentProfile->course);
+        $period = EvaluationService::getOpenEvaluationPeriod();
+        if (!$period) return false;
+
+        // Subject must belong to the open evaluation period.
+        $subjectSemester = $this->normalizeComparableValue((string) $subject->semester);
+        $periodSemester  = $this->normalizeComparableValue((string) $period->semester);
+        if ($subjectSemester === '' || $subjectSemester !== $periodSemester) {
+            return false;
+        }
+        if ((string) $subject->school_year !== (string) $period->school_year) {
+            return false;
+        }
+
+        // Course must match.
         $subjectCourse = $this->normalizeComparableValue((string) $subject->course);
-        if ($studentCourse === '' || $subjectCourse === '' || $studentCourse !== $subjectCourse) {
+        $studentCourse = $this->normalizeComparableValue((string) $studentProfile->course);
+        if ($subjectCourse === '' || $studentCourse === '' || $subjectCourse !== $studentCourse) {
             return false;
         }
 
-        $studentYearLevel = trim((string) $studentProfile->year_level);
-        $subjectYearLevel = trim((string) $subject->year_level);
-        if ($studentYearLevel === '' || $subjectYearLevel === '' || $studentYearLevel !== $subjectYearLevel) {
+        // Year level must match.
+        $subjectYear = trim((string) $subject->year_level);
+        $studentYear = trim((string) $studentProfile->year_level);
+        if ($subjectYear === '' || $studentYear === '' || $subjectYear !== $studentYear) {
             return false;
         }
-
-        if (! $this->sectionValuesOverlap((string) $studentProfile->section, (string) $subject->section)) {
-            return false;
-        }
-
-        $enrolled = StudentSubjectAssignment::where('student_profile_id', $studentProfile->id)
-            ->where('subject_id', $subject->id)
-            ->exists();
-        if (!$enrolled) return false;
 
         $teaches = SubjectAssignment::where('faculty_id', $faculty->id)
             ->where('subject_id', $subject->id)
@@ -57,71 +72,11 @@ class EvaluationPolicy
         $alreadyEvaluated = EvaluationFeedback::where('student_id', $student->id)
             ->where('faculty_id', $faculty->id)
             ->where('subject_id', $subject->id)
+            ->where('semester', $period->semester)
+            ->where('school_year', $period->school_year)
             ->exists();
 
         return !$alreadyEvaluated;
-    }
-
-    private function normalizeComparableValue(string $value): string
-    {
-        return mb_strtolower(trim($value));
-    }
-
-    /**
-     * Supports values like "1", "2", and grouped values like "1,2".
-     */
-    private function sectionValuesOverlap(string $left, string $right): bool
-    {
-        $leftNormalized = $this->normalizeComparableValue($left);
-        $rightNormalized = $this->normalizeComparableValue($right);
-
-        if ($leftNormalized === '' || $rightNormalized === '') {
-            return false;
-        }
-
-        $leftParts = $this->splitSectionParts($leftNormalized);
-        $rightParts = $this->splitSectionParts($rightNormalized);
-
-        if ($leftParts === [] || $rightParts === []) {
-            return $leftNormalized === $rightNormalized;
-        }
-
-        return count(array_intersect($leftParts, $rightParts)) > 0;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private function splitSectionParts(string $value): array
-    {
-        $parts = preg_split('/[\s,\/;&|]+/', $value) ?: [];
-
-        return array_values(array_unique(array_filter(array_map(
-            fn (string $part): string => $this->normalizeSectionToken($part),
-            $parts
-        ))));
-    }
-
-    private function normalizeSectionToken(string $token): string
-    {
-        $value = $this->normalizeComparableValue($token);
-        if ($value === '') {
-            return '';
-        }
-
-        if (preg_match('/^section\s*([0-9]+)$/i', $value, $matches)) {
-            return (string) ((int) $matches[1]);
-        }
-
-        if (preg_match('/^[0-9]+$/', $value)) {
-            return (string) ((int) $value);
-        }
-
-        if (preg_match('/^[a-z]$/', $value)) {
-            return (string) (ord(strtoupper($value)) - ord('A') + 1);
-        }
-
-        return $value;
     }
 
     /**

@@ -19,7 +19,7 @@
             @endif
         </h1>
         <p class="text-sm text-gray-500 mt-1">
-            Period: {{ $period->school_year }} &mdash; {{ $period->semester }}
+            Period: {{ $period->school_year }} &mdash; {{ format_semester($period->semester) }}
         </p>
     </div>
     <a href="{{ route('evaluate.index') }}" class="bg-gray-200 text-slate-900 px-4 py-2.5 rounded-xl font-semibold hover:bg-gray-300 transition">Back</a>

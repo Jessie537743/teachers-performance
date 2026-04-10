@@ -9,7 +9,7 @@
         <h1 class="text-2xl font-bold text-gray-900">Welcome, {{ $dean->name }}</h1>
         <p class="text-sm text-gray-500 mt-1">
             @if($period)
-                Current Period: {{ $period->school_year }} &mdash; {{ $period->semester }}
+                Current Period: {{ $period->school_year }} &mdash; {{ format_semester($period->semester) }}
                 &nbsp;<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">Open</span>
             @else
                 No evaluation period is currently open.

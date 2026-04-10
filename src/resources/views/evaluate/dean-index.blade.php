@@ -9,7 +9,7 @@
         <h1 class="text-2xl font-bold text-gray-900">Faculty Evaluation</h1>
         <p class="text-sm text-gray-500 mt-1">
             @if($period)
-                Period: {{ $period->school_year }} &mdash; {{ $period->semester }}
+                Period: {{ $period->school_year }} &mdash; {{ format_semester($period->semester) }}
             @else
                 No evaluation period is currently open.
             @endif

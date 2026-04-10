@@ -33,7 +33,7 @@
             <button type="submit" class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition shadow-sm">Apply</button>
         </form>
         @if($period)
-            <p class="text-xs text-gray-500 mt-3">Open evaluation period: {{ $period->school_year }} — {{ $period->semester }} (defaults apply when fields are left empty).</p>
+            <p class="text-xs text-gray-500 mt-3">Open evaluation period: {{ $period->school_year }} — {{ format_semester($period->semester) }} (defaults apply when fields are left empty).</p>
         @endif
     </div>
 </div>

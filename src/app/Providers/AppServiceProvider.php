@@ -33,7 +33,7 @@ class AppServiceProvider extends ServiceProvider
         foreach ($permissions as $permission) {
             if (is_string($permission)) {
                 Gate::define($permission, function ($user) use ($permission) {
-                    return in_array($permission, Permission::forRole($user->role));
+                    return $user->hasPermission($permission);
                 });
             }
         }
