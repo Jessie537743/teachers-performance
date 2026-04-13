@@ -18,6 +18,7 @@ class PermissionDelegationController extends Controller
         Gate::authorize('manage-roles');
 
         $users = User::where('is_active', true)
+            ->whereJsonDoesntContain('roles', 'student')
             ->orderBy('name')
             ->get(['id', 'name', 'email', 'roles']);
 
