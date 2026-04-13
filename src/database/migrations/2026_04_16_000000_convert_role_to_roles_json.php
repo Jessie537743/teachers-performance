@@ -9,19 +9,29 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->json('roles')->nullable()->after('role');
-        });
+        // Step 1: Add roles JSON column if it doesn't exist yet
+        if (! Schema::hasColumn('users', 'roles')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->json('roles')->nullable()->after(
+                    Schema::hasColumn('users', 'role') ? 'role' : 'remember_token'
+                );
+            });
+        }
 
-        DB::statement('UPDATE users SET roles = JSON_ARRAY(role)');
+        // Step 2: Populate from old role column (if it still exists)
+        if (Schema::hasColumn('users', 'role')) {
+            DB::statement('UPDATE users SET roles = JSON_ARRAY(role) WHERE roles IS NULL');
+        }
 
-        Schema::table('users', function (Blueprint $table) {
-            $table->json('roles')->default('["student"]')->nullable(false)->change();
-        });
+        // Step 3: Set NOT NULL + default via raw SQL (avoids ->change() issues)
+        DB::statement("ALTER TABLE users MODIFY COLUMN roles JSON NOT NULL DEFAULT (JSON_ARRAY('student'))");
 
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn('role');
-        });
+        // Step 4: Drop old role column if it exists
+        if (Schema::hasColumn('users', 'role')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->dropColumn('role');
+            });
+        }
     }
 
     public function down(): void

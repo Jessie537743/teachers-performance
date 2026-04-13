@@ -9,9 +9,15 @@ use Illuminate\View\View;
 
 class AuditLogController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|\Illuminate\Http\RedirectResponse
     {
         Gate::authorize('manage-settings');
+
+        try {
+            AuditLog::query()->exists();
+        } catch (\Throwable $e) {
+            return redirect()->route('dashboard')->with('error', 'Audit logs table is not available yet. Please run migrations.');
+        }
 
         $query = AuditLog::with('user')->orderByDesc('created_at');
 

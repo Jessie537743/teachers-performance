@@ -12,9 +12,15 @@ use Illuminate\View\View;
 
 class PasswordResetApprovalController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|\Illuminate\Http\RedirectResponse
     {
         Gate::authorize('manage-settings');
+
+        try {
+            PasswordResetRequest::query()->exists();
+        } catch (\Throwable $e) {
+            return redirect()->route('dashboard')->with('error', 'Password reset requests table is not available yet. Please run migrations.');
+        }
 
         $query = PasswordResetRequest::with(['user', 'reviewer'])->orderByDesc('created_at');
 
