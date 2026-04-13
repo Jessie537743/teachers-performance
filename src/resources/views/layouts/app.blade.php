@@ -51,6 +51,27 @@
         .stat-stagger:nth-child(4) { animation-delay: .2s; }
         .stat-stagger:nth-child(5) { animation-delay: .25s; }
         .stat-stagger:nth-child(6) { animation-delay: .3s; }
+        /* Skeleton loading shimmer */
+        @keyframes shimmer {
+            0%   { background-position: -400px 0; }
+            100% { background-position: 400px 0; }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 800px 100%;
+            animation: shimmer 1.5s ease-in-out infinite;
+            border-radius: 0.75rem;
+        }
+        .skeleton-text { height: 0.875rem; border-radius: 0.375rem; }
+        .skeleton-title { height: 1.5rem; width: 60%; border-radius: 0.5rem; }
+        .skeleton-card {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 1rem;
+            padding: 1rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,.05);
+        }
+        .skeleton-hidden { display: none; }
         /* Reduced motion */
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after {

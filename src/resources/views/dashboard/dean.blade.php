@@ -4,6 +4,68 @@
 @section('page-title', 'Dean Dashboard')
 
 @section('content')
+{{-- Skeleton loading --}}
+<div id="skeletonLoader" class="animate-pulse">
+    {{-- Header skeleton --}}
+    <div class="flex justify-between items-center mb-5">
+        <div>
+            <div class="h-7 w-3/4 bg-gray-200 rounded-xl mb-2"></div>
+            <div class="h-4 w-1/2 bg-gray-200 rounded-xl"></div>
+        </div>
+        <div class="h-9 w-28 bg-gray-200 rounded-lg"></div>
+    </div>
+    {{-- Model Training banner skeleton --}}
+    <div class="h-16 w-full bg-gray-200 rounded-2xl mb-5"></div>
+    {{-- 3 stat cards --}}
+    <div class="grid grid-cols-2 gap-3.5 mb-5">
+        @for($i = 0; $i < 3; $i++)
+        <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl bg-gray-200 skeleton"></div>
+            <div class="flex-1">
+                <div class="h-3 w-20 bg-gray-200 rounded-xl mb-2"></div>
+                <div class="h-6 w-12 bg-gray-200 rounded-xl"></div>
+            </div>
+        </div>
+        @endfor
+    </div>
+    {{-- Two side-by-side cards --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+        <div class="bg-white border border-gray-200 rounded-2xl shadow-sm">
+            <div class="px-4 py-2.5 border-b border-gray-200">
+                <div class="h-4 w-40 bg-gray-200 rounded-xl"></div>
+            </div>
+            <div class="px-4 py-3 space-y-3">
+                <div class="h-4 w-full bg-gray-200 rounded-xl skeleton"></div>
+                <div class="h-4 w-5/6 bg-gray-200 rounded-xl skeleton"></div>
+                <div class="h-4 w-4/6 bg-gray-200 rounded-xl skeleton"></div>
+            </div>
+        </div>
+        <div class="bg-white border border-gray-200 rounded-2xl shadow-sm">
+            <div class="px-4 py-2.5 border-b border-gray-200">
+                <div class="h-4 w-32 bg-gray-200 rounded-xl"></div>
+            </div>
+            <div class="px-4 py-3 space-y-2">
+                @for($i = 0; $i < 5; $i++)
+                <div class="h-8 w-full bg-gray-200 rounded-lg skeleton"></div>
+                @endfor
+            </div>
+        </div>
+    </div>
+    {{-- Faculty table skeleton --}}
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm">
+        <div class="px-5 py-4 border-b border-gray-200">
+            <div class="h-5 w-48 bg-gray-200 rounded-xl"></div>
+        </div>
+        <div class="px-4 py-3 space-y-3">
+            @for($i = 0; $i < 5; $i++)
+            <div class="h-4 w-full bg-gray-200 rounded-xl skeleton"></div>
+            @endfor
+        </div>
+    </div>
+</div>
+
+{{-- Real content (hidden until loaded) --}}
+<div id="realContent" style="display:none;">
 <div class="flex justify-between items-center gap-4 mb-5 flex-wrap animate-slide-up">
     <div>
         <h1 class="text-2xl font-bold text-gray-900">Welcome, {{ $dean->name }}</h1>
@@ -184,6 +246,24 @@
     </div>
     @endif
 </div>
+</div>{{-- end realContent --}}
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        document.getElementById('skeletonLoader').style.display = 'none';
+        document.getElementById('realContent').style.display = 'block';
+    }, 300);
+});
+document.addEventListener('turbo:load', function() {
+    var sk = document.getElementById('skeletonLoader');
+    var rc = document.getElementById('realContent');
+    if (sk) sk.style.display = 'none';
+    if (rc) rc.style.display = 'block';
+});
+</script>
+@endpush
 @endsection
 
 @push('scripts')

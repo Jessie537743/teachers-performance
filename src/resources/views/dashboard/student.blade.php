@@ -4,6 +4,52 @@
 @section('page-title', 'Student Dashboard')
 
 @section('content')
+{{-- Skeleton loading --}}
+<div id="skeletonLoader" class="animate-pulse">
+    {{-- Header skeleton --}}
+    <div class="mb-5">
+        <div class="h-7 w-3/4 bg-gray-200 rounded-xl mb-2"></div>
+        <div class="h-4 w-1/2 bg-gray-200 rounded-xl"></div>
+    </div>
+    {{-- Quick stats skeleton --}}
+    <div class="grid grid-cols-3 gap-3.5 mb-5">
+        @for($i = 0; $i < 3; $i++)
+        <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-4">
+            <div class="h-3 w-24 bg-gray-200 rounded-xl mb-2"></div>
+            <div class="h-6 w-10 bg-gray-200 rounded-xl"></div>
+        </div>
+        @endfor
+    </div>
+    {{-- Subject card skeletons --}}
+    @for($i = 0; $i < 3; $i++)
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm mb-4">
+        <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="h-5 w-40 bg-gray-200 rounded-xl skeleton"></div>
+                <div class="h-5 w-16 bg-gray-200 rounded-full"></div>
+            </div>
+            <div class="h-4 w-24 bg-gray-200 rounded-xl"></div>
+        </div>
+        <div class="px-5 py-4 space-y-3">
+            @for($j = 0; $j < 2; $j++)
+            <div class="flex items-center justify-between p-3.5 bg-gray-50 rounded-xl border border-gray-200">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gray-200 skeleton"></div>
+                    <div>
+                        <div class="h-4 w-32 bg-gray-200 rounded-xl mb-1"></div>
+                        <div class="h-3 w-40 bg-gray-200 rounded-xl"></div>
+                    </div>
+                </div>
+                <div class="h-7 w-20 bg-gray-200 rounded-lg"></div>
+            </div>
+            @endfor
+        </div>
+    </div>
+    @endfor
+</div>
+
+{{-- Real content (hidden until loaded) --}}
+<div id="realContent" style="display:none;">
 <div class="flex justify-between items-center gap-4 mb-5 flex-wrap animate-slide-up">
     <div>
         <h1 class="text-2xl font-bold text-gray-900">Welcome, {{ $student->name }}</h1>
@@ -104,4 +150,22 @@
     </div>
 </div>
 @endforelse
+</div>{{-- end realContent --}}
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(function() {
+        document.getElementById('skeletonLoader').style.display = 'none';
+        document.getElementById('realContent').style.display = 'block';
+    }, 300);
+});
+document.addEventListener('turbo:load', function() {
+    var sk = document.getElementById('skeletonLoader');
+    var rc = document.getElementById('realContent');
+    if (sk) sk.style.display = 'none';
+    if (rc) rc.style.display = 'block';
+});
+</script>
+@endpush
 @endsection
