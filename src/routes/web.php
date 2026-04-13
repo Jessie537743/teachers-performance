@@ -5,6 +5,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EvaluateController;
+use App\Http\Controllers\HelpController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin;
 use Illuminate\Support\Facades\Route;
@@ -35,6 +36,9 @@ Route::middleware('auth')->group(function () {
 // Access is controlled by permissions (gates) instead of role middleware
 // -------------------------------------------------------------------------
 Route::middleware(['auth', 'must.change.password'])->group(function () {
+
+    // Help Center — accessible to all authenticated users
+    Route::get('/help', [HelpController::class, 'index'])->name('help.index');
 
     // Dashboard — single entry point, controller resolves the right view per role
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
