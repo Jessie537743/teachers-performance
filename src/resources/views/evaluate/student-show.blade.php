@@ -79,7 +79,7 @@
 </div>
 
 {{-- Evaluation Form --}}
-<form method="POST" action="{{ route('evaluate.store') }}" id="evalForm">
+<form method="POST" action="{{ route('evaluate.store') }}" id="evalForm" onsubmit="event.preventDefault(); showConfirm('Submit your evaluation? This cannot be undone.', this, {safe: true, confirmText: 'Submit'})">
     @csrf
     <input type="hidden" name="type" value="student">
     <input type="hidden" name="faculty_id" value="{{ $facultyProfile->id }}">
@@ -139,8 +139,7 @@
     @endif
 
     <div class="flex gap-3 items-center">
-        <button type="submit" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition shadow-sm"
-                onclick="return confirm('Submit your evaluation? This cannot be undone.')">
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition shadow-sm">
             Submit Evaluation
         </button>
         <a href="{{ route('dashboard') }}" class="bg-gray-200 text-slate-900 px-4 py-2.5 rounded-xl font-semibold hover:bg-gray-300 transition">Cancel</a>

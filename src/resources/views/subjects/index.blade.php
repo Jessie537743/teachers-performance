@@ -166,7 +166,7 @@
                             </a>
                             @if($subject->is_active)
                                 <form method="POST" action="{{ route('subjects.destroy', $subject->id) }}"
-                                      onsubmit="return confirm('Deactivate this subject?')">
+                                      onsubmit="event.preventDefault(); showConfirm('Deactivate this subject?', this)">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="inline-flex items-center gap-2 bg-red-600 text-white px-3 py-1.5 rounded-xl text-sm font-semibold hover:bg-red-700 transition">Deactivate</button>
                                 </form>

@@ -96,7 +96,7 @@
                         @json($criterionPayload)
                     </script>
                     <form method="POST" action="{{ route('criteria.destroy', $criterion->id) }}"
-                          onsubmit="return confirm('Delete this criterion and all its questions?')">
+                          onsubmit="event.preventDefault(); showConfirm('Delete this criterion and all its questions?', this)">
                         @csrf @method('DELETE')
                         <button type="submit" class="inline-flex items-center gap-2 bg-red-600 text-white px-3 py-1.5 rounded-xl text-sm font-semibold hover:bg-red-700 transition">Delete</button>
                     </form>

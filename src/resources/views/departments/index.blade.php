@@ -88,13 +88,13 @@
                             {{-- Deactivate / Reactivate --}}
                             @if($dept->is_active)
                                 <form method="POST" action="{{ route('departments.destroy', $dept->id) }}"
-                                      onsubmit="return confirm('Deactivate this department?')">
+                                      onsubmit="event.preventDefault(); showConfirm('Deactivate this department?', this)">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="inline-flex items-center gap-2 bg-red-600 text-white px-3 py-1.5 rounded-xl text-sm font-semibold hover:bg-red-700 transition">Deactivate</button>
                                 </form>
                             @else
                                 <form method="POST" action="{{ route('departments.reactivate', $dept->id) }}"
-                                      onsubmit="return confirm('Reactivate this department?')">
+                                      onsubmit="event.preventDefault(); showConfirm('Reactivate this department?', this, {safe: true, confirmText: 'Reactivate'})">
                                     @csrf
                                     <button type="submit" class="inline-flex items-center gap-2 bg-green-600 text-white px-3 py-1.5 rounded-xl text-sm font-semibold hover:bg-green-700 transition">Reactivate</button>
                                 </form>

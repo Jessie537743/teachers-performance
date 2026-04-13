@@ -112,7 +112,7 @@
                                 Edit
                             </button>
                             <form method="POST" action="{{ route('evaluation-periods.destroy', $period->id) }}"
-                                  onsubmit="return confirm('Delete this evaluation period?')">
+                                  onsubmit="event.preventDefault(); showConfirm('Delete this evaluation period?', this)">
                                 @csrf @method('DELETE')
                                 <button type="submit" class="inline-flex items-center gap-2 bg-red-600 text-white px-3 py-1.5 rounded-xl text-sm font-semibold hover:bg-red-700 transition">Delete</button>
                             </form>

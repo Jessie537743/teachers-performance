@@ -65,7 +65,7 @@
                     </div>
                     @if($appLogo)
                     <form method="POST" action="{{ route('settings.remove-logo') }}" class="ml-auto"
-                          onsubmit="return confirm('Remove the custom logo? The default logo will be used instead.')">
+                          onsubmit="event.preventDefault(); showConfirm('Remove the custom logo? The default logo will be used instead.', this, {confirmText: 'Remove'})">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="inline-flex items-center gap-2 bg-red-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-red-700 transition">Remove</button>

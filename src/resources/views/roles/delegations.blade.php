@@ -133,7 +133,7 @@
                         <td class="px-6 py-3 text-right">
                             @if($d->revoked_at === null)
                                 <form method="POST" action="{{ route('roles.delegations.revoke', $d) }}"
-                                      onsubmit="return confirm('Revoke this delegation?')">
+                                      onsubmit="event.preventDefault(); showConfirm('Revoke this delegation?', this, {confirmText: 'Revoke'})">
                                     @csrf
                                     <button type="submit" class="text-red-600 hover:text-red-800 font-semibold text-sm">Revoke</button>
                                 </form>

@@ -176,18 +176,6 @@
 
         {{-- Content --}}
         <section class="animate-fade-in w-full p-6 lg:p-6 md:p-5 sm:p-4">
-            @if(session('success'))
-                <div class="mb-4 animate-alert-in rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-green-800">{{ session('success') }}</div>
-            @endif
-            @if(session('status'))
-                <div class="mb-4 animate-alert-in rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-green-800">{{ session('status') }}</div>
-            @endif
-            @if(session('info'))
-                <div class="mb-4 animate-alert-in rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-800">{{ session('info') }}</div>
-            @endif
-            @if(session('error'))
-                <div class="mb-4 animate-alert-in rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800">{{ session('error') }}</div>
-            @endif
             @if($errors->any())
                 <div class="mb-4 animate-alert-in rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-800">
                     <ul class="m-0 list-disc pl-5">
@@ -297,7 +285,122 @@
 </script>
 <style>
     .user-dropdown.show { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
+
+    /* Toast notifications */
+    #toastContainer { position: fixed; top: 1rem; right: 1rem; z-index: 9998; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
+    .toast { pointer-events: auto; display: flex; align-items: flex-start; gap: 0.75rem; min-width: 320px; max-width: 420px; padding: 0.875rem 1rem; border-radius: 0.75rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,.15), 0 4px 6px -2px rgba(0,0,0,.08); transform: translateX(110%); opacity: 0; transition: transform .35s cubic-bezier(.4,0,.2,1), opacity .35s ease; }
+    .toast.show { transform: translateX(0); opacity: 1; }
+    .toast.hide { transform: translateX(110%); opacity: 0; }
+    .toast-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+    .toast-error   { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+    .toast-info    { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
+    .toast-warning { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+    .toast-progress { position: absolute; bottom: 0; left: 0; height: 3px; border-radius: 0 0 0.75rem 0.75rem; animation: toastProgress 4s linear forwards; }
+    .toast-success .toast-progress { background: #22c55e; }
+    .toast-error .toast-progress   { background: #ef4444; }
+    .toast-info .toast-progress    { background: #3b82f6; }
+    .toast-warning .toast-progress { background: #f59e0b; }
+    @keyframes toastProgress { from { width: 100%; } to { width: 0%; } }
+
+    /* Confirm modal */
+    #confirmOverlay { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(15,23,42,.45); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
+    #confirmOverlay.active { display: flex; }
+    #confirmBox { animation: confirmIn .2s ease-out; }
+    @keyframes confirmIn { from { opacity: 0; transform: scale(.95) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 </style>
+
+{{-- Toast container --}}
+<div id="toastContainer"></div>
+
+{{-- Confirmation modal --}}
+<div id="confirmOverlay" onclick="if(event.target===this)closeConfirm()">
+    <div id="confirmBox" class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+        <div class="p-6">
+            <div class="flex items-center gap-3 mb-3">
+                <div id="confirmIcon" class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-red-600"><path d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <h3 id="confirmTitle" class="text-lg font-bold text-slate-900">Are you sure?</h3>
+            </div>
+            <p id="confirmMessage" class="text-sm text-gray-600 ml-[52px]"></p>
+        </div>
+        <div class="flex justify-end gap-2.5 px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <button onclick="closeConfirm()" class="px-4 py-2 rounded-xl text-sm font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-100 transition">Cancel</button>
+            <button id="confirmBtn" onclick="doConfirm()" class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-red-600 hover:bg-red-700 transition">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+/* ── Toast system ── */
+function showToast(type, message) {
+    var container = document.getElementById('toastContainer');
+    if (!container) return;
+    var icons = {
+        success: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>',
+        error: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+        info: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+        warning: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+    };
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    toast.style.position = 'relative';
+    toast.innerHTML = '<div class="flex-shrink-0 mt-0.5">' + (icons[type] || icons.info) + '</div>'
+        + '<div class="flex-1 text-sm font-medium">' + message + '</div>'
+        + '<button onclick="this.closest(\'.toast\').remove()" class="flex-shrink-0 opacity-50 hover:opacity-100 transition" style="background:none;border:none;cursor:pointer;padding:2px;">'
+        + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'
+        + '<div class="toast-progress"></div>';
+    container.appendChild(toast);
+    requestAnimationFrame(function() { requestAnimationFrame(function() { toast.classList.add('show'); }); });
+    setTimeout(function() {
+        toast.classList.remove('show');
+        toast.classList.add('hide');
+        setTimeout(function() { toast.remove(); }, 400);
+    }, 4000);
+}
+
+/* ── Confirmation modal ── */
+var _confirmForm = null;
+function showConfirm(message, form, options) {
+    _confirmForm = form;
+    var opts = options || {};
+    document.getElementById('confirmMessage').textContent = message;
+    document.getElementById('confirmTitle').textContent = opts.title || 'Are you sure?';
+    var btn = document.getElementById('confirmBtn');
+    btn.textContent = opts.confirmText || 'Confirm';
+    btn.className = 'px-4 py-2 rounded-xl text-sm font-semibold text-white transition '
+        + (opts.safe ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700');
+    document.getElementById('confirmOverlay').classList.add('active');
+}
+function closeConfirm() {
+    document.getElementById('confirmOverlay').classList.remove('active');
+    _confirmForm = null;
+}
+function doConfirm() {
+    var overlay = document.getElementById('confirmOverlay');
+    overlay.classList.remove('active');
+    if (_confirmForm) {
+        var form = _confirmForm;
+        _confirmForm = null;
+        form.submit();
+    }
+}
+</script>
+
+{{-- Auto-show toasts from Laravel session --}}
+@if(session('success'))
+<script>document.addEventListener('DOMContentLoaded', function() { showToast('success', @json(session('success'))); });</script>
+@endif
+@if(session('status'))
+<script>document.addEventListener('DOMContentLoaded', function() { showToast('success', @json(session('status'))); });</script>
+@endif
+@if(session('info'))
+<script>document.addEventListener('DOMContentLoaded', function() { showToast('info', @json(session('info'))); });</script>
+@endif
+@if(session('error'))
+<script>document.addEventListener('DOMContentLoaded', function() { showToast('error', @json(session('error'))); });</script>
+@endif
+
 @stack('scripts')
 </body>
 </html>

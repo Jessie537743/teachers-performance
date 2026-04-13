@@ -132,7 +132,7 @@
                                         class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition">
                                     Edit
                                 </button>
-                                <form method="POST" action="{{ route('sentiment-lexicon.destroy', $entry) }}" onsubmit="return confirm('Delete &quot;{{ $entry->word }}&quot;?')">
+                                <form method="POST" action="{{ route('sentiment-lexicon.destroy', $entry) }}" onsubmit="event.preventDefault(); showConfirm('Delete &quot;{{ $entry->word }}&quot;?', this)">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 transition">

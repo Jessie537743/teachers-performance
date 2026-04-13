@@ -93,7 +93,7 @@
                             @if($req->isPending())
                                 <div class="flex items-center justify-end gap-2">
                                     {{-- Approve --}}
-                                    <form method="POST" action="{{ route('password-reset-requests.approve', $req) }}" onsubmit="return confirm('Approve this password reset request?')">
+                                    <form method="POST" action="{{ route('password-reset-requests.approve', $req) }}" onsubmit="event.preventDefault(); showConfirm('Approve this password reset request?', this, {safe: true, confirmText: 'Approve'})">
                                         @csrf
                                         <button type="submit" class="inline-flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white text-xs font-semibold rounded-lg hover:bg-green-700 transition">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>

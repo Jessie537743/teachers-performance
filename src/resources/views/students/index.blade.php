@@ -174,7 +174,7 @@
                             </button>
                             @if($student->is_active)
                                 <form method="POST" action="{{ route('students.destroy', $student->id) }}"
-                                      onsubmit="return confirm('Deactivate this student?')">
+                                      onsubmit="event.preventDefault(); showConfirm('Deactivate this student?', this)">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="inline-flex items-center gap-2 bg-red-600 text-white px-3 py-1.5 rounded-xl text-sm font-semibold hover:bg-red-700 transition">Deactivate</button>
                                 </form>
