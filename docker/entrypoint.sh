@@ -27,11 +27,14 @@ chmod -R ug+rwX storage bootstrap/cache
 # Run migrations (idempotent). Set RUN_MIGRATIONS=false to skip.
 if [ "${RUN_MIGRATIONS:-true}" = "true" ] && [ -n "${DB_HOST:-}" ]; then
     echo "[entrypoint] Running migrations..."
-    php artisan migrate --force || echo "[entrypoint] Migration failed (continuing)."
+    php artisan migrate --force 2>&1 || echo "[entrypoint] WARNING: Migration failed — check logs above."
 fi
 
-# Cache config/routes/views for production performance.
+# Clear stale caches, then re-cache for production performance.
 if [ "${APP_ENV:-production}" = "production" ]; then
+    php artisan config:clear  || true
+    php artisan route:clear   || true
+    php artisan view:clear    || true
     php artisan config:cache  || true
     php artisan route:cache   || true
     php artisan view:cache    || true
