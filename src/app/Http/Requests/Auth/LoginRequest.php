@@ -62,6 +62,18 @@ class LoginRequest extends FormRequest
             }
         }
 
+        // Check for pending password reset request
+        if ($attempted) {
+            $authedUser = Auth::user();
+            $pendingReset = \App\Models\PasswordResetRequest::where('user_id', $authedUser->id)->pending()->latest('created_at')->first();
+            if ($pendingReset) {
+                Auth::logout();
+                throw ValidationException::withMessages([
+                    'login' => 'Your password reset request is pending admin approval. Please wait.',
+                ]);
+            }
+        }
+
         if (! $attempted) {
             RateLimiter::hit($this->throttleKey());
 

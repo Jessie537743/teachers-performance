@@ -24,6 +24,7 @@ class User extends Authenticatable
         'is_active',
         'department_id',
         'must_change_password',
+        'date_of_birth',
         'email_verified_at',
     ];
 
@@ -39,6 +40,7 @@ class User extends Authenticatable
             'password'             => 'hashed',
             'is_active'            => 'boolean',
             'must_change_password' => 'boolean',
+            'date_of_birth'        => 'date',
             'roles'                => 'array',
         ];
     }

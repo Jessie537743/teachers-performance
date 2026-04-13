@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\ChangePasswordController;
+use App\Http\Controllers\Auth\ForgotPasswordRequestController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\DashboardController;
@@ -12,6 +13,13 @@ use Illuminate\Support\Facades\Route;
 
 // Root: redirect unauthenticated visitors to the login page
 Route::get('/', fn() => redirect()->route('login'));
+
+// Forgot Password Request (guest)
+Route::middleware('guest')->group(function () {
+    Route::get('/forgot-password-request', [ForgotPasswordRequestController::class, 'showForm'])->name('forgot-password.form');
+    Route::post('/forgot-password-request/verify', [ForgotPasswordRequestController::class, 'verify'])->name('forgot-password.verify');
+    Route::post('/forgot-password-request/submit', [ForgotPasswordRequestController::class, 'submit'])->name('forgot-password.submit');
+});
 
 
 // -------------------------------------------------------------------------
@@ -127,6 +135,11 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
 
     // Audit Logs
     Route::get('/audit-logs', [Admin\AuditLogController::class, 'index'])->name('audit-logs.index');
+
+    // Password Reset Requests (admin approval)
+    Route::get('/password-reset-requests', [Admin\PasswordResetApprovalController::class, 'index'])->name('password-reset-requests.index');
+    Route::post('/password-reset-requests/{passwordResetRequest}/approve', [Admin\PasswordResetApprovalController::class, 'approve'])->name('password-reset-requests.approve');
+    Route::post('/password-reset-requests/{passwordResetRequest}/decline', [Admin\PasswordResetApprovalController::class, 'decline'])->name('password-reset-requests.decline');
 
     // Sentiment Lexicon Management
     Route::get('/sentiment-lexicon', [Admin\SentimentLexiconController::class, 'index'])->name('sentiment-lexicon.index');
