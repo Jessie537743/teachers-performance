@@ -174,7 +174,39 @@ class User extends Authenticatable
 
     public function permissions(): array
     {
-        return Permission::forRoles($this->roles ?? []);
+        return array_values(array_unique(array_merge(
+            Permission::forRoles($this->roles ?? []),
+            $this->delegatedPermissions()
+        )));
+    }
+
+    /**
+     * Permissions granted via active delegations (where this user is the delegatee).
+     */
+    public function delegatedPermissions(): array
+    {
+        return \Illuminate\Support\Facades\Cache::remember(
+            "delegated_perms:user:{$this->id}",
+            60,
+            function () {
+                return PermissionDelegation::active()
+                    ->where('delegatee_id', $this->id)
+                    ->get()
+                    ->pluck('permissions')
+                    ->flatten()
+                    ->unique()
+                    ->values()
+                    ->all();
+            }
+        );
+    }
+
+    /**
+     * Clear the delegated permissions cache for this user.
+     */
+    public function clearDelegatedPermissionsCache(): void
+    {
+        \Illuminate\Support\Facades\Cache::forget("delegated_perms:user:{$this->id}");
     }
 
     // -------------------------------------------------------------------------

@@ -10,7 +10,11 @@
     </div>
 </div>
 
-<div class="flex gap-4 items-center mb-6">
+<div class="flex gap-4 items-center mb-6 flex-wrap">
+    <a href="{{ route('roles.delegations.index') }}" class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-all hover:-translate-y-0.5 shadow-sm">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg>
+        Manage Delegations
+    </a>
     <form method="POST" action="{{ route('roles.reset') }}"
           onsubmit="return confirm('Reset ALL role permissions to defaults? This cannot be undone.')">
         @csrf
