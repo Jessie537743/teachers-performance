@@ -27,7 +27,9 @@ class SettingsController extends Controller
         $search = $request->query('search', '');
 
         if ($tab === 'users') {
-            $query = User::with('department')->orderBy('name');
+            $query = User::with('department')
+                ->whereJsonDoesntContain('roles', 'student')
+                ->orderBy('name');
 
             if ($roleFilter) {
                 $query->whereJsonContains('roles', $roleFilter);

@@ -101,6 +101,7 @@
                 <select name="role" id="role" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10">
                     <option value="">All Roles</option>
                     @foreach(\App\Enums\Permission::allRoles() as $role)
+                        @if($role === 'student') @continue @endif
                         <option value="{{ $role }}" {{ $roleFilter === $role ? 'selected' : '' }}>
                             {{ \App\Enums\Permission::roleLabel($role) }}
                         </option>
