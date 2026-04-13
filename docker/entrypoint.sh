@@ -35,6 +35,8 @@ if [ "${APP_ENV:-production}" = "production" ]; then
     php artisan config:clear  || true
     php artisan route:clear   || true
     php artisan view:clear    || true
+    # Also nuke compiled Blade files directly in case view:clear misses them
+    rm -rf storage/framework/views/*.php 2>/dev/null || true
     php artisan config:cache  || true
     php artisan route:cache   || true
     # Skip view:cache — custom pagination views under vendor/ are not resolved

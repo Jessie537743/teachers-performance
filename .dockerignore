@@ -1,7 +1,9 @@
 **/.git
 **/.github
 **/node_modules
-**/vendor
+# Exclude Composer vendor (installed during build), but NOT resources/views/vendor
+src/vendor
+ml_api/vendor
 **/.env
 **/.env.*
 !**/.env.example
