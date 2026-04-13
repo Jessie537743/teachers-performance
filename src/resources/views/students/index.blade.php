@@ -21,18 +21,70 @@
 </div>
 
 <form method="GET" action="{{ route('students.index') }}" class="mb-5">
-    <div class="flex items-center gap-2">
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-2">
         <input
             type="text"
             name="search"
             value="{{ $search ?? '' }}"
             placeholder="Search student name..."
-            class="w-full max-w-md border border-gray-200 bg-white rounded-xl px-3.5 py-2.5 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+            class="border border-gray-200 bg-white rounded-xl px-3.5 py-2.5 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
         >
+        <select
+            name="department_id"
+            class="border border-gray-200 bg-white rounded-xl px-3.5 py-2.5 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+        >
+            <option value="">All Departments</option>
+            @foreach($departments as $dept)
+                <option value="{{ $dept->id }}" {{ (string) ($departmentId ?? '') === (string) $dept->id ? 'selected' : '' }}>
+                    {{ $dept->name }}
+                </option>
+            @endforeach
+        </select>
+        <select
+            name="course"
+            class="border border-gray-200 bg-white rounded-xl px-3.5 py-2.5 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+        >
+            <option value="">All Courses</option>
+            @foreach($courses as $courseOption)
+                <option value="{{ $courseOption }}" {{ (string) ($course ?? '') === (string) $courseOption ? 'selected' : '' }}>
+                    {{ $courseOption }}
+                </option>
+            @endforeach
+        </select>
+        <select
+            name="year_level"
+            class="border border-gray-200 bg-white rounded-xl px-3.5 py-2.5 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+        >
+            <option value="">All Years</option>
+            @foreach($yearLevels as $yearOption)
+                <option value="{{ $yearOption }}" {{ (string) ($yearLevel ?? '') === (string) $yearOption ? 'selected' : '' }}>
+                    Year {{ $yearOption }}
+                </option>
+            @endforeach
+        </select>
+        <select
+            name="section"
+            class="border border-gray-200 bg-white rounded-xl px-3.5 py-2.5 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+        >
+            <option value="">All Sections</option>
+            @foreach($sections as $sectionOption)
+                <option value="{{ $sectionOption }}" {{ (string) ($section ?? '') === (string) $sectionOption ? 'selected' : '' }}>
+                    {{ $sectionOption }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+    <div class="flex items-center gap-2 mt-2">
         <button type="submit" class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-all shadow-sm">
-            Search
+            Filter
         </button>
-        @if(!empty($search))
+        @if(
+            !empty($search)
+            || !empty($departmentId)
+            || !empty($course)
+            || !empty($yearLevel)
+            || !empty($section)
+        )
             <a href="{{ route('students.index') }}" class="inline-flex items-center gap-2 bg-gray-200 text-slate-900 px-4 py-2.5 rounded-xl font-semibold hover:bg-gray-300 transition-all">
                 Clear
             </a>
@@ -116,7 +168,8 @@
                                 data-section="{{ e($displaySection) }}"
                                 data-semester="{{ e($student->studentProfile?->semester ?? '') }}"
                                 data-school-year="{{ e($student->studentProfile?->school_year ?? '') }}"
-                                data-status="{{ e($student->studentProfile?->student_status ?? 'regular') }}">
+                                data-status="{{ e($student->studentProfile?->student_status ?? 'regular') }}"
+                                data-subject-ids='@json($student->studentProfile?->subjectAssignments?->pluck("subject_id")->values()->all() ?? [])'>
                                 Edit
                             </button>
                             @if($student->is_active)
@@ -220,8 +273,14 @@
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="s_course">Course</label>
-                    <input type="text" name="course" id="s_course" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
-                           placeholder="e.g. BSIT" value="{{ old('course') }}" required maxlength="100">
+                    <select name="course" id="s_course" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" required>
+                        <option value="">-- Select Course --</option>
+                        @foreach($courses as $courseOption)
+                            <option value="{{ $courseOption }}" {{ old('course') == $courseOption ? 'selected' : '' }}>
+                                {{ $courseOption }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="s_year">Year Level</label>
@@ -247,8 +306,16 @@
             </div>
             <input type="hidden" name="semester" id="s_semester" value="{{ old('semester', $defaultSemester) }}">
             <input type="hidden" name="school_year" id="s_sy" value="{{ old('school_year', $defaultSchoolYear) }}">
+            @error('selected_subject_ids')
+                <p class="text-sm text-red-600 mb-2">{{ $message }}</p>
+            @enderror
+            <div id="s_irregular_subjects_wrap" class="hidden mb-3 rounded-xl border border-amber-200 bg-amber-50/70 p-4">
+                <p class="text-sm font-semibold text-amber-900 mb-2">Manual Subject Selection (Irregular)</p>
+                <p class="text-xs text-amber-800 mb-3">Select subjects available for the chosen semester.</p>
+                <div id="s_subject_choices" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+            </div>
             <p class="text-xs text-gray-500 mb-3">
-                Semester and School Year are automatically set to the current evaluation period.
+                School Year is automatically set to the current evaluation period.
             </p>
             <div class="flex gap-2.5 mt-1.5">
                 <button type="submit" class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-all hover:-translate-y-0.5 shadow-sm">Add Student</button>
@@ -288,7 +355,12 @@
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-semibold text-slate-700 mb-1.5">Course</label>
-                    <input type="text" name="course" id="est_course" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" required>
+                    <select name="course" id="est_course" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" required>
+                        <option value="">-- Select Course --</option>
+                        @foreach($courses as $courseOption)
+                            <option value="{{ $courseOption }}">{{ $courseOption }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="mb-4">
                     <label class="block text-sm font-semibold text-slate-700 mb-1.5">Year Level</label>
@@ -312,8 +384,13 @@
             </div>
             <input type="hidden" name="semester" id="est_semester" value="{{ $defaultSemester }}">
             <input type="hidden" name="school_year" id="est_sy" value="{{ $defaultSchoolYear }}">
+            <div id="est_irregular_subjects_wrap" class="hidden mb-3 rounded-xl border border-amber-200 bg-amber-50/70 p-4">
+                <p class="text-sm font-semibold text-amber-900 mb-2">Manual Subject Selection (Irregular)</p>
+                <p class="text-xs text-amber-800 mb-3">Select subjects available for the chosen semester.</p>
+                <div id="est_subject_choices" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
+            </div>
             <p class="text-xs text-gray-500 mb-3">
-                Semester and School Year are automatically set by the system.
+                School Year is automatically set by the system.
             </p>
             <div class="flex gap-2.5 mt-1.5">
                 <button type="submit" class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-all hover:-translate-y-0.5 shadow-sm">Save Changes</button>
@@ -344,8 +421,57 @@ document.getElementById('bulkUploadModal')?.addEventListener('click', function(e
 });
 
 const editStudentStatusEl = document.getElementById('est_status');
+const addStudentStatusEl = document.getElementById('s_status');
+const addSemesterEl = document.getElementById('s_semester');
+const editSemesterEl = document.getElementById('est_semester');
+const subjectOptionsBySemester = @json($subjectOptionsBySemester);
+const oldAddSelectedSubjectIds = @json(array_map('intval', old('selected_subject_ids', [])));
 
-function openEditStudent(id, name, studentId, email, deptId, course, year, section, semester, sy, studentStatus) {
+function normalizeSemesterToken(value) {
+    const raw = String(value || '').trim().toLowerCase();
+    const map = {
+        '1st semester': '1st',
+        'first semester': '1st',
+        '1st sem': '1st',
+        '2nd semester': '2nd',
+        'second semester': '2nd',
+        '2nd sem': '2nd',
+        '2nd semest': '2nd',
+    };
+    return map[raw] || raw;
+}
+
+function renderSubjectChoices(containerId, inputName, semesterValue, selectedIds) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const token = normalizeSemesterToken(semesterValue);
+    const options = subjectOptionsBySemester[token] || [];
+    const selectedSet = new Set((selectedIds || []).map((id) => parseInt(id, 10)).filter((id) => !Number.isNaN(id)));
+
+    if (options.length === 0) {
+        container.innerHTML = '<p class="text-xs text-amber-900">No subjects available for this semester.</p>';
+        return;
+    }
+
+    container.innerHTML = options.map((option) => {
+        const checked = selectedSet.has(parseInt(option.id, 10)) ? 'checked' : '';
+        return `
+            <label class="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm text-slate-700">
+                <input type="checkbox" name="${inputName}" value="${option.id}" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" ${checked}>
+                <span>${option.label}</span>
+            </label>
+        `;
+    }).join('');
+}
+
+function toggleIrregularSubjectPicker(statusValue, wrapperId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    wrapper.classList.toggle('hidden', statusValue !== 'irregular');
+}
+
+function openEditStudent(id, name, studentId, email, deptId, course, year, section, semester, sy, studentStatus, subjectIds) {
     const editModal = document.getElementById('editStudentModal');
     document.getElementById('editStudentForm').action = @json(url('students')) + '/' + id;
     document.getElementById('est_name').value = name;
@@ -364,6 +490,8 @@ function openEditStudent(id, name, studentId, email, deptId, course, year, secti
 
     document.getElementById('est_sy').value = sy || '';
     editStudentStatusEl.value = studentStatus === 'irregular' ? 'irregular' : 'regular';
+    toggleIrregularSubjectPicker(editStudentStatusEl.value, 'est_irregular_subjects_wrap');
+    renderSubjectChoices('est_subject_choices', 'selected_subject_ids[]', semEl.value, subjectIds || []);
 
     editModal.classList.remove('hidden');
 }
@@ -383,9 +511,42 @@ document.querySelectorAll('.open-edit-student-btn').forEach((btn) => {
             btn.dataset.section,
             btn.dataset.semester,
             btn.dataset.schoolYear,
-            btn.dataset.status
+            btn.dataset.status,
+            JSON.parse(btn.dataset.subjectIds || '[]')
         );
     });
 });
+
+function refreshAddStudentIrregularSubjects() {
+    const status = addStudentStatusEl?.value || 'regular';
+    toggleIrregularSubjectPicker(status, 's_irregular_subjects_wrap');
+    if (status === 'irregular') {
+        renderSubjectChoices('s_subject_choices', 'selected_subject_ids[]', addSemesterEl?.value || '', oldAddSelectedSubjectIds);
+    }
+}
+
+if (addStudentStatusEl) {
+    addStudentStatusEl.addEventListener('change', refreshAddStudentIrregularSubjects);
+}
+if (addSemesterEl) {
+    addSemesterEl.addEventListener('change', refreshAddStudentIrregularSubjects);
+}
+if (editStudentStatusEl) {
+    editStudentStatusEl.addEventListener('change', function () {
+        toggleIrregularSubjectPicker(editStudentStatusEl.value, 'est_irregular_subjects_wrap');
+        if (editStudentStatusEl.value === 'irregular') {
+            renderSubjectChoices('est_subject_choices', 'selected_subject_ids[]', editSemesterEl?.value || '', []);
+        }
+    });
+}
+if (editSemesterEl) {
+    editSemesterEl.addEventListener('change', function () {
+        if ((editStudentStatusEl?.value || 'regular') === 'irregular') {
+            renderSubjectChoices('est_subject_choices', 'selected_subject_ids[]', editSemesterEl.value, []);
+        }
+    });
+}
+
+refreshAddStudentIrregularSubjects();
 </script>
 @endpush

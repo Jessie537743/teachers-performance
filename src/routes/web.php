@@ -54,6 +54,10 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
 
     Route::resource('faculty', Admin\FacultyController::class)
         ->except(['create', 'show', 'edit']);
+    Route::post('faculty/bulk-upload', [Admin\FacultyController::class, 'bulkUpload'])
+        ->name('faculty.bulk-upload');
+    Route::get('faculty/bulk-template', [Admin\FacultyController::class, 'downloadBulkTemplate'])
+        ->name('faculty.bulk-template');
 
     Route::get('faculty-profiles/{faculty_profile}/intervention-suggestions', [Admin\FacultyInterventionSuggestionController::class, 'show'])
         ->name('faculty.intervention-suggestions');
@@ -62,6 +66,14 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
         ->name('certificates.performance-excellent');
     Route::get('reports/employee-comments', [Admin\EmployeeCommentReportController::class, 'index'])
         ->name('reports.employee-comments');
+    Route::get('reports/individual-evaluation', [Admin\IndividualEvaluationReportController::class, 'index'])
+        ->name('reports.individual-evaluation');
+    Route::get('reports/department', [Admin\DepartmentReportController::class, 'index'])
+        ->name('reports.department');
+    Route::get('reports/low-performance-personnel', [Admin\LowPerformancePersonnelReportController::class, 'index'])
+        ->name('reports.low-performance-personnel');
+    Route::get('reports/chronic-low-performance', [Admin\ChronicLowPerformanceReportController::class, 'index'])
+        ->name('reports.chronic-low-performance');
 
     Route::resource('students', Admin\StudentController::class)
         ->except(['create', 'show', 'edit']);
@@ -70,12 +82,12 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     Route::get('students/bulk-template', [Admin\StudentController::class, 'downloadBulkTemplate'])
         ->name('students.bulk-template');
 
-    Route::resource('subjects', Admin\SubjectController::class)
-        ->except(['create', 'show', 'edit']);
     Route::post('subjects/bulk-upload', [Admin\SubjectController::class, 'bulkUpload'])
         ->name('subjects.bulk-upload');
     Route::get('subjects/bulk-template', [Admin\SubjectController::class, 'downloadBulkTemplate'])
         ->name('subjects.bulk-template');
+    Route::resource('subjects', Admin\SubjectController::class)
+        ->except(['create']);
 
     Route::resource('courses', Admin\CourseController::class)
         ->except(['create', 'show', 'edit']);
@@ -91,20 +103,10 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     Route::put('/roles', [Admin\RolePermissionController::class, 'update'])->name('roles.update');
     Route::post('/roles/reset', [Admin\RolePermissionController::class, 'reset'])->name('roles.reset');
 
-    // Permission delegations
-    Route::get('/roles/delegations', [Admin\PermissionDelegationController::class, 'index'])
-        ->name('roles.delegations.index');
-    Route::post('/roles/delegations', [Admin\PermissionDelegationController::class, 'store'])
-        ->name('roles.delegations.store');
-    Route::post('/roles/delegations/{delegation}/revoke', [Admin\PermissionDelegationController::class, 'revoke'])
-        ->name('roles.delegations.revoke');
-
     // Settings
     Route::get('/settings', [Admin\SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings/general', [Admin\SettingsController::class, 'updateGeneral'])->name('settings.update-general');
     Route::delete('/settings/logo', [Admin\SettingsController::class, 'removeLogo'])->name('settings.remove-logo');
-    Route::post('/settings/users/{user}/reset-password', [Admin\SettingsController::class, 'resetUserPassword'])
-        ->name('settings.users.reset-password');
 
     // AI Model Training (admin + dean)
     Route::get('/model-training', [Admin\ModelTrainingController::class, 'index'])->name('model-training.index');

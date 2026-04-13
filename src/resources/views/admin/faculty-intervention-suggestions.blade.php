@@ -75,6 +75,12 @@
         </p>
     </div>
 
+    <div class="bg-indigo-50 border border-indigo-100 rounded-2xl shadow-sm p-5">
+        <h2 class="text-sm font-bold text-indigo-900 uppercase tracking-wide mb-2">Rule-based overall summary</h2>
+        <p class="text-sm text-slate-800 whitespace-pre-line leading-relaxed m-0">{{ $analysis['overall_summary'] ?? '' }}</p>
+        <p class="text-[11px] text-indigo-800/80 mt-3 mb-0">Generated from scores and linked intervention records (deterministic; not external AI).</p>
+    </div>
+
     @if(! $analysis['overall']['qualifies_intervention'])
         <div class="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-700">
             Overall performance for this period is <strong>not</strong> in the Fair/Poor (or equivalent) band, so automatic per-item intervention mapping is not shown. Adjust school year and semester if needed.

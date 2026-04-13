@@ -88,7 +88,7 @@
                                 <td class="px-4 py-3 text-gray-700">{{ optional($metric->training_date)->format('Y-m-d H:i') ?? '—' }}</td>
                                 <td class="px-4 py-3 text-gray-700">
                                     @if($metric->semester && $metric->school_year)
-                                        {{ format_semester($metric->semester) }} / {{ $metric->school_year }}
+                                        {{ $metric->semester }} / {{ $metric->school_year }}
                                     @else
                                         All terms
                                     @endif
@@ -116,7 +116,7 @@
                 <h2 class="text-base font-semibold text-gray-900">Latest Feature Importance</h2>
                 @if($latestMetric)
                     <span class="text-xs text-gray-500">
-                        {{ $latestMetric->semester && $latestMetric->school_year ? format_semester($latestMetric->semester) . ' / ' . $latestMetric->school_year : 'All terms' }}
+                        {{ $latestMetric->semester && $latestMetric->school_year ? $latestMetric->semester . ' / ' . $latestMetric->school_year : 'All terms' }}
                     </span>
                 @endif
             </div>

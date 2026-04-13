@@ -17,15 +17,29 @@ class CourseController extends Controller
     {
         Gate::authorize('manage-courses');
 
+        $courseCode = trim((string) request()->query('course_code', ''));
+        $description = trim((string) request()->query('description', ''));
+        $departmentId = request()->query('department_id');
+
         $courses = Course::query()
             ->with('department')
+            ->when($courseCode !== '', function ($query) use ($courseCode) {
+                $query->where('course_code', 'like', '%' . $courseCode . '%');
+            })
+            ->when($description !== '', function ($query) use ($description) {
+                $query->where('course_name', 'like', '%' . $description . '%');
+            })
+            ->when(filled($departmentId), function ($query) use ($departmentId) {
+                $query->where('department_id', (int) $departmentId);
+            })
             ->orderBy('department_id')
             ->orderBy('course_code')
-            ->paginate(500);
+            ->paginate(500)
+            ->withQueryString();
 
         $departments = Department::where('is_active', true)->orderBy('name')->get();
 
-        return view('courses.index', compact('courses', 'departments'));
+        return view('courses.index', compact('courses', 'departments', 'courseCode', 'description', 'departmentId'));
     }
 
     public function store(Request $request): RedirectResponse

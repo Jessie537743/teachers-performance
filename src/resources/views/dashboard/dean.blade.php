@@ -9,7 +9,7 @@
         <h1 class="text-2xl font-bold text-gray-900">Welcome, {{ $dean->name }}</h1>
         <p class="text-sm text-gray-500 mt-1">
             @if($period)
-                Current Period: {{ $period->school_year }} &mdash; {{ format_semester($period->semester) }}
+                Current Period: {{ $period->school_year }} &mdash; {{ $period->semester }}
                 &nbsp;<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">Open</span>
             @else
                 No evaluation period is currently open.
@@ -27,8 +27,7 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h6v6H3z"/><path d="M15 3h6v6h-6z"/><path d="M3 15h6v6H3z"/><path d="M15 15h6v6h-6z"/></svg>
         </div>
         <div>
-            <div class="text-sm font-semibold text-blue-900">Model Training</div>
-            <div class="text-xs text-blue-800">Trigger Random Forest retraining for your selected period.</div>
+
         </div>
     </div>
     <span class="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold">Open</span>

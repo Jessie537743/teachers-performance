@@ -18,7 +18,7 @@
     <button type="button" class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-all hover:-translate-y-0.5 shadow-sm" onclick="document.getElementById('addPeriodModal').style.display='flex'">+ Add Evaluation Period</button>
     @endcan
     @if($openPeriod)
-        <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-green-100 text-green-700">Open: {{ $openPeriod->school_year }} &mdash; {{ format_semester($openPeriod->semester) }} ({{ $openPeriod->start_date }} to {{ $openPeriod->end_date }})</span>
+        <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-green-100 text-green-700">Open: {{ $openPeriod->school_year }} &mdash; {{ $openPeriod->semester }} ({{ $openPeriod->start_date }} to {{ $openPeriod->end_date }})</span>
     @else
         <span class="inline-flex items-center px-4 py-2 rounded-full text-sm font-bold bg-red-100 text-red-700">No evaluation period is currently open</span>
     @endif
@@ -33,15 +33,15 @@
             <div class="mb-4">
                 <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="ep_sy">School Year</label>
                 <input type="text" name="school_year" id="ep_sy" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
-                       placeholder="e.g. 2025-2026" pattern="\d{4}-\d{4}" title="Format: YYYY-YYYY" value="{{ old('school_year') }}" required maxlength="9">
+                       placeholder="e.g. 2024-2025" value="{{ old('school_year') }}" required maxlength="20">
             </div>
             <div class="mb-4">
                 <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="ep_sem">Semester</label>
                 <select name="semester" id="ep_sem" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" required>
                     <option value="">-- Select Semester --</option>
-                    <option value="1st Semester" {{ format_semester(old('semester')) === '1st Semester' ? 'selected' : '' }}>1st Semester</option>
-                    <option value="2nd Semester" {{ format_semester(old('semester')) === '2nd Semester' ? 'selected' : '' }}>2nd Semester</option>
-                    <option value="Summer" {{ format_semester(old('semester')) === 'Summer' ? 'selected' : '' }}>Summer</option>
+                    <option value="1st" {{ old('semester') === '1st' ? 'selected' : '' }}>1st Semester</option>
+                    <option value="2nd" {{ old('semester') === '2nd' ? 'selected' : '' }}>2nd Semester</option>
+                    <option value="Summer" {{ old('semester') === 'Summer' ? 'selected' : '' }}>Summer</option>
                 </select>
             </div>
             <div class="mb-4">
@@ -94,7 +94,7 @@
                 <tr class="hover:bg-blue-50/50 transition-colors">
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle">{{ $index + 1 }}</td>
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle"><strong>{{ $period->school_year }}</strong></td>
-                    <td class="px-4 py-3.5 border-b border-gray-200 align-middle">{{ format_semester($period->semester) }}</td>
+                    <td class="px-4 py-3.5 border-b border-gray-200 align-middle">{{ $period->semester }}</td>
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle">{{ $period->start_date }}</td>
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle">{{ $period->end_date }}</td>
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle">
@@ -145,8 +145,8 @@
             <div class="mb-4">
                 <label class="block text-sm font-semibold text-slate-700 mb-1.5">Semester</label>
                 <select name="semester" id="ep_esem" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" required>
-                    <option value="1st Semester">1st Semester</option>
-                    <option value="2nd Semester">2nd Semester</option>
+                    <option value="1st">1st Semester</option>
+                    <option value="2nd">2nd Semester</option>
                     <option value="Summer">Summer</option>
                 </select>
             </div>

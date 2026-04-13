@@ -126,54 +126,11 @@ class User extends Authenticatable
 
     public function hasPermission(string $permission): bool
     {
-        return in_array($permission, $this->permissions(), true);
+        return in_array($permission, Permission::forRole($this->role));
     }
 
     public function permissions(): array
     {
-        return array_values(array_unique(array_merge(
-            Permission::forRole($this->role),
-            $this->delegatedPermissions()
-        )));
-    }
-
-    /**
-     * Permissions this user has received from other users via active delegations.
-     * Cached per-request to avoid repeated DB queries on every gate check.
-     */
-    public function delegatedPermissions(): array
-    {
-        if (!$this->exists) {
-            return [];
-        }
-
-        return $this->delegatedPermissionsCache ??= PermissionDelegation::active()
-            ->where('delegatee_id', $this->id)
-            ->get()
-            ->flatMap(fn ($d) => $d->permissions ?? [])
-            ->unique()
-            ->values()
-            ->all();
-    }
-
-    /**
-     * Clear the cached delegated permissions (e.g. after a delegation is created/revoked).
-     */
-    public function clearDelegatedPermissionsCache(): void
-    {
-        $this->delegatedPermissionsCache = null;
-    }
-
-    /** @var array<string>|null */
-    protected ?array $delegatedPermissionsCache = null;
-
-    public function delegationsGiven()
-    {
-        return $this->hasMany(PermissionDelegation::class, 'delegator_id');
-    }
-
-    public function delegationsReceived()
-    {
-        return $this->hasMany(PermissionDelegation::class, 'delegatee_id');
+        return Permission::forRole($this->role);
     }
 }

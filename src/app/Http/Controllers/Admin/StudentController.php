@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Course;
 use App\Models\Department;
 use App\Models\EvaluationPeriod;
 use App\Models\StudentProfile;
@@ -26,20 +27,128 @@ class StudentController extends Controller
         Gate::authorize('manage-students');
 
         $search = trim((string) $request->query('search', ''));
+        $departmentId = $request->query('department_id');
+        $course = trim((string) $request->query('course', ''));
+        $yearLevel = trim((string) $request->query('year_level', ''));
+        $section = trim((string) $request->query('section', ''));
 
-        $students = User::with(['studentProfile.department'])
+        $students = User::with(['studentProfile.department', 'studentProfile.subjectAssignments.subject'])
             ->where('role', 'student')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where('name', 'like', '%' . $search . '%');
             })
+            ->when(
+                filled($departmentId) || $course !== '' || $yearLevel !== '' || $section !== '',
+                function ($query) use ($departmentId, $course, $yearLevel, $section) {
+                    $query->whereHas('studentProfile', function ($profileQuery) use ($departmentId, $course, $yearLevel, $section) {
+                        if (filled($departmentId)) {
+                            $profileQuery->where('department_id', (int) $departmentId);
+                        }
+                        if ($course !== '') {
+                            $profileQuery->where('course', $course);
+                        }
+                        if ($yearLevel !== '') {
+                            $profileQuery->where('year_level', $yearLevel);
+                        }
+                        if ($section !== '') {
+                            $profileQuery->where('section', $section);
+                        }
+                    });
+                }
+            )
             ->orderBy('name')
             ->paginate(25)
             ->withQueryString();
 
         $departments = Department::where('is_active', true)->orderBy('name')->get();
-        [$defaultSemester, $defaultSchoolYear] = $this->resolveStudentTermDefaults();
+        $coursesFromCatalog = Course::query()
+            ->where('is_active', true)
+            ->whereNotNull('course_code')
+            ->select('course_code')
+            ->distinct()
+            ->orderBy('course_code')
+            ->pluck('course_code');
+        $coursesFromProfiles = StudentProfile::query()
+            ->whereNotNull('course')
+            ->select('course')
+            ->distinct()
+            ->orderBy('course')
+            ->pluck('course')
+            ->values();
+        $courses = $coursesFromCatalog
+            ->merge($coursesFromProfiles)
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values();
+        $yearLevels = StudentProfile::query()
+            ->whereNotNull('year_level')
+            ->select('year_level')
+            ->distinct()
+            ->orderBy('year_level')
+            ->pluck('year_level')
+            ->filter()
+            ->values();
+        $sections = StudentProfile::query()
+            ->whereNotNull('section')
+            ->select('section')
+            ->pluck('section')
+            ->map(fn ($value) => $this->normalizeSectionLabel((string) $value))
+            ->filter(function (string $value): bool {
+                $trimmed = trim($value);
+                if ($trimmed === '') {
+                    return false;
+                }
 
-        return view('students.index', compact('students', 'departments', 'defaultSemester', 'defaultSchoolYear', 'search'));
+                // Exclude stray symbols like backticks/punctuation-only values.
+                return (bool) preg_match('/[A-Za-z0-9]/', $trimmed);
+            })
+            ->unique()
+            ->sort(function (string $left, string $right): int {
+                $leftNum = ctype_digit($left) ? (int) $left : null;
+                $rightNum = ctype_digit($right) ? (int) $right : null;
+
+                if ($leftNum !== null && $rightNum !== null) {
+                    return $leftNum <=> $rightNum;
+                }
+
+                return strnatcasecmp($left, $right);
+            })
+            ->values();
+        [$defaultSemester, $defaultSchoolYear] = $this->resolveStudentTermDefaults();
+        $subjectOptionsBySemester = $this->subjectOptionsBySemester();
+        $semesterOptions = array_keys($subjectOptionsBySemester);
+        $normalizedDefaultSemester = $this->normalizeSemesterToken($defaultSemester);
+        if ($semesterOptions === []) {
+            $semesterOptions = [$normalizedDefaultSemester];
+            $subjectOptionsBySemester[$normalizedDefaultSemester] = [];
+        } elseif (!in_array($normalizedDefaultSemester, $semesterOptions, true)) {
+            $semesterOptions[] = $normalizedDefaultSemester;
+            $subjectOptionsBySemester[$normalizedDefaultSemester] = [];
+        }
+
+        $viewData = compact(
+            'students',
+            'departments',
+            'defaultSemester',
+            'defaultSchoolYear',
+            'search',
+            'departmentId',
+            'course',
+            'yearLevel',
+            'section',
+            'courses',
+            'yearLevels',
+            'sections',
+            'subjectOptionsBySemester',
+            'semesterOptions'
+        );
+
+        if (view()->exists('students.index')) {
+            return view('students.index', $viewData);
+        }
+
+        return view()->file(resource_path('views/students/index.blade.php'), $viewData);
     }
 
     public function store(Request $request): RedirectResponse
@@ -57,6 +166,8 @@ class StudentController extends Controller
             'semester'      => ['required', 'string', 'max:20'],
             'school_year'   => ['required', 'string', 'max:20'],
             'student_status' => ['required', 'in:regular,irregular'],
+            'selected_subject_ids' => ['nullable', 'array'],
+            'selected_subject_ids.*' => ['integer', 'exists:subjects,id'],
         ]);
 
         DB::transaction(function () use ($validated) {
@@ -88,7 +199,12 @@ class StudentController extends Controller
                 'created_at'    => now(),
             ]);
 
-            $subjectIds = $this->subjectIdsForEnrollment($validated);
+            $subjectIds = $validated['student_status'] === 'irregular'
+                ? $this->selectedSubjectIdsForIrregularStudent(
+                    $validated['selected_subject_ids'] ?? [],
+                    (string) $validated['semester']
+                )
+                : $this->subjectIdsForEnrollment($validated);
 
             foreach ($subjectIds as $subjectId) {
                 StudentSubjectAssignment::firstOrCreate([
@@ -127,6 +243,8 @@ class StudentController extends Controller
             'school_year'    => ['required', 'string', 'max:20'],
             'student_status' => ['required', 'in:regular,irregular'],
             'is_active'      => ['sometimes', 'boolean'],
+            'selected_subject_ids' => ['nullable', 'array'],
+            'selected_subject_ids.*' => ['integer', 'exists:subjects,id'],
         ]);
 
         DB::transaction(function () use ($user, $validated) {
@@ -163,7 +281,12 @@ class StudentController extends Controller
                     'student_status' => $validated['student_status'],
                 ]);
 
-                $subjectIds = $this->subjectIdsForEnrollment($validated);
+                $subjectIds = $validated['student_status'] === 'irregular'
+                    ? $this->selectedSubjectIdsForIrregularStudent(
+                        $validated['selected_subject_ids'] ?? [],
+                        (string) $validated['semester']
+                    )
+                    : $this->subjectIdsForEnrollment($validated);
                 $user->studentProfile->subjectAssignments()->delete();
 
                 foreach ($subjectIds as $subjectId) {
@@ -194,6 +317,11 @@ class StudentController extends Controller
     public function bulkUpload(Request $request): RedirectResponse
     {
         Gate::authorize('manage-students');
+
+        // Bulk imports can exceed default PHP time limits when hashing many passwords.
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(0);
+        }
 
         $validated = $request->validate([
             'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
@@ -234,7 +362,8 @@ class StudentController extends Controller
                         'name'                 => $normalized['name'],
                         'email'                => $email,
                         'username'             => $incomingStudentId,
-                        'password'             => Hash::make($incomingStudentId),
+                        // Use a slightly lower bcrypt cost only for bulk import throughput.
+                        'password'             => Hash::make($incomingStudentId, ['rounds' => 8]),
                         'role'                 => 'student',
                         'department_id'        => $normalized['department_id'],
                         'is_active'            => true,
@@ -565,6 +694,118 @@ class StudentController extends Controller
             'school_year'    => $schoolYear,
             'student_status' => $studentStatus,
         ];
+    }
+
+    /**
+     * @return array<string, list<array{id:int,label:string}>>
+     */
+    private function subjectOptionsBySemester(): array
+    {
+        $grouped = Subject::query()
+            ->whereNotNull('semester')
+            ->where('semester', '!=', '')
+            ->select(['id', 'code', 'title', 'semester'])
+            ->orderBy('semester')
+            ->orderBy('code')
+            ->orderBy('title')
+            ->get()
+            ->groupBy(fn (Subject $subject) => $this->normalizeSemesterToken((string) $subject->semester))
+            ->map(function ($subjects) {
+                return $subjects->map(function (Subject $subject) {
+                    $label = trim(((string) $subject->code) . ' - ' . ((string) $subject->title));
+                    if ($label === '-' || $label === '') {
+                        $label = 'Subject #' . $subject->id;
+                    }
+
+                    return [
+                        'id' => (int) $subject->id,
+                        'label' => $label,
+                    ];
+                })->values()->all();
+            });
+
+        $sortedKeys = $grouped
+            ->keys()
+            ->sortBy(fn (string $semester) => $this->semesterSortOrder($semester))
+            ->values();
+
+        $result = [];
+        foreach ($sortedKeys as $semester) {
+            $result[$semester] = $grouped->get($semester, []);
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param  array<int, mixed>  $selectedSubjectIds
+     * @return list<int>
+     */
+    private function selectedSubjectIdsForIrregularStudent(array $selectedSubjectIds, string $semester): array
+    {
+        $ids = collect($selectedSubjectIds)
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn (int $id) => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($ids === []) {
+            throw ValidationException::withMessages([
+                'selected_subject_ids' => 'Select at least one subject for irregular students.',
+            ]);
+        }
+
+        $semesterToken = $this->normalizeSemesterToken($semester);
+
+        $subjects = Subject::query()
+            ->whereIn('id', $ids)
+            ->select(['id', 'semester'])
+            ->get();
+
+        if ($subjects->count() !== count($ids)) {
+            throw ValidationException::withMessages([
+                'selected_subject_ids' => 'One or more selected subjects are invalid.',
+            ]);
+        }
+
+        $invalidBySemester = $subjects->first(function (Subject $subject) use ($semesterToken) {
+            return $this->normalizeSemesterToken((string) $subject->semester) !== $semesterToken;
+        });
+
+        if ($invalidBySemester) {
+            throw ValidationException::withMessages([
+                'selected_subject_ids' => 'Selected subjects must match the chosen semester.',
+            ]);
+        }
+
+        return $ids;
+    }
+
+    private function normalizeSemesterToken(string $semester): string
+    {
+        $value = strtolower(trim($semester));
+        $map = [
+            '1st semester' => '1st',
+            'first semester' => '1st',
+            '1st sem' => '1st',
+            '2nd semester' => '2nd',
+            'second semester' => '2nd',
+            '2nd sem' => '2nd',
+            '2nd semest' => '2nd',
+        ];
+
+        return $map[$value] ?? $value;
+    }
+
+    private function semesterSortOrder(string $semester): int
+    {
+        return match ($this->normalizeSemesterToken($semester)) {
+            '1st' => 1,
+            '2nd' => 2,
+            'summer' => 3,
+            default => 9,
+        };
     }
 
     private function normalizeSectionLabel(string $value): string

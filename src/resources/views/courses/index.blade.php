@@ -18,6 +18,46 @@
     <span class="text-gray-500 text-sm">{{ $courses->total() }} total</span>
 </div>
 
+<form method="GET" action="{{ route('courses.index') }}" class="mb-5">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+        <input
+            type="text"
+            name="course_code"
+            value="{{ $courseCode ?? '' }}"
+            placeholder="Filter course code..."
+            class="border border-gray-200 bg-white rounded-xl px-3.5 py-2.5 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+        >
+        <input
+            type="text"
+            name="description"
+            value="{{ $description ?? '' }}"
+            placeholder="Filter description..."
+            class="border border-gray-200 bg-white rounded-xl px-3.5 py-2.5 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+        >
+        <select
+            name="department_id"
+            class="border border-gray-200 bg-white rounded-xl px-3.5 py-2.5 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+        >
+            <option value="">All Departments</option>
+            @foreach($departments as $dept)
+                <option value="{{ $dept->id }}" {{ (string) ($departmentId ?? '') === (string) $dept->id ? 'selected' : '' }}>
+                    {{ $dept->name }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+    <div class="flex items-center gap-2 mt-2">
+        <button type="submit" class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-all shadow-sm">
+            Filter
+        </button>
+        @if(!empty($courseCode) || !empty($description) || !empty($departmentId))
+            <a href="{{ route('courses.index') }}" class="inline-flex items-center gap-2 bg-gray-200 text-slate-900 px-4 py-2.5 rounded-xl font-semibold hover:bg-gray-300 transition-all">
+                Clear
+            </a>
+        @endif
+    </div>
+</form>
+
 {{-- Add Course Modal --}}
 <div id="addCourseModal" class="hidden fixed inset-0 bg-slate-900/50 z-[2000] items-center justify-center">
     <div class="bg-white rounded-2xl p-7 w-full max-w-[520px] max-h-[90vh] overflow-y-auto shadow-2xl">

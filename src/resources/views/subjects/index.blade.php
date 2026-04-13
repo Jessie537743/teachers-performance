@@ -7,9 +7,15 @@
 <div class="flex justify-between items-center gap-4 mb-5 flex-wrap animate-slide-up">
     <div>
         <h1 class="text-2xl font-bold text-slate-900">Subjects</h1>
-        <p class="text-sm text-gray-500 mt-1">Manage course subjects and assigned teachers.</p>
+        <p class="text-sm text-gray-500 mt-1">Manage course subjects and assigned teachers. Use <strong>Edit</strong> to update an existing offering.</p>
     </div>
 </div>
+
+@if(session('success'))
+    <div class="mb-5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-900 font-medium">
+        {{ session('success') }}
+    </div>
+@endif
 
 {{-- Add Button + Count --}}
 <div class="flex gap-4 items-center mb-6">
@@ -127,23 +133,27 @@
                 @forelse($subjects as $subject)
                 <tr class="hover:bg-blue-50/50 transition-colors">
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle">{{ ($subjects->currentPage() - 1) * $subjects->perPage() + $loop->iteration }}</td>
-                    <td class="px-4 py-3.5 border-b border-gray-200 align-middle"><strong>{{ $subject->code }}</strong></td>
+                    <td class="px-4 py-3.5 border-b border-gray-200 align-middle">
+                        <a href="{{ route('subjects.show', $subject) }}" class="font-bold text-blue-700 hover:text-blue-900 hover:underline">{{ $subject->code }}</a>
+                    </td>
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle">{{ $subject->title }}</td>
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle">{{ $subject->department?->name ?? '—' }}</td>
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle">{{ $subject->course }}</td>
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle">Year {{ $subject->year_level }}</td>
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle">{{ $subject->section }}</td>
-                    <td class="px-4 py-3.5 border-b border-gray-200 align-middle">{{ format_semester($subject->semester) }}</td>
+                    <td class="px-4 py-3.5 border-b border-gray-200 align-middle">{{ $subject->semester }}</td>
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle">
                         {{ $subject->assignments->first()?->faculty?->user?->name ?? '—' }}
                     </td>
                     @can('manage-subjects')
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle">
-                        <div class="flex gap-1.5">
-                            <button type="button" class="inline-flex items-center gap-2 bg-gray-200 text-slate-900 px-3 py-1.5 rounded-xl text-sm font-semibold hover:bg-gray-300 transition"
-                                onclick="openEditSubject({{ $subject->id }}, '{{ addslashes($subject->code) }}', '{{ addslashes($subject->title) }}', {{ $subject->department_id }}, '{{ addslashes($subject->course) }}', {{ $subject->year_level }}, '{{ addslashes($subject->section) }}', '{{ $subject->semester }}', {{ $subject->assignments->first()?->faculty_id ?? 'null' }})">
+                        <div class="flex flex-wrap gap-1.5">
+                            <a href="{{ route('subjects.show', $subject) }}" class="inline-flex items-center gap-2 bg-slate-100 text-slate-800 px-3 py-1.5 rounded-xl text-sm font-semibold hover:bg-slate-200 transition">
+                                Details
+                            </a>
+                            <a href="{{ route('subjects.edit', $subject) }}" class="inline-flex items-center gap-2 bg-gray-200 text-slate-900 px-3 py-1.5 rounded-xl text-sm font-semibold hover:bg-gray-300 transition">
                                 Edit
-                            </button>
+                            </a>
                             <form method="POST" action="{{ route('subjects.destroy', $subject->id) }}"
                                   onsubmit="return confirm('Delete this subject?')">
                                 @csrf @method('DELETE')
@@ -225,17 +235,25 @@
                     @error('course_keys')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
                     @error('course_mode')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
                 </div>
-                <div class="mb-1">
-                    <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="sub_section">Section</label>
-                    <select name="section" id="sub_section" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" required>
-                        <option value="">Select Section</option>
-                        @foreach(range(1, 20) as $n)
-                            <option value="{{ $n }}" {{ (string) old('section') === (string) $n ? 'selected' : '' }}>{{ $n }}</option>
-                        @endforeach
-                        @foreach(['A','B','C','D','E','F','G','H'] as $sec)
-                            <option value="{{ $sec }}" {{ old('section') === $sec ? 'selected' : '' }}>{{ $sec }}</option>
-                        @endforeach
+                <div class="mb-1 sm:col-span-2">
+                    @php $oldSectionList = (array) old('sections', []); @endphp
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="sub_sections">Sections (assign the same teacher to each)</label>
+                    <select name="sections[]" id="sub_sections" multiple required size="8"
+                            class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-2 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 min-h-[160px]">
+                        <optgroup label="Numeric">
+                            @foreach(range(1, 20) as $n)
+                                <option value="{{ $n }}" @selected(collect($oldSectionList)->contains($n) || collect($oldSectionList)->contains((string) $n))>{{ $n }}</option>
+                            @endforeach
+                        </optgroup>
+                        <optgroup label="Letter">
+                            @foreach(['A','B','C','D','E','F','G','H'] as $sec)
+                                <option value="{{ $sec }}" @selected(collect($oldSectionList)->contains($sec))>{{ $sec }}</option>
+                            @endforeach
+                        </optgroup>
                     </select>
+                    <p class="text-xs text-gray-500 mt-1.5">Hold Ctrl (Windows) or Cmd (Mac) and click to select multiple sections. One subject row is created per section &times; each selected course.</p>
+                    @error('sections')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
+                    @error('sections.*')<p class="text-sm text-red-600 mt-1">{{ $message }}</p>@enderror
                 </div>
                 <div class="mb-1">
                     <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="sub_year">Year Level</label>
@@ -256,6 +274,12 @@
                     </select>
                 </div>
                 <div class="mb-1 sm:col-span-2">
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="sub_school_year">School year <span class="text-gray-400 font-normal">(optional)</span></label>
+                    <input type="text" name="school_year" id="sub_school_year" maxlength="20"
+                           class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
+                           placeholder="e.g. 2025-2026" value="{{ old('school_year') }}">
+                </div>
+                <div class="mb-1 sm:col-span-2">
                     <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="sub_faculty">Teacher Assigned</label>
                     <select name="faculty_id" id="sub_faculty" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10">
                         <option value="">No Teacher Assigned</option>
@@ -267,7 +291,7 @@
             <div class="mt-4 rounded-xl border border-blue-100 bg-blue-50/90 px-4 py-3 text-sm text-blue-950 leading-relaxed">
                 In <strong>Select specific courses per department</strong> mode, you choose exact programs so unrelated degrees are not added automatically.
                 In <strong>All courses under selected departments</strong> mode, an offering is created for every active program in each department you checked.
-                The <strong>section</strong>, <strong>year level</strong>, <strong>semester</strong>, and optional <strong>teacher</strong> apply to each new row.
+                Selected <strong>sections</strong>, <strong>year level</strong>, <strong>semester</strong>, optional <strong>school year</strong>, and optional <strong>teacher</strong> apply to every new row (each section &times; each course).
             </div>
             <div class="flex gap-2.5 mt-5">
                 <button type="submit" class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-all hover:-translate-y-0.5 shadow-sm">Add Subject</button>
@@ -277,67 +301,6 @@
     </div>
 </div>
 
-{{-- Edit Subject Modal --}}
-<div id="editSubjectModal" class="hidden fixed inset-0 bg-slate-900/50 z-[2000] items-center justify-center">
-    <div class="bg-white rounded-2xl p-7 w-full max-w-[580px] max-h-[90vh] overflow-y-auto shadow-2xl">
-        <h3 class="mb-5 text-lg font-bold text-slate-900">Edit Subject</h3>
-        <form method="POST" id="editSubjectForm">
-            @csrf @method('PUT')
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div class="mb-4">
-                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Code</label>
-                    <input type="text" name="code" id="esub_code" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" required maxlength="50">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Title</label>
-                    <input type="text" name="title" id="esub_title" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" required>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Department</label>
-                    <select name="department_id" id="esub_dept" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" required>
-                        @foreach($departments as $dept)
-                            <option value="{{ $dept->id }}">{{ $dept->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Course</label>
-                    <input type="text" name="course" id="esub_course" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" required>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Year Level</label>
-                    <select name="year_level" id="esub_year" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" required>
-                        @for($y = 1; $y <= 6; $y++)
-                            <option value="{{ $y }}">Year {{ $y }}</option>
-                        @endfor
-                    </select>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Section</label>
-                    <input type="text" name="section" id="esub_section" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" required>
-                </div>
-                <div class="mb-4">
-                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Semester</label>
-                    <select name="semester" id="esub_semester" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" required>
-                        <option value="1st Semester">1st Semester</option>
-                        <option value="2nd Semester">2nd Semester</option>
-                        <option value="Summer">Summer</option>
-                    </select>
-                </div>
-                <div class="mb-4 sm:col-span-2">
-                    <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="esub_faculty">Teacher assigned</label>
-                    <select name="faculty_id" id="esub_faculty" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" required>
-                        <option value="">-- Select Teacher --</option>
-                    </select>
-                </div>
-            </div>
-            <div class="flex gap-2.5 mt-1.5">
-                <button type="submit" class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-all hover:-translate-y-0.5 shadow-sm">Save Changes</button>
-                <button type="button" class="inline-flex items-center gap-2 bg-gray-200 text-slate-900 px-4 py-2.5 rounded-xl font-semibold hover:bg-gray-300 transition" onclick="document.getElementById('editSubjectModal').style.display='none'">Cancel</button>
-            </div>
-        </form>
-    </div>
-</div>
 @endsection
 
 @push('scripts')
@@ -385,10 +348,6 @@ document.getElementById('addSubjectModal')?.addEventListener('click', function(e
 document.getElementById('bulkSubjectUploadModal')?.addEventListener('click', function(e) {
     if (e.target === this) bulkSubjectUploadModalClose();
 });
-document.getElementById('editSubjectModal')?.addEventListener('click', function(e) {
-    if (e.target === this) this.style.display = 'none';
-});
-
 const coursesForAdd = @json($coursesForAdd);
 const facultyList = @json($facultyListForSubjects);
 
@@ -399,36 +358,10 @@ const subCourseModeEl = document.getElementById('sub_course_mode');
 const subCoursesEl = document.getElementById('sub_courses');
 const subCoursesBoxEl = document.getElementById('sub_courses_box');
 const subFacultyEl = document.getElementById('sub_faculty');
-const esubDeptEl = document.getElementById('esub_dept');
-const esubFacultyEl = document.getElementById('esub_faculty');
 
 function getSelectedDeptIds() {
     if (!subDeptsEl) return [];
     return Array.from(subDeptsEl.selectedOptions).map((o) => String(o.value)).filter(Boolean);
-}
-
-function buildFacultySelectOptions(selectEl, deptId, selectedId) {
-    if (!selectEl) return;
-    selectEl.innerHTML = '<option value="">-- Select Teacher --</option>';
-    facultyList.forEach((faculty) => {
-        const option = document.createElement('option');
-        option.value = faculty.id;
-        option.textContent = faculty.dept_code ? (faculty.name + ' (' + faculty.dept_code + ')') : faculty.name;
-        selectEl.appendChild(option);
-    });
-    if (selectedId != null && selectedId !== '') {
-        const n = Number(selectedId);
-        if (!Number.isNaN(n)) {
-            selectEl.value = String(n);
-            if (selectEl.value !== String(n)) {
-                const opt = document.createElement('option');
-                opt.value = String(n);
-                opt.textContent = 'Current assignee (#' + n + ')';
-                opt.selected = true;
-                selectEl.appendChild(opt);
-            }
-        }
-    }
 }
 
 function refreshAddCourseOptions() {
@@ -488,28 +421,5 @@ subCourseModeEl?.addEventListener('change', toggleAddCourseModeUI);
 refreshAddCourseOptions();
 refreshAddFacultyOptions();
 toggleAddCourseModeUI();
-
-function openEditSubject(id, code, title, deptId, course, year, section, semester, facultyId) {
-    document.getElementById('editSubjectForm').action = @json(url('subjects')) + '/' + id;
-    document.getElementById('esub_code').value = code;
-    document.getElementById('esub_title').value = title;
-    document.getElementById('esub_dept').value = deptId;
-    document.getElementById('esub_course').value = course;
-    document.getElementById('esub_year').value = year;
-    document.getElementById('esub_section').value = section;
-    const semEl = document.getElementById('esub_semester');
-    const semNorm = { '1st semester': '1st', '2nd semester': '2nd', '1st Semester': '1st', '2nd Semester': '2nd' };
-    const s = typeof semester === 'string' ? (semNorm[semester] || semester) : semester;
-    semEl.value = s;
-    if (semEl.value !== s && semester) {
-        const opt = document.createElement('option');
-        opt.value = semester;
-        opt.textContent = semester;
-        opt.selected = true;
-        semEl.appendChild(opt);
-    }
-    buildFacultySelectOptions(esubFacultyEl, deptId, facultyId);
-    document.getElementById('editSubjectModal').style.display = 'flex';
-}
 </script>
 @endpush

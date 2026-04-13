@@ -12,14 +12,20 @@ use App\Models\Question;
 use App\Models\SelfEvaluationResult;
 use App\Models\User;
 use App\Services\EvaluationService;
+use App\Services\FacultyMlPredictionService;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\View\View;
 
 class AnalyticsController extends Controller
 {
     use LoadsFacultyPerformance;
+
+    public function __construct(
+        private readonly FacultyMlPredictionService $facultyMlPredictionService,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -72,15 +78,28 @@ class AnalyticsController extends Controller
                 ];
             });
 
+        $facultyNameSearch = mb_substr(trim((string) $request->input('faculty_name', '')), 0, 255);
+        $tableFacultyRows  = $this->filterFacultyRowsByNameSearch($allFacultyRows, $facultyNameSearch);
+
         $page    = $request->input('page', 1);
         $perPage = 25;
         $facultyRows = new LengthAwarePaginator(
-            $allFacultyRows->forPage($page, $perPage)->values(),
-            $allFacultyRows->count(),
+            $tableFacultyRows->forPage($page, $perPage)->values(),
+            $tableFacultyRows->count(),
             $perPage,
             $page,
             ['path' => $request->url(), 'query' => $request->query()]
         );
+
+        $facultyRows->setCollection(
+            $this->facultyMlPredictionService->attachPredictionsToRows(
+                collect($facultyRows->items()),
+                $semester,
+                $schoolYear
+            )
+        );
+
+        $mlPeriodReady = filled($semester) && filled($schoolYear);
 
         // Student-question analytics (used for Random Forest input visualization)
         $studentAnswerAggregate = EvaluationAnswer::query()
@@ -209,6 +228,23 @@ class AnalyticsController extends Controller
             );
         }
 
+        $facultyRowsWithData = $this->facultyRowsWithEvaluationData($allFacultyRows);
+        $analyticsFacultyWithDataCount = $facultyRowsWithData->count();
+        $analyticsAvgGwa = $facultyRowsWithData->isNotEmpty()
+            ? round((float) $facultyRowsWithData->avg('weighted_average'), 2)
+            : null;
+        $analyticsTopTierCount = $facultyRowsWithData->filter(function (array $row): bool {
+            $level = $row['performance_level'] ?? '';
+
+            return in_array($level, ['Excellent', 'Outstanding'], true);
+        })->count();
+        $analyticsNeedsAttentionCount = $facultyRowsWithData->filter(function (array $row): bool {
+            return EvaluationService::qualifiesForPerformanceIntervention(
+                $row['performance_level'],
+                $row['profile']->evaluationCriteriaPersonnelType()
+            );
+        })->count();
+
         return view('analytics.system', compact(
             'facultyRows',
             'allFacultyRows',
@@ -225,7 +261,12 @@ class AnalyticsController extends Controller
             'selectedPersonnelProfileId',
             'selectedPersonnel',
             'selectedPersonnelUser',
-            'historicalTrend'
+            'historicalTrend',
+            'facultyNameSearch',
+            'analyticsFacultyWithDataCount',
+            'analyticsAvgGwa',
+            'analyticsTopTierCount',
+            'analyticsNeedsAttentionCount'
         ));
     }
 
@@ -246,17 +287,39 @@ class AnalyticsController extends Controller
         $levelCounts   = $allFacultyRows->groupBy('performance_level')->map(fn($r) => $r->count());
         $chartLabels   = EvaluationService::analyticsPerformanceLevelLabels();
         $chartData     = collect($chartLabels)->map(fn($l) => $levelCounts->get($l, 0))->toArray();
-        $departmentAvg = $allFacultyRows->avg('weighted_average');
+
+        $facultyRowsWithData = $this->facultyRowsWithEvaluationData($allFacultyRows);
+        $departmentAvg = $facultyRowsWithData->isNotEmpty()
+            ? $facultyRowsWithData->avg('weighted_average')
+            : null;
+        $departmentTopTierCount = $facultyRowsWithData->filter(function (array $row): bool {
+            $level = $row['performance_level'] ?? '';
+
+            return in_array($level, ['Excellent', 'Outstanding'], true);
+        })->count();
+
+        $facultyNameSearch = mb_substr(trim((string) $request->input('faculty_name', '')), 0, 255);
+        $tableFacultyRows  = $this->filterFacultyRowsByNameSearch($allFacultyRows, $facultyNameSearch);
 
         $page    = $request->input('page', 1);
         $perPage = 25;
         $facultyRows = new LengthAwarePaginator(
-            $allFacultyRows->forPage($page, $perPage)->values(),
-            $allFacultyRows->count(),
+            $tableFacultyRows->forPage($page, $perPage)->values(),
+            $tableFacultyRows->count(),
             $perPage,
             $page,
             ['path' => $request->url(), 'query' => $request->query()]
         );
+
+        $facultyRows->setCollection(
+            $this->facultyMlPredictionService->attachPredictionsToRows(
+                collect($facultyRows->items()),
+                $semester,
+                $schoolYear
+            )
+        );
+
+        $mlPeriodReady = filled($semester) && filled($schoolYear);
 
         return view('analytics.department', compact(
             'facultyRows',
@@ -264,11 +327,30 @@ class AnalyticsController extends Controller
             'chartLabels',
             'chartData',
             'departmentAvg',
+            'departmentTopTierCount',
             'schoolYear',
             'semester',
             'period',
-            'dean'
+            'dean',
+            'facultyNameSearch',
+            'mlPeriodReady'
         ));
+    }
+
+    /**
+     * Rows where at least one evaluation source (student, dean, self, peer) has data for the period.
+     *
+     * @param  Collection<int, array<string, mixed>>  $rows
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function facultyRowsWithEvaluationData(Collection $rows): Collection
+    {
+        return $rows->filter(function (array $row): bool {
+            return ($row['student_avg'] ?? null) !== null
+                || ($row['dean_avg'] ?? null) !== null
+                || ($row['self_avg'] ?? null) !== null
+                || ($row['peer_avg'] ?? null) !== null;
+        });
     }
 
     /**
@@ -388,6 +470,25 @@ class AnalyticsController extends Controller
         }
 
         return $result;
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, array<string, mixed>>  $rows
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     */
+    private function filterFacultyRowsByNameSearch($rows, string $search)
+    {
+        if ($search === '') {
+            return $rows->values();
+        }
+
+        $needle = mb_strtolower($search);
+
+        return $rows->filter(function (array $row) use ($needle) {
+            $name = mb_strtolower((string) ($row['user']->name ?? ''));
+
+            return str_contains($name, $needle);
+        })->values();
     }
 
     private function comparePeriodKeys(string $left, string $right): int

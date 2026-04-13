@@ -3,20 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Traits\LoadsFacultyPerformance;
-use App\Http\Controllers\Traits\NormalizesComparableValues;
 use App\Models\DeanEvaluationFeedback;
 use App\Models\Department;
-use App\Models\EvaluationFeedback;
-use App\Models\Subject;
-use App\Models\SubjectAssignment;
 use App\Models\User;
 use App\Services\EvaluationService;
+use App\Services\StudentEvaluationSubjectService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    use LoadsFacultyPerformance, NormalizesComparableValues;
+    use LoadsFacultyPerformance;
 
     public function index(): View
     {
@@ -119,8 +116,7 @@ class DashboardController extends Controller
         $period  = EvaluationService::getOpenEvaluationPeriod();
         $profile = $student->studentProfile;
 
-        // No open evaluation period or no student profile → nothing to show.
-        if (! $period || ! $profile) {
+        if (! $profile) {
             return view('dashboard.student', [
                 'subjectItems' => collect(),
                 'period'       => $period,
@@ -128,70 +124,7 @@ class DashboardController extends Controller
             ]);
         }
 
-        // Show subjects scheduled for the open evaluation period that match
-        // the student's course AND year level. Section is intentionally NOT
-        // enforced — section data is inconsistent across the dataset and the
-        // course + year combination is sufficient to scope the cohort.
-        $subjects = Subject::with('department')
-            ->where(function ($q) use ($period) {
-                $q->where('semester', $period->semester)
-                  ->orWhereRaw('LOWER(TRIM(semester)) = ?', [strtolower(trim((string) $period->semester))]);
-            })
-            ->where('school_year', $period->school_year)
-            ->whereRaw('LOWER(TRIM(course)) = ?', [strtolower(trim((string) $profile->course))])
-            ->whereRaw('TRIM(year_level) = ?', [trim((string) $profile->year_level)])
-            ->orderBy('code')
-            ->get();
-
-        if ($subjects->isEmpty()) {
-            return view('dashboard.student', [
-                'subjectItems' => collect(),
-                'period'       => $period,
-                'student'      => $student,
-            ]);
-        }
-
-        $subjectIds = $subjects->pluck('id');
-
-        $facultyAssignmentsBySubject = SubjectAssignment::with('faculty.user')
-            ->whereIn('subject_id', $subjectIds)
-            ->get()
-            ->groupBy('subject_id');
-
-        $evaluatedKeys = EvaluationFeedback::where('student_id', $student->id)
-            ->where('semester', $period->semester)
-            ->where('school_year', $period->school_year)
-            ->whereIn('subject_id', $subjectIds)
-            ->selectRaw('CONCAT(faculty_id, ":", subject_id) as lookup_key')
-            ->pluck('lookup_key')
-            ->flip();
-
-        $subjectItems = $subjects->map(function (Subject $subject) use ($facultyAssignmentsBySubject, $evaluatedKeys) {
-            $subjectFAs = $facultyAssignmentsBySubject->get($subject->id, collect());
-
-            $facultyList = $subjectFAs
-                ->filter(fn ($fa) => $fa->faculty !== null)
-                ->map(function ($fa) use ($subject, $evaluatedKeys) {
-                    $facultyProfile = $fa->faculty;
-                    $lookupKey      = $facultyProfile->id . ':' . $subject->id;
-
-                    return [
-                        'faculty_profile' => $facultyProfile,
-                        'faculty_user'    => $facultyProfile->user,
-                        'has_evaluated'   => $evaluatedKeys->has($lookupKey),
-                    ];
-                })
-                ->values();
-
-            return [
-                'subject'      => $subject,
-                'faculty_list' => $facultyList,
-            ];
-        })
-        // Only surface subjects that actually have at least one faculty
-        // assigned — otherwise there is nothing for the student to evaluate.
-        ->filter(fn (array $item) => $item['faculty_list']->isNotEmpty())
-        ->values();
+        $subjectItems = StudentEvaluationSubjectService::buildSubjectItemsForStudent($student, $profile, $period);
 
         return view('dashboard.student', compact('subjectItems', 'period', 'student'));
     }

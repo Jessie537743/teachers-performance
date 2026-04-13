@@ -1,9 +1,7 @@
 **/.git
 **/.github
 **/node_modules
-/vendor
-/src/vendor
-/ml_api/vendor
+**/vendor
 **/.env
 **/.env.*
 !**/.env.example

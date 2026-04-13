@@ -84,7 +84,7 @@
                         </div>
                         <div class="flex justify-between items-center py-2">
                             <span class="text-sm text-gray-400 font-medium">Semester</span>
-                            <span class="text-sm text-slate-800 font-semibold text-right">{{ format_semester($user->studentProfile->semester) }}</span>
+                            <span class="text-sm text-slate-800 font-semibold text-right">{{ $user->studentProfile->semester }}</span>
                         </div>
                         <div class="flex justify-between items-center py-2">
                             <span class="text-sm text-gray-400 font-medium">School Year</span>
@@ -121,6 +121,11 @@
                 <span class="font-bold text-slate-900">Edit Details</span>
             </div>
             <div class="p-5">
+                @if($user->facultyProfile && in_array($user->role, ['faculty', 'dean', 'head'], true))
+                <div class="rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3 mb-4 text-sm text-blue-900 leading-relaxed">
+                    <strong>Default password:</strong> your account password is <strong>the same as your email address</strong> until you change it using <span class="font-semibold">Change Password</span> below (or when an administrator updates your email).
+                </div>
+                @endif
                 <form method="POST" action="{{ route('account.update') }}">
                     @csrf
                     @method('PUT')
@@ -134,6 +139,18 @@
                         <input type="email" name="email" id="acc_email" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
                                value="{{ old('email', $user->email) }}" required maxlength="191">
                     </div>
+                    @if($user->facultyProfile && in_array($user->role, ['faculty', 'dean', 'head'], true))
+                    <div class="mb-4">
+                        <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="account_comment">Comments / notes</label>
+                        <p class="text-xs text-gray-500 mb-2">Private notes for your account (visible only to you). Not used in evaluations.</p>
+                        <textarea name="account_comment" id="account_comment" rows="5" maxlength="2000"
+                                  class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10 text-sm"
+                                  placeholder="Optional reminders, goals, or comments…">{{ old('account_comment', $user->facultyProfile->account_comment ?? '') }}</textarea>
+                        @error('account_comment')
+                            <p class="text-sm text-red-600 mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    @endif
                     <button type="submit" class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-all hover:-translate-y-0.5 shadow-sm">Save Changes</button>
                 </form>
             </div>

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\FacultyDepartmentPosition;
 use App\Http\Controllers\Traits\LoadsFacultyPerformance;
-use App\Http\Controllers\Traits\NormalizesComparableValues;
 use App\Models\Criterion;
 use App\Models\DeanEvaluationAnswer;
 use App\Models\DeanEvaluationFeedback;
@@ -15,19 +15,20 @@ use App\Models\FacultyProfile;
 use App\Models\Question;
 use App\Models\SelfEvaluationResult;
 use App\Models\Subject;
-use App\Models\SubjectAssignment;
 use App\Models\User;
 use App\Policies\EvaluationPolicy;
 use App\Services\EvaluationService;
+use App\Services\StudentEvaluationSubjectService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class EvaluateController extends Controller
 {
-    use LoadsFacultyPerformance, NormalizesComparableValues;
+    use LoadsFacultyPerformance;
 
     /**
      * List evaluations available to the current user.
@@ -36,12 +37,12 @@ class EvaluateController extends Controller
     {
         $user = auth()->user();
 
-        if ($user->can('view-admin-dashboard')) {
-            return $this->adminExcellentCertificatesIndex($request);
-        }
-
         if ($user->can('submit-dean-evaluation') || $user->can('monitor-not-evaluated')) {
             return $this->deanIndex($request);
+        }
+
+        if ($user->can('view-admin-dashboard')) {
+            return $this->adminExcellentCertificatesIndex($request);
         }
 
         if ($user->can('submit-self-evaluation') || $user->can('submit-peer-evaluation')) {
@@ -129,12 +130,20 @@ class EvaluateController extends Controller
 
     private function deanIndex(Request $request): View
     {
-        Gate::authorize('monitor-not-evaluated');
+        abort_unless(
+            auth()->user()?->can('submit-dean-evaluation') || auth()->user()?->can('monitor-not-evaluated'),
+            403,
+            'You do not have permission to access dean evaluations.'
+        );
 
         $dean   = auth()->user();
         $period = EvaluationService::getOpenEvaluationPeriod();
         $dean->loadMissing('facultyProfile.department');
         $deanProfile = $dean->facultyProfile;
+
+        $evaluatesInstitutionLeaders = EvaluationService::isInstitutionLeaderDeanEvaluator($dean);
+
+        $isHrWideMonitor = $dean->can('view-hr-dashboard') && $dean->can('monitor-not-evaluated');
 
         $hasSelfEvaluated = false;
         $canSelfEvaluate = false;
@@ -147,92 +156,234 @@ class EvaluateController extends Controller
             $canSelfEvaluate = app(EvaluationPolicy::class)->submitSelfEvaluation($dean);
         }
 
-        $facultyUsers = User::with('facultyProfile')
-            ->where('role', 'faculty')
-            ->where('department_id', $dean->department_id)
-            ->where('is_active', true)
-            ->get();
+        $facultyStatusCounts = ['all' => 0, 'evaluated' => 0, 'pending' => 0];
+        $selectedFacultyStatus = 'all';
 
-        $evaluatedProfileIds = collect();
-        if ($period && $facultyUsers->isNotEmpty()) {
-            $profileIds = $facultyUsers->pluck('facultyProfile.id')->filter();
+        if ($isHrWideMonitor) {
+            $facultyUsers = User::with(['facultyProfile.department'])
+                ->where('role', 'faculty')
+                ->where('is_active', true)
+                ->whereHas('facultyProfile')
+                ->orderBy('name')
+                ->get();
 
-            $evaluatedProfileIds = DeanEvaluationFeedback::whereIn('faculty_id', $profileIds)
-                ->where('dean_user_id', $dean->id)
-                ->where('semester', $period->semester)
-                ->where('school_year', $period->school_year)
-                ->pluck('faculty_id')
-                ->flip();
-        }
+            $selfCompleteIds = collect();
+            $peerCompleteIds = collect();
+            $supervisorCompleteIds = collect();
 
-        $faculty = $facultyUsers->map(function (User $user) use ($evaluatedProfileIds) {
-            $profile = $user->facultyProfile;
+            if ($period && $facultyUsers->isNotEmpty()) {
+                $profileIds = $facultyUsers->pluck('facultyProfile.id')->filter()->values();
 
-            return [
-                'user'          => $user,
-                'profile'       => $profile,
-                'has_evaluated' => $profile && $evaluatedProfileIds->has($profile->id),
+                $selfCompleteIds = SelfEvaluationResult::query()
+                    ->whereIn('faculty_id', $profileIds)
+                    ->where('semester', $period->semester)
+                    ->where('school_year', $period->school_year)
+                    ->pluck('faculty_id')
+                    ->unique()
+                    ->flip();
+
+                $peerCompleteIds = FacultyPeerEvaluationFeedback::query()
+                    ->whereIn('evaluatee_faculty_id', $profileIds)
+                    ->where('evaluation_type', 'peer')
+                    ->where('semester', $period->semester)
+                    ->where('school_year', $period->school_year)
+                    ->pluck('evaluatee_faculty_id')
+                    ->unique()
+                    ->flip();
+
+                $supervisorCompleteIds = DeanEvaluationFeedback::query()
+                    ->whereIn('faculty_id', $profileIds)
+                    ->where('semester', $period->semester)
+                    ->where('school_year', $period->school_year)
+                    ->pluck('faculty_id')
+                    ->unique()
+                    ->flip();
+            }
+
+            $faculty = $facultyUsers->map(function (User $user) use ($selfCompleteIds, $peerCompleteIds, $supervisorCompleteIds) {
+                $profile = $user->facultyProfile;
+                $pid = $profile?->id;
+
+                $hasSelf = $pid !== null && $selfCompleteIds->has($pid);
+                $hasPeer = $pid !== null && $peerCompleteIds->has($pid);
+                $hasSupervisor = $pid !== null && $supervisorCompleteIds->has($pid);
+
+                return [
+                    'user'             => $user,
+                    'profile'          => $profile,
+                    'has_self'         => $hasSelf,
+                    'has_peer'         => $hasPeer,
+                    'has_supervisor'   => $hasSupervisor,
+                    'has_evaluated'    => $hasSelf && $hasPeer && $hasSupervisor,
+                ];
+            });
+
+            $faculty = $faculty
+                ->sortBy(function (array $item) {
+                    $dept = $item['profile']?->department?->name ?? '';
+
+                    return Str::lower($dept).'|'.Str::lower($item['user']->name);
+                })
+                ->values();
+
+            $facultyStatusCounts = [
+                'all'       => $faculty->count(),
+                'evaluated' => $faculty->where('has_evaluated', true)->count(),
+                'pending'   => $faculty->where('has_evaluated', false)->count(),
             ];
-        })->filter(fn (array $item) => $item['has_evaluated'] === false)->values();
+
+            $selectedFacultyStatus = (string) $request->query('faculty_status', 'all');
+            if (! in_array($selectedFacultyStatus, ['all', 'evaluated', 'pending'], true)) {
+                $selectedFacultyStatus = 'all';
+            }
+
+            $faculty = $faculty->filter(function (array $item) use ($selectedFacultyStatus): bool {
+                return match ($selectedFacultyStatus) {
+                    'evaluated' => $item['has_evaluated'] === true,
+                    'pending'   => $item['has_evaluated'] === false,
+                    default     => true,
+                };
+            })->values();
+
+            $facultyPendingCount = $facultyStatusCounts['pending'];
+        } elseif ($evaluatesInstitutionLeaders) {
+            // All academic leaders by position: Dean/Head (teaching) and Administrator/Head (non-teaching).
+            $facultyUsers = User::with(['facultyProfile.department'])
+                ->whereHas('facultyProfile', function ($q) {
+                    $q->where('department_position', FacultyDepartmentPosition::DeanHead);
+                })
+                ->where('is_active', true)
+                ->where('id', '!=', $dean->id)
+                ->orderBy('name')
+                ->get();
+
+            $evaluatedProfileIds = collect();
+            if ($period && $facultyUsers->isNotEmpty()) {
+                $profileIds = $facultyUsers->pluck('facultyProfile.id')->filter();
+
+                $evaluatedProfileIds = DeanEvaluationFeedback::whereIn('faculty_id', $profileIds)
+                    ->where('dean_user_id', $dean->id)
+                    ->where('semester', $period->semester)
+                    ->where('school_year', $period->school_year)
+                    ->pluck('faculty_id')
+                    ->flip();
+            }
+
+            $faculty = $facultyUsers->map(function (User $user) use ($evaluatedProfileIds) {
+                $profile = $user->facultyProfile;
+
+                return [
+                    'user'          => $user,
+                    'profile'       => $profile,
+                    'has_evaluated' => $profile && $evaluatedProfileIds->has($profile->id),
+                ];
+            });
+
+            $faculty = $faculty
+                ->sortBy(function (array $item) {
+                    $dept = $item['profile']?->department?->name ?? '';
+
+                    return Str::lower($dept).'|'.Str::lower($item['user']->name);
+                })
+                ->values();
+            $facultyPendingCount = $faculty->where('has_evaluated', false)->count();
+        } else {
+            $facultyUsers = User::with('facultyProfile')
+                ->where('role', 'faculty')
+                ->where('department_id', $dean->department_id)
+                ->where('is_active', true)
+                ->get();
+
+            $evaluatedProfileIds = collect();
+            if ($period && $facultyUsers->isNotEmpty()) {
+                $profileIds = $facultyUsers->pluck('facultyProfile.id')->filter();
+
+                $evaluatedProfileIds = DeanEvaluationFeedback::whereIn('faculty_id', $profileIds)
+                    ->where('dean_user_id', $dean->id)
+                    ->where('semester', $period->semester)
+                    ->where('school_year', $period->school_year)
+                    ->pluck('faculty_id')
+                    ->flip();
+            }
+
+            $faculty = $facultyUsers->map(function (User $user) use ($evaluatedProfileIds) {
+                $profile = $user->facultyProfile;
+
+                return [
+                    'user'          => $user,
+                    'profile'       => $profile,
+                    'has_evaluated' => $profile && $evaluatedProfileIds->has($profile->id),
+                ];
+            });
+
+            $faculty = $faculty->filter(fn (array $item) => $item['has_evaluated'] === false)->values();
+            $facultyPendingCount = $faculty->count();
+        }
 
         $selectedStudentStatus = (string) $request->query('student_status', 'non_evaluative');
         if (! in_array($selectedStudentStatus, ['evaluated', 'non_evaluative'], true)) {
             $selectedStudentStatus = 'non_evaluative';
         }
 
-        $studentUsers = User::with(['studentProfile.department', 'department'])
-            ->where('role', 'student')
-            ->where('department_id', $dean->department_id)
-            ->where('is_active', true)
-            ->orderBy('name')
-            ->get();
+        if ($evaluatesInstitutionLeaders || $isHrWideMonitor) {
+            $studentItems = collect();
+            $studentStatusCounts = ['evaluated' => 0, 'non_evaluative' => 0];
+        } else {
+            $studentUsers = User::with(['studentProfile.department', 'department'])
+                ->where('role', 'student')
+                ->where('department_id', $dean->department_id)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get();
 
-        $studentSubmissionCounts = collect();
-        if ($period && $studentUsers->isNotEmpty()) {
-            $studentIds = $studentUsers->pluck('id')->values()->all();
+            $studentSubmissionCounts = collect();
+            if ($period && $studentUsers->isNotEmpty()) {
+                $studentIds = $studentUsers->pluck('id')->values()->all();
 
-            $studentSubmissionCounts = EvaluationFeedback::query()
-                ->select('student_id', DB::raw('COUNT(*) as total_submissions'))
-                ->whereIn('student_id', $studentIds)
-                ->where('evaluator_type', 'student')
-                ->where('semester', $period->semester)
-                ->where('school_year', $period->school_year)
-                ->groupBy('student_id')
-                ->pluck('total_submissions', 'student_id');
-        }
-
-        $allStudentItems = $studentUsers->map(function (User $student) use ($studentSubmissionCounts) {
-            $submissionCount = (int) ($studentSubmissionCounts->get($student->id) ?? 0);
-            $profile = $student->studentProfile;
-
-            $departmentName = $profile?->department?->name
-                ?? $student->department?->name
-                ?? '-';
-
-            return [
-                'user'             => $student,
-                'profile'          => $profile,
-                'department_name'  => $departmentName,
-                'submission_count' => $submissionCount,
-                'has_evaluated'    => $submissionCount > 0,
-            ];
-        })->values();
-
-        $studentStatusCounts = [
-            'evaluated'     => $allStudentItems->where('has_evaluated', true)->count(),
-            'non_evaluative' => $allStudentItems->where('has_evaluated', false)->count(),
-        ];
-
-        $studentItems = $allStudentItems->filter(function (array $item) use ($selectedStudentStatus): bool {
-            if ($selectedStudentStatus === 'evaluated') {
-                return $item['has_evaluated'] === true;
+                $studentSubmissionCounts = EvaluationFeedback::query()
+                    ->select('student_id', DB::raw('COUNT(*) as total_submissions'))
+                    ->whereIn('student_id', $studentIds)
+                    ->where('evaluator_type', 'student')
+                    ->where('semester', $period->semester)
+                    ->where('school_year', $period->school_year)
+                    ->groupBy('student_id')
+                    ->pluck('total_submissions', 'student_id');
             }
 
-            return $item['has_evaluated'] === false;
-        })->values();
+            $allStudentItems = $studentUsers->map(function (User $student) use ($studentSubmissionCounts) {
+                $submissionCount = (int) ($studentSubmissionCounts->get($student->id) ?? 0);
+                $profile = $student->studentProfile;
+
+                $departmentName = $profile?->department?->name
+                    ?? $student->department?->name
+                    ?? '-';
+
+                return [
+                    'user'             => $student,
+                    'profile'          => $profile,
+                    'department_name'  => $departmentName,
+                    'submission_count' => $submissionCount,
+                    'has_evaluated'    => $submissionCount > 0,
+                ];
+            })->values();
+
+            $studentStatusCounts = [
+                'evaluated'      => $allStudentItems->where('has_evaluated', true)->count(),
+                'non_evaluative' => $allStudentItems->where('has_evaluated', false)->count(),
+            ];
+
+            $studentItems = $allStudentItems->filter(function (array $item) use ($selectedStudentStatus): bool {
+                if ($selectedStudentStatus === 'evaluated') {
+                    return $item['has_evaluated'] === true;
+                }
+
+                return $item['has_evaluated'] === false;
+            })->values();
+        }
 
         return view('evaluate.dean-index', compact(
             'faculty',
+            'facultyPendingCount',
             'period',
             'dean',
             'deanProfile',
@@ -240,7 +391,11 @@ class EvaluateController extends Controller
             'canSelfEvaluate',
             'studentItems',
             'selectedStudentStatus',
-            'studentStatusCounts'
+            'studentStatusCounts',
+            'evaluatesInstitutionLeaders',
+            'isHrWideMonitor',
+            'facultyStatusCounts',
+            'selectedFacultyStatus'
         ));
     }
 
@@ -330,6 +485,7 @@ class EvaluateController extends Controller
             'faculty_id' => ['required', 'integer', 'exists:faculty_profiles,id'],
             'ratings'    => ['required', 'array'],
             'comment'    => ['nullable', 'string', 'max:2000'],
+            'recommendation_choice' => ['nullable', 'integer', 'in:1,2,3'],
         ]);
 
         $facultyId = $validated['faculty_id'];
@@ -422,6 +578,20 @@ class EvaluateController extends Controller
                 $likertSum += $val;
                 $likertCount++;
             }
+        }
+
+        if ($recommendation === null && isset($validated['recommendation_choice'])) {
+            $recommendation = match ((int) $validated['recommendation_choice']) {
+                1       => 'retention',
+                2       => 'promotion',
+                default => 'reassignment',
+            };
+        }
+
+        if (EvaluationService::isDeanHeadEvaluateePersonnelType($evaluateePersonnel) && $recommendation === null) {
+            return redirect()->back()
+                ->withErrors(['ratings' => 'Please select a recommendation for this academic administrator.'])
+                ->withInput();
         }
 
         $avg = $likertCount > 0 ? round($likertSum / $likertCount, 2) : 0;
@@ -585,7 +755,7 @@ class EvaluateController extends Controller
             ? $evaluatorProfile->evaluationCriteriaPersonnelType()
             : $targetProfile->evaluationCriteriaPersonnelType();
 
-        $criteria = Criterion::with('questions')
+        $criteria = Criterion::with(['questions.criterion'])
             ->forEvaluatorGroup($evaluatorGroup)
             ->forPersonnelType($personnelType)
             ->orderBy('name')
@@ -602,6 +772,7 @@ class EvaluateController extends Controller
             }
             if ($deanRecommendationQuestions->isEmpty()) {
                 $deanRecommendationQuestions = Question::query()
+                    ->with('criterion')
                     ->where('response_type', 'dean_recommendation')
                     ->whereHas(
                         'criterion',
@@ -610,8 +781,6 @@ class EvaluateController extends Controller
                     ->orderBy('id')
                     ->get();
             }
-
-            // Keep exactly one recommendation question for academic administrators.
             $deanRecommendationQuestions = $deanRecommendationQuestions
                 ->sortBy('id')
                 ->take(1)
@@ -683,6 +852,20 @@ class EvaluateController extends Controller
             ->all();
 
         $questionIds = $this->keepSingleDeanRecommendationQuestion($questionIds);
+
+        // Non–Dean/Head evaluatees: peer/self forms use Likert only (no academic-administrator recommendation).
+        if (! EvaluationService::isDeanHeadEvaluateePersonnelType($evaluateePersonnel)) {
+            $questionIds = Question::query()
+                ->whereIn('id', $questionIds)
+                ->where(function ($query) {
+                    $query->whereNull('response_type')
+                        ->orWhere('response_type', 'likert');
+                })
+                ->orderBy('id')
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        }
 
         $norm = [];
         foreach ($validated['ratings'] as $k => $v) {
@@ -802,77 +985,18 @@ class EvaluateController extends Controller
         $period  = EvaluationService::getOpenEvaluationPeriod();
         $profile = $student->studentProfile;
 
-        if (! $period || ! $profile) {
+        if (! $profile) {
             return view('evaluate.student-index', [
                 'subjectItems' => collect(),
                 'period'       => $period,
                 'student'      => $student,
+                'profile'      => null,
             ]);
         }
 
-        // Show subjects scheduled for the open evaluation period that match
-        // the student's course AND year level (section gating is relaxed).
-        $subjects = Subject::with('department')
-            ->where(function ($q) use ($period) {
-                $q->where('semester', $period->semester)
-                  ->orWhereRaw('LOWER(TRIM(semester)) = ?', [strtolower(trim((string) $period->semester))]);
-            })
-            ->where('school_year', $period->school_year)
-            ->whereRaw('LOWER(TRIM(course)) = ?', [strtolower(trim((string) $profile->course))])
-            ->whereRaw('TRIM(year_level) = ?', [trim((string) $profile->year_level)])
-            ->orderBy('code')
-            ->get();
+        $subjectItems = StudentEvaluationSubjectService::buildSubjectItemsForStudent($student, $profile, $period);
 
-        if ($subjects->isEmpty()) {
-            return view('evaluate.student-index', [
-                'subjectItems' => collect(),
-                'period'       => $period,
-                'student'      => $student,
-            ]);
-        }
-
-        $subjectIds = $subjects->pluck('id');
-
-        $facultyAssignmentsBySubject = SubjectAssignment::with('faculty.user')
-            ->whereIn('subject_id', $subjectIds)
-            ->get()
-            ->groupBy('subject_id');
-
-        $evaluatedKeys = EvaluationFeedback::where('student_id', $student->id)
-            ->where('semester', $period->semester)
-            ->where('school_year', $period->school_year)
-            ->whereIn('subject_id', $subjectIds)
-            ->selectRaw('CONCAT(faculty_id, ":", subject_id) as lookup_key')
-            ->pluck('lookup_key')
-            ->flip();
-
-        $subjectItems = $subjects->map(function (Subject $subject) use ($facultyAssignmentsBySubject, $evaluatedKeys) {
-            $subjectFAs = $facultyAssignmentsBySubject->get($subject->id, collect());
-
-            $facultyList = $subjectFAs
-                ->filter(fn ($fa) => $fa->faculty !== null)
-                ->map(function ($fa) use ($subject, $evaluatedKeys) {
-                    $facultyProfile = $fa->faculty;
-                    $lookupKey      = $facultyProfile->id . ':' . $subject->id;
-
-                    return [
-                        'faculty_profile' => $facultyProfile,
-                        'faculty_user'    => $facultyProfile->user,
-                        'has_evaluated'   => $evaluatedKeys->has($lookupKey),
-                    ];
-                })
-                ->values();
-
-            return [
-                'subject'      => $subject,
-                'faculty_list' => $facultyList,
-            ];
-        })
-        // Drop subjects with no faculty assigned — nothing to evaluate.
-        ->filter(fn (array $item) => $item['faculty_list']->isNotEmpty())
-        ->values();
-
-        return view('evaluate.student-index', compact('subjectItems', 'period', 'student'));
+        return view('evaluate.student-index', compact('subjectItems', 'period', 'student', 'profile'));
     }
 
     /**

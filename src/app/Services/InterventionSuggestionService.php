@@ -12,6 +12,7 @@ use App\Models\FacultyProfile;
 use App\Models\Question;
 use App\Models\SelfEvaluationResult;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class InterventionSuggestionService
 {
@@ -26,7 +27,7 @@ class InterventionSuggestionService
     /**
      * @return array{
      *   personnel_type: string,
-     *   overall: array{weighted_average: float|null, performance_level: string|null, qualifies_intervention: bool},
+     *   overall: array{weighted_average: float|null, performance_level: string|null, qualifies_intervention: bool, components?: array<string, float|null>},
      *   weak_questions: list<array{
      *     question_id: int,
      *     question_text: string,
@@ -36,6 +37,7 @@ class InterventionSuggestionService
      *     sources: array<string, float|null>,
      *     interventions: \Illuminate\Support\Collection<int, \App\Models\Intervention>,
      *   }>,
+     *   overall_summary: string,
      * }
      */
     public function analyze(FacultyProfile $profile, string $semester, string $schoolYear): array
@@ -135,22 +137,104 @@ class InterventionSuggestionService
                 $q = $questionModels->get($row['question_id']);
                 if ($q) {
                     $weakQuestions[$i]['question_text']  = $q->question_text;
-                    $weakQuestions[$i]['criterion_name'] = $q->criterion?->name ?? '—';
+                    $crit                                = $q->criterion;
+                    $weakQuestions[$i]['criterion_name'] = $crit ? $crit->name : '—';
                     $weakQuestions[$i]['interventions']  = $q->interventions;
                 }
             }
         }
 
-        return [
+        $analysis = [
             'personnel_type'  => $personnelType,
             'overall'         => [
-                'weighted_average'      => $weighted['weighted_average'] > 0 ? round((float) $weighted['weighted_average'], 2) : null,
-                'performance_level'     => $overallLevel,
-                'qualifies_intervention' => $qualifies,
-                'components'            => $weighted['components'],
+                'weighted_average'       => $weighted['weighted_average'] > 0 ? round((float) $weighted['weighted_average'], 2) : null,
+                'performance_level'      => $overallLevel,
+                'qualifies_intervention'   => $qualifies,
+                'components'             => $weighted['components'],
             ],
             'weak_questions' => $weakQuestions,
         ];
+
+        $analysis['overall_summary'] = $this->buildRuleBasedOverallSummary($analysis);
+
+        return $analysis;
+    }
+
+    /**
+     * Deterministic narrative from scores and linked interventions (no external AI).
+     */
+    private function buildRuleBasedOverallSummary(array $analysis): string
+    {
+        $overall   = $analysis['overall'];
+        $w         = $overall['weighted_average'];
+        $level     = $overall['performance_level'];
+        $qualifies = $overall['qualifies_intervention'];
+        $weak      = $analysis['weak_questions'];
+
+        if ($w === null && ($level === null || $level === '')) {
+            return 'Insufficient multi-source evaluation data for this school year and semester to compute a weighted composite. Complete student, dean, self, and peer evaluations as applicable.';
+        }
+
+        if (! $qualifies) {
+            $gwa = $w !== null ? number_format((float) $w, 2) : '—';
+            $lvl = $level ?: 'N/A';
+
+            return 'Overall weighted composite is '.$gwa.' (performance level: '.$lvl.'). This does not fall in the intervention band for this personnel type, so no automated intervention summary is generated.';
+        }
+
+        if ($weak === []) {
+            return 'Overall performance qualifies for intervention planning, but no individual Likert items were identified in the at-risk band for this period, or detailed per-question scores are unavailable. Review raw evaluations or ensure answers are stored.';
+        }
+
+        $gwa = $w !== null ? number_format((float) $w, 2) : '—';
+        $lvl = $level ?: 'N/A';
+
+        $lines   = [];
+        $lines[] = 'Overall weighted composite is '.$gwa.' (performance level: '.$lvl.'). Priority areas below are ordered from lowest weighted per-question scores (student, dean, self, peer).';
+        $lines[] = '';
+        $lines[] = 'Rule-based intervention summary:';
+
+        $maxItems = 8;
+        $count    = 0;
+        foreach ($weak as $item) {
+            if ($count >= $maxItems) {
+                $lines[] = '• … Additional areas appear in the detailed list below.';
+                break;
+            }
+
+            $crit = trim((string) ($item['criterion_name'] ?? ''));
+            if ($crit === '') {
+                $crit = 'Criterion';
+            }
+
+            $interventionLine = '';
+            if (! empty($item['interventions']) && $item['interventions']->isNotEmpty()) {
+                foreach ($item['interventions'] as $intervention) {
+                    $rec = trim((string) ($intervention->recommended_intervention ?? ''));
+                    if ($rec !== '') {
+                        $interventionLine = Str::limit($rec, 220, '…');
+                        break;
+                    }
+                    $ind = trim((string) ($intervention->indicator ?? ''));
+                    if ($ind !== '') {
+                        $interventionLine = Str::limit($ind, 220, '…');
+                        break;
+                    }
+                }
+            }
+
+            if ($interventionLine === '') {
+                $interventionLine = 'No intervention text is linked to this item yet—add one under Criteria / Interventions administration.';
+            }
+
+            $lines[] = '• '.$crit.': '.$interventionLine;
+            $count++;
+        }
+
+        $lines[] = '';
+        $lines[] = 'This narrative is generated by fixed rules from evaluation scores and linked intervention records (not by an external AI).';
+
+        return implode("\n", $lines);
     }
 
     /**

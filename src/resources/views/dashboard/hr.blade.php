@@ -9,7 +9,7 @@
         <h1 class="text-2xl font-bold text-gray-900">Welcome, {{ $hr->name }}</h1>
         <p class="text-sm text-gray-500 mt-1">
             @if($period)
-                Active Period: {{ $period->school_year }} &mdash; {{ format_semester($period->semester) }}
+                Active Period: {{ $period->school_year }} &mdash; {{ $period->semester }}
                 &nbsp;<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">Open</span>
             @else
                 No evaluation period is currently open.
@@ -41,6 +41,18 @@
         <div class="text-xs text-gray-400 mt-0.5">With performance data</div>
     </div>
 </div>
+
+@can('monitor-not-evaluated')
+<div class="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700 rounded-2xl shadow-sm p-4 mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div class="text-white">
+        <div class="text-sm font-semibold">Evaluation compliance</div>
+        <p class="text-xs text-slate-300 mt-0.5">See self, peer, and supervisor completion for every faculty member for the open period (student course evaluations are tracked elsewhere).</p>
+    </div>
+    <a href="{{ route('evaluate.index') }}" class="inline-flex items-center justify-center px-4 py-2.5 bg-white text-slate-900 text-sm font-semibold rounded-xl hover:bg-slate-100 transition-colors shrink-0">
+        Open monitoring
+    </a>
+</div>
+@endcan
 
 {{-- Performance Distribution Chart --}}
 <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
