@@ -13,10 +13,12 @@
 <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden transition hover:shadow-md">
     {{-- Tab Navigation --}}
     <div class="flex border-b border-gray-200 overflow-x-auto">
+        {{-- Setup Guide tab hidden for now
         <a href="{{ route('help.index', ['tab' => 'setup-guide']) }}"
            class="px-6 py-3.5 font-semibold text-sm whitespace-nowrap transition {{ $tab === 'setup-guide' ? 'text-blue-600 border-b-[3px] border-blue-600' : 'text-gray-700 border-b-[3px] border-transparent hover:text-blue-600' }}">
             Setup Guide
         </a>
+        --}}
         <a href="{{ route('help.index', ['tab' => 'help-guide']) }}"
            class="px-6 py-3.5 font-semibold text-sm whitespace-nowrap transition {{ $tab === 'help-guide' ? 'text-blue-600 border-b-[3px] border-blue-600' : 'text-gray-700 border-b-[3px] border-transparent hover:text-blue-600' }}">
             Help Guide
