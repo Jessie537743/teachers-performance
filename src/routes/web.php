@@ -12,6 +12,25 @@ use Illuminate\Support\Facades\Route;
 // Root: redirect unauthenticated visitors to the login page
 Route::get('/', fn() => redirect()->route('login'));
 
+// Temporary debug route — remove after fixing 500 error
+Route::get('/debug-dashboard', function () {
+    try {
+        $controller = app(\App\Http\Controllers\DashboardController::class);
+        return $controller->index();
+    } catch (\Throwable $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => collect($e->getTrace())->take(10)->map(fn($t) => [
+                'file' => $t['file'] ?? '?',
+                'line' => $t['line'] ?? '?',
+                'function' => ($t['class'] ?? '') . ($t['type'] ?? '') . ($t['function'] ?? ''),
+            ]),
+        ], 500);
+    }
+})->middleware(['auth', 'must.change.password']);
+
 // -------------------------------------------------------------------------
 // Change password (auth required; intentionally excluded from must.change.password
 // so users with must_change_password = true can still reach this screen)
