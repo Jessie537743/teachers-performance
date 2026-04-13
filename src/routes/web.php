@@ -123,6 +123,12 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     Route::post('/settings/general', [Admin\SettingsController::class, 'updateGeneral'])->name('settings.update-general');
     Route::delete('/settings/logo', [Admin\SettingsController::class, 'removeLogo'])->name('settings.remove-logo');
 
+    // Sentiment Lexicon Management
+    Route::get('/sentiment-lexicon', [Admin\SentimentLexiconController::class, 'index'])->name('sentiment-lexicon.index');
+    Route::post('/sentiment-lexicon', [Admin\SentimentLexiconController::class, 'store'])->name('sentiment-lexicon.store');
+    Route::put('/sentiment-lexicon/{sentimentLexicon}', [Admin\SentimentLexiconController::class, 'update'])->name('sentiment-lexicon.update');
+    Route::delete('/sentiment-lexicon/{sentimentLexicon}', [Admin\SentimentLexiconController::class, 'destroy'])->name('sentiment-lexicon.destroy');
+
     // AI Model Training (admin + dean)
     Route::get('/model-training', [Admin\ModelTrainingController::class, 'index'])->name('model-training.index');
     Route::post('/model-training/train', [Admin\ModelTrainingController::class, 'train'])->name('model-training.train');
