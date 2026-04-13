@@ -15,12 +15,12 @@ class DashboardController extends Controller
 {
     use LoadsFacultyPerformance;
 
-    public function index(): View|\Illuminate\Http\JsonResponse
+    public function index(): View|\Illuminate\Http\JsonResponse|\Illuminate\Http\Response
     {
-        try {
-            $user = auth()->user();
+        $user = auth()->user();
 
-            return match (true) {
+        try {
+            $view = match (true) {
                 $user->can('view-admin-dashboard')   => $this->adminDashboard(),
                 $user->can('view-dean-dashboard')    => $this->deanDashboard(),
                 $user->can('view-student-dashboard') => $this->studentDashboard(),
@@ -28,13 +28,15 @@ class DashboardController extends Controller
                 $user->can('view-faculty-dashboard') => $this->facultyDashboard(),
                 default                              => $this->defaultDashboard(),
             };
+
+            // Force-render to catch Blade errors
+            return response($view->render());
         } catch (\Throwable $e) {
-            // Temporary debug — remove after diagnosing
             return response()->json([
                 'error'   => $e->getMessage(),
                 'file'    => $e->getFile(),
                 'line'    => $e->getLine(),
-                'trace'   => collect($e->getTrace())->take(8)->map(fn($t) => [
+                'trace'   => collect($e->getTrace())->take(10)->map(fn($t) => [
                     'file'     => $t['file'] ?? '?',
                     'line'     => $t['line'] ?? '?',
                     'function' => ($t['class'] ?? '') . ($t['type'] ?? '') . ($t['function'] ?? ''),
