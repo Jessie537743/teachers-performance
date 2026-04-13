@@ -41,7 +41,7 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        AuditLog::logAuth('login', $user, 'Login successful');
+        try { AuditLog::logAuth('login', $user, 'Login successful'); } catch (\Throwable $e) { /* table may not exist yet */ }
 
         // Send to change-password screen if required
         if ($user->must_change_password) {
@@ -60,7 +60,7 @@ class AuthenticatedSessionController extends Controller
 
         Auth::guard('web')->logout();
 
-        AuditLog::logAuth('logout', $user, 'Logout');
+        try { AuditLog::logAuth('logout', $user, 'Logout'); } catch (\Throwable $e) { /* table may not exist yet */ }
 
         $request->session()->invalidate();
 

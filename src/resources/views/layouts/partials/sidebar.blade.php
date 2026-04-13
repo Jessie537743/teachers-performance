@@ -72,7 +72,7 @@
 @can('manage-settings')
 <a href="{{ route('password-reset-requests.index') }}" class="flex items-center justify-between px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('password-reset-requests.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">
     <span>Password Requests</span>
-    @php $pendingResets = \App\Models\PasswordResetRequest::pending()->count(); @endphp
+    @php try { $pendingResets = \App\Models\PasswordResetRequest::pending()->count(); } catch (\Throwable $e) { $pendingResets = 0; } @endphp
     @if($pendingResets > 0)
         <span class="inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold bg-red-500 text-white rounded-full">{{ $pendingResets }}</span>
     @endif

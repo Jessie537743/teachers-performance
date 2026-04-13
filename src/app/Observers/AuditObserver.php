@@ -23,14 +23,18 @@ class AuditObserver
 
     public function created(Model $model): void
     {
-        $values = $this->filterAttributes($model->getAttributes());
+        try {
+            $values = $this->filterAttributes($model->getAttributes());
 
-        AuditLog::log(
-            action: 'created',
-            description: class_basename($model) . ' created' . $this->modelLabel($model),
-            model: $model,
-            newValues: $values
-        );
+            AuditLog::log(
+                action: 'created',
+                description: class_basename($model) . ' created' . $this->modelLabel($model),
+                model: $model,
+                newValues: $values
+            );
+        } catch (\Throwable $e) {
+            // Silently fail if audit_logs table doesn't exist yet
+        }
     }
 
     public function updated(Model $model): void
@@ -53,25 +57,33 @@ class AuditObserver
             $action = $changed['is_active'] ? 'reactivated' : 'deactivated';
         }
 
-        AuditLog::log(
-            action: $action,
-            description: class_basename($model) . ' ' . $action . $this->modelLabel($model),
-            model: $model,
-            oldValues: $original,
-            newValues: $changed
-        );
+        try {
+            AuditLog::log(
+                action: $action,
+                description: class_basename($model) . ' ' . $action . $this->modelLabel($model),
+                model: $model,
+                oldValues: $original,
+                newValues: $changed
+            );
+        } catch (\Throwable $e) {
+            // Silently fail if audit_logs table doesn't exist yet
+        }
     }
 
     public function deleted(Model $model): void
     {
-        $values = $this->filterAttributes($model->getAttributes());
+        try {
+            $values = $this->filterAttributes($model->getAttributes());
 
-        AuditLog::log(
-            action: 'deleted',
-            description: class_basename($model) . ' deleted' . $this->modelLabel($model),
-            model: $model,
-            oldValues: $values
-        );
+            AuditLog::log(
+                action: 'deleted',
+                description: class_basename($model) . ' deleted' . $this->modelLabel($model),
+                model: $model,
+                oldValues: $values
+            );
+        } catch (\Throwable $e) {
+            // Silently fail if audit_logs table doesn't exist yet
+        }
     }
 
     /**
