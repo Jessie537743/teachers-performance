@@ -50,7 +50,7 @@ trait LoadsFacultyPerformance
     ): Collection {
         // Query 1 — load all faculty with relationships already eager-loaded
         $faculty = User::with(['facultyProfile.department', 'department'])
-            ->where('role', 'faculty')
+            ->whereHasRole('faculty')
             ->where('is_active', true)
             ->when($departmentId, fn($q) => $q->where('department_id', $departmentId))
             ->get();

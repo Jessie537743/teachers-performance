@@ -33,14 +33,14 @@ class AppServiceProvider extends ServiceProvider
         foreach ($permissions as $permission) {
             if (is_string($permission)) {
                 Gate::define($permission, function ($user) use ($permission) {
-                    return in_array($permission, Permission::forRole($user->role));
+                    return in_array($permission, Permission::forRoles($user->roles ?? []));
                 });
             }
         }
 
         // Super admin bypass — admin role passes every Gate check
         Gate::before(function ($user, $ability) {
-            if ($user->role === 'admin') {
+            if (in_array('admin', $user->roles ?? [], true)) {
                 return true;
             }
         });

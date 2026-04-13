@@ -2,10 +2,12 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -51,11 +53,13 @@ class LoginRequest extends FormRequest
             $attempted = Auth::attempt(['email' => $login, 'password' => $password], $remember);
         } else {
             // Student-only username login (student_id).
-            $attempted = Auth::attempt([
-                'role' => 'student',
-                'username' => $login,
-                'password' => $password,
-            ], $remember);
+            $user = User::whereJsonContains('roles', 'student')
+                ->where('username', $login)
+                ->first();
+            if ($user && Hash::check($password, $user->password)) {
+                Auth::login($user, $remember);
+                $attempted = true;
+            }
         }
 
         if (! $attempted) {

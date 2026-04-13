@@ -24,7 +24,7 @@ class EmployeeCommentReportController extends Controller
 
         $facultyOptions = FacultyProfile::query()
             ->with(['user', 'department'])
-            ->whereHas('user', fn ($q) => $q->where('role', 'faculty')->where('is_active', true))
+            ->whereHas('user', fn ($q) => $q->whereJsonContains('roles', 'faculty')->where('is_active', true))
             ->get()
             ->sortBy(fn (FacultyProfile $profile) => strtolower($profile->user?->name ?? ''))
             ->values();

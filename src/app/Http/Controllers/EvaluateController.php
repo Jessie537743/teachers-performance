@@ -161,7 +161,7 @@ class EvaluateController extends Controller
 
         if ($isHrWideMonitor) {
             $facultyUsers = User::with(['facultyProfile.department'])
-                ->where('role', 'faculty')
+                ->whereHasRole('faculty')
                 ->where('is_active', true)
                 ->whereHas('facultyProfile')
                 ->orderBy('name')
@@ -289,7 +289,7 @@ class EvaluateController extends Controller
             $facultyPendingCount = $faculty->where('has_evaluated', false)->count();
         } else {
             $facultyUsers = User::with('facultyProfile')
-                ->where('role', 'faculty')
+                ->whereHasRole('faculty')
                 ->where('department_id', $dean->department_id)
                 ->where('is_active', true)
                 ->get();
@@ -330,7 +330,7 @@ class EvaluateController extends Controller
             $studentStatusCounts = ['evaluated' => 0, 'non_evaluative' => 0];
         } else {
             $studentUsers = User::with(['studentProfile.department', 'department'])
-                ->where('role', 'student')
+                ->whereHasRole('student')
                 ->where('department_id', $dean->department_id)
                 ->where('is_active', true)
                 ->orderBy('name')
@@ -655,7 +655,7 @@ class EvaluateController extends Controller
             : false;
 
         $peerUsers = User::with('facultyProfile.department')
-            ->where('role', 'faculty')
+            ->whereHasRole('faculty')
             ->where('department_id', $faculty->department_id)
             ->where('id', '!=', $faculty->id)
             ->where('is_active', true)

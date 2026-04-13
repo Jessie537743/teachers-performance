@@ -24,7 +24,7 @@ class AccountController extends Controller
             'email' => ['required', 'email', 'max:191', Rule::unique('users')->ignore($user->id)],
         ];
 
-        if ($user->facultyProfile && in_array($user->role, ['faculty', 'dean', 'head'], true)) {
+        if ($user->facultyProfile && $user->hasRole(['faculty', 'dean', 'head'])) {
             $rules['account_comment'] = ['nullable', 'string', 'max:2000'];
         }
 
@@ -35,7 +35,7 @@ class AccountController extends Controller
             'email' => $validated['email'],
         ]);
 
-        if ($user->facultyProfile && in_array($user->role, ['faculty', 'dean', 'head'], true)) {
+        if ($user->facultyProfile && $user->hasRole(['faculty', 'dean', 'head'])) {
             $user->facultyProfile->update([
                 'account_comment' => $validated['account_comment'] ?? null,
             ]);

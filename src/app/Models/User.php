@@ -20,7 +20,7 @@ class User extends Authenticatable
         'email',
         'username',
         'password',
-        'role',
+        'roles',
         'is_active',
         'department_id',
         'must_change_password',
@@ -39,6 +39,7 @@ class User extends Authenticatable
             'password'             => 'hashed',
             'is_active'            => 'boolean',
             'must_change_password' => 'boolean',
+            'roles'                => 'array',
         ];
     }
 
@@ -62,62 +63,104 @@ class User extends Authenticatable
     }
 
     // -------------------------------------------------------------------------
-    // Role helpers
+    // Backward-compatible accessor
+    // -------------------------------------------------------------------------
+
+    public function getRoleAttribute(): string
+    {
+        return $this->primaryRole();
+    }
+
+    // -------------------------------------------------------------------------
+    // Multi-role helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Return the highest-priority role this user holds.
+     */
+    public function primaryRole(): string
+    {
+        $priority = [
+            'admin',
+            'school_president',
+            'vp_acad',
+            'vp_admin',
+            'dean',
+            'head',
+            'human_resource',
+            'faculty',
+            'staff',
+            'student',
+        ];
+
+        $roles = $this->roles ?? [];
+
+        foreach ($priority as $role) {
+            if (in_array($role, $roles, true)) {
+                return $role;
+            }
+        }
+
+        return 'student';
+    }
+
+    // -------------------------------------------------------------------------
+    // Role check helpers
     // -------------------------------------------------------------------------
 
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return in_array('admin', $this->roles ?? [], true);
     }
 
     public function isDean(): bool
     {
-        return $this->role === 'dean';
+        return in_array('dean', $this->roles ?? [], true);
     }
 
     public function isFaculty(): bool
     {
-        return $this->role === 'faculty';
+        return in_array('faculty', $this->roles ?? [], true);
     }
 
     public function isStudent(): bool
     {
-        return $this->role === 'student';
+        return in_array('student', $this->roles ?? [], true);
     }
 
     public function isSchoolPresident(): bool
     {
-        return $this->role === 'school_president';
+        return in_array('school_president', $this->roles ?? [], true);
     }
 
     public function isVpAcad(): bool
     {
-        return $this->role === 'vp_acad';
+        return in_array('vp_acad', $this->roles ?? [], true);
     }
 
     public function isVpAdmin(): bool
     {
-        return $this->role === 'vp_admin';
+        return in_array('vp_admin', $this->roles ?? [], true);
     }
 
     public function isHumanResource(): bool
     {
-        return $this->role === 'human_resource';
+        return in_array('human_resource', $this->roles ?? [], true);
     }
 
     public function isHead(): bool
     {
-        return $this->role === 'head';
+        return in_array('head', $this->roles ?? [], true);
     }
 
     public function isStaff(): bool
     {
-        return $this->role === 'staff';
+        return in_array('staff', $this->roles ?? [], true);
     }
 
     public function hasRole(string|array $roles): bool
     {
-        return in_array($this->role, (array) $roles, true);
+        return count(array_intersect($this->roles ?? [], (array) $roles)) > 0;
     }
 
     // -------------------------------------------------------------------------
@@ -126,11 +169,76 @@ class User extends Authenticatable
 
     public function hasPermission(string $permission): bool
     {
-        return in_array($permission, Permission::forRole($this->role));
+        return in_array($permission, $this->permissions(), true);
     }
 
     public function permissions(): array
     {
-        return Permission::forRole($this->role);
+        return Permission::forRoles($this->roles ?? []);
+    }
+
+    // -------------------------------------------------------------------------
+    // Scope
+    // -------------------------------------------------------------------------
+
+    /**
+     * Scope to users who hold at least one of the given roles.
+     */
+    public function scopeWhereHasRole($query, string|array $roles)
+    {
+        $roles = (array) $roles;
+
+        if (count($roles) === 1) {
+            return $query->whereJsonContains('roles', $roles[0]);
+        }
+
+        return $query->where(function ($q) use ($roles) {
+            foreach ($roles as $role) {
+                $q->orWhereJsonContains('roles', $role);
+            }
+        });
+    }
+
+    // -------------------------------------------------------------------------
+    // Role mutation helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Append a role if the user does not already have it.
+     */
+    public function addRole(string $role): void
+    {
+        $roles = $this->roles ?? [];
+
+        if (! in_array($role, $roles, true)) {
+            $roles[] = $role;
+            $this->roles = $roles;
+            $this->save();
+        }
+    }
+
+    /**
+     * Remove a role from the user.
+     */
+    public function removeRole(string $role): void
+    {
+        $roles = $this->roles ?? [];
+        $roles = array_values(array_filter($roles, fn ($r) => $r !== $role));
+        $this->roles = $roles;
+        $this->save();
+    }
+
+    // -------------------------------------------------------------------------
+    // Display helpers
+    // -------------------------------------------------------------------------
+
+    /**
+     * Comma-separated human-readable role labels.
+     */
+    public function rolesLabel(): string
+    {
+        return collect($this->roles ?? [])
+            ->map(fn ($role) => Permission::roleLabel($role))
+            ->implode(', ');
     }
 }

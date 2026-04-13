@@ -213,6 +213,18 @@ class Permission
         };
     }
 
+    // Get merged permissions for multiple roles
+    public static function forRoles(array $roles): array
+    {
+        $permissions = [];
+
+        foreach ($roles as $role) {
+            $permissions = array_merge($permissions, self::forRole($role));
+        }
+
+        return array_values(array_unique($permissions));
+    }
+
     // Clear cached permissions (call after updates)
     public static function clearCache(?string $role = null): void
     {

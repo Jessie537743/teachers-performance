@@ -17,7 +17,7 @@ class EnsureDepartmentAccess
         $user = auth()->user();
 
         // Only restrict dean/head roles
-        if (!in_array($user->role, ['dean', 'head'])) {
+        if (!$user->hasRole(['dean', 'head'])) {
             return $next($request);
         }
 

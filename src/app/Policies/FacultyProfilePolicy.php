@@ -14,13 +14,13 @@ class FacultyProfilePolicy
      */
     public function view(User $user, FacultyProfile $faculty): bool
     {
-        if ($user->role === 'admin') return true;
+        if ($user->isAdmin()) return true;
 
-        if (in_array($user->role, ['dean', 'head'])) {
+        if ($user->hasRole(['dean', 'head'])) {
             return $faculty->department_id === $user->department_id;
         }
 
-        if ($user->role === 'faculty') {
+        if ($user->isFaculty()) {
             return $faculty->user_id === $user->id;
         }
 
@@ -29,16 +29,16 @@ class FacultyProfilePolicy
 
     public function create(User $user): bool
     {
-        return $user->role === 'admin';
+        return $user->isAdmin();
     }
 
     public function update(User $user, FacultyProfile $faculty): bool
     {
-        return $user->role === 'admin';
+        return $user->isAdmin();
     }
 
     public function delete(User $user, FacultyProfile $faculty): bool
     {
-        return $user->role === 'admin';
+        return $user->isAdmin();
     }
 }

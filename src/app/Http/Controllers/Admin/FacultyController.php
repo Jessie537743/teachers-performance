@@ -82,7 +82,7 @@ class FacultyController extends Controller
         $departmentId = $filters['department_id'] ?? null;
 
         $faculty = User::with(['facultyProfile.department', 'department'])
-            ->whereIn('role', ['faculty', 'dean', 'head', 'vp_acad', 'school_president'])
+            ->whereHasRole(['faculty', 'dean', 'head', 'vp_acad', 'school_president'])
             ->when($search !== '', fn ($q) => $q->where('name', 'like', '%' . addcslashes($search, '%_\\') . '%'))
             ->when($departmentId, function ($q) use ($departmentId) {
                 $q->where(function ($q2) use ($departmentId) {
@@ -100,7 +100,7 @@ class FacultyController extends Controller
             ->get();
 
         $deansByDepartment = User::with(['facultyProfile.department'])
-            ->whereIn('role', ['faculty', 'dean', 'head'])
+            ->whereHasRole(['faculty', 'dean', 'head'])
             ->where('is_active', true)
             ->whereHas(
                 'facultyProfile',
@@ -152,15 +152,16 @@ class FacultyController extends Controller
             );
 
             $isDeptHead = self::isDeanOrHeadPosition($validated['department_position']);
-            $systemRole = $isDeptHead
+            $leadershipRole = $isDeptHead
                 ? self::leadershipRoleByDepartmentId((int) $validated['department_id'])
-                : 'faculty';
+                : null;
+            $roles = $isDeptHead ? [$leadershipRole, 'faculty'] : ['faculty'];
             // Default password is the email address; user must change on first login
             $user = User::create([
                 'name'                => $validated['name'],
                 'email'               => $validated['email'],
                 'password'            => Hash::make($validated['email']),
-                'role'                => $systemRole,
+                'roles'               => $roles,
                 'department_id'       => $validated['department_id'],
                 'is_active'           => true,
                 'must_change_password' => true,
@@ -199,15 +200,31 @@ class FacultyController extends Controller
             );
 
             $isDeptHead = self::isDeanOrHeadPosition($validated['department_position']);
-            $newRole    = $faculty->role;
+            $currentRoles = $faculty->roles ?? [];
 
-            if (in_array($faculty->role, ['vp_acad', 'school_president'], true)) {
+            if ($faculty->hasRole(['vp_acad', 'school_president'])) {
                 // Institution leaders evaluate all deans/heads; do not remap to dean/head/faculty.
-                $newRole = $faculty->role;
+                $newRoles = $currentRoles;
             } elseif ($isDeptHead) {
-                $newRole = self::leadershipRoleByDepartmentId((int) $validated['department_id']);
-            } elseif (in_array($faculty->role, ['head', 'dean'], true)) {
-                $newRole = 'faculty';
+                $leadershipRole = self::leadershipRoleByDepartmentId((int) $validated['department_id']);
+                // Add leadership role, keep faculty, remove any other leadership role
+                $newRoles = collect($currentRoles)
+                    ->reject(fn ($r) => in_array($r, ['dean', 'head'], true))
+                    ->push($leadershipRole)
+                    ->when(! collect($currentRoles)->contains('faculty'), fn ($c) => $c->push('faculty'))
+                    ->unique()
+                    ->values()
+                    ->all();
+            } elseif ($faculty->hasRole(['head', 'dean'])) {
+                // Demoting dean/head to faculty: remove leadership role, keep faculty
+                $newRoles = collect($currentRoles)
+                    ->reject(fn ($r) => in_array($r, ['dean', 'head'], true))
+                    ->when(! collect($currentRoles)->contains('faculty'), fn ($c) => $c->push('faculty'))
+                    ->unique()
+                    ->values()
+                    ->all();
+            } else {
+                $newRoles = $currentRoles;
             }
 
             $previousEmail = $faculty->email;
@@ -218,7 +235,7 @@ class FacultyController extends Controller
                 'name'          => $validated['name'],
                 'email'         => $newEmail,
                 'department_id' => $validated['department_id'],
-                'role'          => $newRole,
+                'roles'         => $newRoles,
                 'is_active'     => $validated['is_active'] ?? $faculty->is_active,
             ];
 
@@ -303,15 +320,16 @@ class FacultyController extends Controller
 
                 DB::transaction(function () use ($normalized) {
                     $isLeadership = self::isDeanOrHeadPosition($normalized['department_position']);
-                    $systemRole = $isLeadership
+                    $leadershipRole = $isLeadership
                         ? self::leadershipRoleByDepartmentId((int) $normalized['department_id'])
-                        : 'faculty';
+                        : null;
+                    $roles = $isLeadership ? [$leadershipRole, 'faculty'] : ['faculty'];
 
                     $user = User::create([
                         'name'                 => $normalized['name'],
                         'email'                => $normalized['email'],
                         'password'             => Hash::make($normalized['email']),
-                        'role'                 => $systemRole,
+                        'roles'                => $roles,
                         'department_id'        => $normalized['department_id'],
                         'is_active'            => true,
                         'must_change_password' => true,

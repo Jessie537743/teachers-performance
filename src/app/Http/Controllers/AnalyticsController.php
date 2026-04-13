@@ -175,7 +175,7 @@ class AnalyticsController extends Controller
         // Historical trend by selected personnel (admin)
         $personnelOptions = User::query()
             ->with('facultyProfile')
-            ->where('role', 'faculty')
+            ->whereHasRole('faculty')
             ->orderBy('name')
             ->get()
             ->filter(fn (User $u) => $u->facultyProfile !== null)
@@ -206,7 +206,7 @@ class AnalyticsController extends Controller
         if ($selectedPersonnelProfileId > 0) {
             $selectedPersonnelUser = User::query()
                 ->with('facultyProfile')
-                ->where('role', 'faculty')
+                ->whereHasRole('faculty')
                 ->whereHas('facultyProfile', fn ($q) => $q->where('id', $selectedPersonnelProfileId))
                 ->first();
         }

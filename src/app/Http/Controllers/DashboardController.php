@@ -39,8 +39,8 @@ class DashboardController extends Controller
         );
 
         $departments   = Department::withCount(['facultyProfiles', 'studentProfiles'])->get();
-        $totalFaculty  = User::where('role', 'faculty')->where('is_active', true)->count();
-        $totalStudents = User::where('role', 'student')->where('is_active', true)->count();
+        $totalFaculty  = User::whereHasRole('faculty')->where('is_active', true)->count();
+        $totalStudents = User::whereHasRole('student')->where('is_active', true)->count();
 
         $page    = request()->input('page', 1);
         $perPage = 25;
@@ -134,9 +134,9 @@ class DashboardController extends Controller
         $hr     = auth()->user();
         $period = EvaluationService::getOpenEvaluationPeriod();
 
-        $totalFaculty  = User::where('role', 'faculty')->where('is_active', true)->count();
-        $totalStudents = User::where('role', 'student')->where('is_active', true)->count();
-        $totalDeans    = User::whereIn('role', ['dean', 'head'])->where('is_active', true)->count();
+        $totalFaculty  = User::whereHasRole('faculty')->where('is_active', true)->count();
+        $totalStudents = User::whereHasRole('student')->where('is_active', true)->count();
+        $totalDeans    = User::whereHasRole(['dean', 'head'])->where('is_active', true)->count();
 
         $nonTeachingDepts = Department::where('department_type', 'non-teaching')
             ->where('is_active', true)

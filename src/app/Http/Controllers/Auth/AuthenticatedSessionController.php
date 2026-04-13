@@ -45,7 +45,7 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('password.change');
         }
 
-        return redirect()->to($this->redirectByRole($user->role));
+        return redirect()->to($this->redirectByRole($user->primaryRole()));
     }
 
     /**

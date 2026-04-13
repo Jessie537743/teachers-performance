@@ -256,7 +256,7 @@ class EvaluationService
     public static function isInstitutionLeaderDeanEvaluator(?User $user): bool
     {
         return $user !== null
-            && in_array($user->role, self::institutionLeaderDeanEvaluatorRoles(), true);
+            && $user->hasRole(self::institutionLeaderDeanEvaluatorRoles());
     }
 
     private static function closeEndedOpenPeriodsAndPromoteStudents(): void

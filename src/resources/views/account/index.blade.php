@@ -26,7 +26,7 @@
                     <div class="text-xl font-bold text-slate-800">{{ $user->name }}</div>
                     <div class="text-sm text-gray-400">{{ $user->email }}</div>
                     <div class="mt-1.5 flex gap-1.5">
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 capitalize">{{ str_replace('_', ' ', $user->role) }}</span>
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 capitalize">{{ $user->rolesLabel() }}</span>
                         @if($user->is_active)
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">Active</span>
                         @else
@@ -47,7 +47,7 @@
                 </div>
                 <div class="flex justify-between items-center py-2">
                     <span class="text-sm text-gray-400 font-medium">Role</span>
-                    <span class="text-sm text-slate-800 font-semibold text-right capitalize">{{ str_replace('_', ' ', $user->role) }}</span>
+                    <span class="text-sm text-slate-800 font-semibold text-right capitalize">{{ $user->rolesLabel() }}</span>
                 </div>
                 <div class="flex justify-between items-center py-2">
                     <span class="text-sm text-gray-400 font-medium">Department</span>
@@ -121,7 +121,7 @@
                 <span class="font-bold text-slate-900">Edit Details</span>
             </div>
             <div class="p-5">
-                @if($user->facultyProfile && in_array($user->role, ['faculty', 'dean', 'head'], true))
+                @if($user->facultyProfile && $user->hasRole(['faculty', 'dean', 'head']))
                 <div class="rounded-xl border border-blue-100 bg-blue-50/80 px-4 py-3 mb-4 text-sm text-blue-900 leading-relaxed">
                     <strong>Default password:</strong> your account password is <strong>the same as your email address</strong> until you change it using <span class="font-semibold">Change Password</span> below (or when an administrator updates your email).
                 </div>
@@ -139,7 +139,7 @@
                         <input type="email" name="email" id="acc_email" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
                                value="{{ old('email', $user->email) }}" required maxlength="191">
                     </div>
-                    @if($user->facultyProfile && in_array($user->role, ['faculty', 'dean', 'head'], true))
+                    @if($user->facultyProfile && $user->hasRole(['faculty', 'dean', 'head']))
                     <div class="mb-4">
                         <label class="block text-sm font-semibold text-slate-700 mb-1.5" for="account_comment">Comments / notes</label>
                         <p class="text-xs text-gray-500 mb-2">Private notes for your account (visible only to you). Not used in evaluations.</p>

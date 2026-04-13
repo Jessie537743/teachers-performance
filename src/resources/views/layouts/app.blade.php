@@ -92,7 +92,7 @@
                 <div class="grid h-7 w-7 flex-shrink-0 place-items-center rounded-full bg-primary text-[11px] font-bold text-white">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
                 <div class="overflow-hidden">
                     <div class="truncate text-[13px] font-semibold text-white/90">{{ auth()->user()->name }}</div>
-                    <div class="truncate text-[11px] capitalize">{{ str_replace('_', ' ', auth()->user()->role) }}</div>
+                    <div class="truncate text-[11px] capitalize">{{ auth()->user()->rolesLabel() }}</div>
                 </div>
             </div>
         </div>
@@ -120,7 +120,7 @@
                         <div>
                             <div class="text-sm font-semibold text-slate-800">{{ auth()->user()->name }}</div>
                             <div class="text-xs text-slate-500">{{ auth()->user()->email }}</div>
-                            <div class="text-[11px] capitalize text-slate-400">{{ str_replace('_', ' ', auth()->user()->role) }}</div>
+                            <div class="text-[11px] capitalize text-slate-400">{{ auth()->user()->rolesLabel() }}</div>
                         </div>
                     </div>
                     <div class="h-px bg-gray-200"></div>

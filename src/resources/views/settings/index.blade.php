@@ -144,7 +144,7 @@
                         <td class="px-4 py-3.5 border-b border-gray-200 align-middle text-sm text-gray-400">{{ $user->email }}</td>
                         <td class="px-4 py-3.5 border-b border-gray-200 align-middle">
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 capitalize">
-                                {{ str_replace('_', ' ', $user->role) }}
+                                {{ $user->rolesLabel() }}
                             </span>
                         </td>
                         <td class="px-4 py-3.5 border-b border-gray-200 align-middle text-sm">{{ $user->department?->name ?? '—' }}</td>

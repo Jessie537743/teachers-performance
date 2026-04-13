@@ -83,7 +83,7 @@ class EvaluationPolicy
 
         if (EvaluationService::isInstitutionLeaderDeanEvaluator($evaluator)) {
             $isLeaderByPosition = $faculty->isDeanOrDepartmentHead();
-            $isLeaderByRole = in_array($evaluateeUser->role, ['dean', 'head'], true);
+            $isLeaderByRole = $evaluateeUser->hasRole(['dean', 'head']);
             if (! $isLeaderByPosition && ! $isLeaderByRole) {
                 return false;
             }

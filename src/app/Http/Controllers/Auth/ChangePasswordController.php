@@ -39,7 +39,7 @@ class ChangePasswordController extends Controller
         $user->must_change_password = false;
         $user->save();
 
-        return redirect()->to($this->redirectByRole($user->role))
+        return redirect()->to($this->redirectByRole($user->primaryRole()))
             ->with('status', 'Password changed successfully.');
     }
 

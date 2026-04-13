@@ -40,7 +40,7 @@ class FacultySeeder extends Seeder
         };
 
         // -----------------------------------------------------------------------
-        // DEAN users  (from users table, role='dean', except admin id=9)
+        // DEAN users  (from users table, roles includes 'dean', except admin id=9)
         // faculty_profiles rows exist for deans too (same user_id appears in
         // faculty_profiles for ids 17-21 which map to users 49-53).
         // -----------------------------------------------------------------------
@@ -65,7 +65,7 @@ class FacultySeeder extends Seeder
                 'name'                 => $row['name'],
                 'email'                => $row['email'],
                 'password'             => $row['password'],
-                'role'                 => 'dean',
+                'roles'                => json_encode(['dean', 'faculty']),
                 'is_active'            => true,
                 'department_id'        => $dept($row['old_dept_id']),
                 'must_change_password' => false,
@@ -152,7 +152,7 @@ class FacultySeeder extends Seeder
                 'name'                 => $row['name'],
                 'email'                => $row['email'],
                 'password'             => $row['password'],
-                'role'                 => 'faculty',
+                'roles'                => json_encode(['faculty']),
                 'is_active'            => true,
                 'department_id'        => $dept($row['old_dept_id']),
                 'must_change_password' => false,

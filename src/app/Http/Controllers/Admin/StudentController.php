@@ -33,7 +33,7 @@ class StudentController extends Controller
         $section = trim((string) $request->query('section', ''));
 
         $students = User::with(['studentProfile.department', 'studentProfile.subjectAssignments.subject'])
-            ->where('role', 'student')
+            ->whereHasRole('student')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where('name', 'like', '%' . $search . '%');
             })
@@ -180,7 +180,7 @@ class StudentController extends Controller
                 'email'               => $email,
                 'username'            => $incomingStudentId,
                 'password'            => Hash::make($incomingStudentId),
-                'role'                => 'student',
+                'roles'               => ['student'],
                 'department_id'       => $validated['department_id'],
                 'is_active'           => true,
                 'must_change_password' => true,
@@ -364,7 +364,7 @@ class StudentController extends Controller
                         'username'             => $incomingStudentId,
                         // Use a slightly lower bcrypt cost only for bulk import throughput.
                         'password'             => Hash::make($incomingStudentId, ['rounds' => 8]),
-                        'role'                 => 'student',
+                        'roles'                => ['student'],
                         'department_id'        => $normalized['department_id'],
                         'is_active'            => true,
                         'must_change_password' => true,

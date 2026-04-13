@@ -17,7 +17,7 @@ class DefaultUserSeeder extends Seeder
             'name'                 => 'System Administrator',
             'email'                => 'admin@sample.com',
             'password'             => '$2y$12$X9zxuroF.Zzc4S86OPWK8eO9DubcAHxi1FdziYYJGOvWp7bwrs92G',
-            'role'                 => 'admin',
+            'roles'                => json_encode(['admin']),
             'is_active'            => true,
             'department_id'        => null,
             'must_change_password' => false,

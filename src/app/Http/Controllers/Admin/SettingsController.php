@@ -30,7 +30,7 @@ class SettingsController extends Controller
             $query = User::with('department')->orderBy('name');
 
             if ($roleFilter) {
-                $query->where('role', $roleFilter);
+                $query->whereJsonContains('roles', $roleFilter);
             }
 
             if ($search) {

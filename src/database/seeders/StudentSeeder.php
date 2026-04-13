@@ -118,7 +118,7 @@ class StudentSeeder extends Seeder
                 'name'                 => $row['name'],
                 'email'                => $row['email'],
                 'password'             => $row['password'],
-                'role'                 => 'student',
+                'roles'                => json_encode(['student']),
                 'is_active'            => true,
                 'department_id'        => $dept($row['old_dept_id']),
                 'must_change_password' => false,

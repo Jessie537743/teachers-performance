@@ -22,7 +22,7 @@ class IndividualEvaluationReportController extends Controller
         $facultyOptions = FacultyProfile::query()
             ->with(['user', 'department'])
             ->whereHas('user', function ($q) {
-                $q->where('role', 'faculty')->where('is_active', true);
+                $q->whereJsonContains('roles', 'faculty')->where('is_active', true);
             })
             ->get()
             ->sortBy(function (FacultyProfile $profile) {
@@ -72,7 +72,7 @@ class IndividualEvaluationReportController extends Controller
             $exists = FacultyProfile::query()
                 ->whereKey($facultyId)
                 ->whereHas('user', function ($q) {
-                    $q->where('role', 'faculty')->where('is_active', true);
+                    $q->whereJsonContains('roles', 'faculty')->where('is_active', true);
                 })
                 ->exists();
             if (! $exists) {

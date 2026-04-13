@@ -66,7 +66,10 @@ class SampleEvaluationDataSeeder extends Seeder
         $profiles = FacultyProfile::query()
             ->with(['user', 'department'])
             ->whereHas('user', function ($q) {
-                $q->whereIn('role', ['faculty', 'head'])
+                $q->where(function ($qq) {
+                        $qq->whereJsonContains('roles', 'faculty')
+                           ->orWhereJsonContains('roles', 'head');
+                    })
                     ->where('is_active', true);
             })
             ->orderBy('id')
@@ -299,10 +302,13 @@ class SampleEvaluationDataSeeder extends Seeder
         $deptKey = $deptId === null ? '' : (string) $deptId;
         if (! array_key_exists($deptKey, $this->deanUserByDepartmentCache)) {
             $this->deanUserByDepartmentCache[$deptKey] = User::query()
-                ->whereIn('role', ['dean', 'head'])
+                ->where(function ($q) {
+                    $q->whereJsonContains('roles', 'dean')
+                       ->orWhereJsonContains('roles', 'head');
+                })
                 ->where('department_id', $deptId)
                 ->where('is_active', true)
-                ->orderByRaw("CASE role WHEN 'dean' THEN 1 WHEN 'head' THEN 2 ELSE 9 END")
+                ->orderByRaw("CASE WHEN JSON_CONTAINS(roles, '\"dean\"') THEN 1 WHEN JSON_CONTAINS(roles, '\"head\"') THEN 2 ELSE 9 END")
                 ->first();
         }
 
