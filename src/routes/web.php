@@ -5,6 +5,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EvaluateController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin;
 use Illuminate\Support\Facades\Route;
 
@@ -22,6 +23,10 @@ Route::middleware('auth')->group(function () {
         ->name('password.change');
     Route::post('/change-password', [ChangePasswordController::class, 'update'])
         ->name('password.update.custom');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 // -------------------------------------------------------------------------

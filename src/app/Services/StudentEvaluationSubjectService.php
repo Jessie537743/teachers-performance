@@ -114,7 +114,7 @@ class StudentEvaluationSubjectService
             ->where('semester', $period->semester)
             ->where('school_year', $period->school_year)
             ->whereIn('subject_id', $subjectIds)
-            ->selectRaw('CONCAT(faculty_id, ":", subject_id) as lookup_key')
+            ->selectRaw('CONCAT(faculty_id, ?, subject_id) as lookup_key', [':'])
             ->pluck('lookup_key')
             ->flip();
 
