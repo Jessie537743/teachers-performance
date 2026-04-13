@@ -36,6 +36,9 @@
         [x-cloak] { display: none !important; }
         /* Sidebar width */
         .sidebar-w { width: 260px; min-width: 260px; }
+        /* Hide sidebar scrollbar */
+        .sidebar-scroll { scrollbar-width: none; -ms-overflow-style: none; }
+        .sidebar-scroll::-webkit-scrollbar { display: none; }
         .main-ml { margin-left: 260px; }
         @media (max-width: 1024px) {
             .main-ml { margin-left: 0; }
@@ -105,7 +108,7 @@
             </div>
             <span class="text-lg font-bold truncate">{{ \App\Models\Setting::get('app_name', 'Evaluation System') }}</span>
         </div>
-        <div class="flex-1 overflow-y-auto px-3 py-4">
+        <div class="flex-1 overflow-y-auto sidebar-scroll px-3 py-4">
             @include('layouts.partials.sidebar')
         </div>
         <div class="border-t border-white/10 p-3.5">
