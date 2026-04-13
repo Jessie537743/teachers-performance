@@ -21,10 +21,6 @@
            class="px-6 py-3.5 font-semibold text-sm no-underline transition {{ $tab === 'users' ? 'text-blue-600 border-b-[3px] border-blue-600' : 'text-gray-700 border-b-[3px] border-transparent hover:text-blue-600' }}">
             Users
         </a>
-        <a href="{{ route('roles.index') }}"
-           class="px-6 py-3.5 font-semibold text-sm no-underline transition {{ request()->routeIs('roles.*') ? 'text-blue-600 border-b-[3px] border-blue-600' : 'text-gray-700 border-b-[3px] border-transparent hover:text-blue-600' }}">
-            Roles & Permissions
-        </a>
     </div>
 
     {{-- General Tab --}}
