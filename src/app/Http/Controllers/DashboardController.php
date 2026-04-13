@@ -15,34 +15,18 @@ class DashboardController extends Controller
 {
     use LoadsFacultyPerformance;
 
-    public function index(): View|\Illuminate\Http\JsonResponse|\Illuminate\Http\Response
+    public function index(): View
     {
         $user = auth()->user();
 
-        try {
-            $view = match (true) {
-                $user->can('view-admin-dashboard')   => $this->adminDashboard(),
-                $user->can('view-dean-dashboard')    => $this->deanDashboard(),
-                $user->can('view-student-dashboard') => $this->studentDashboard(),
-                $user->can('view-hr-dashboard')      => $this->hrDashboard(),
-                $user->can('view-faculty-dashboard') => $this->facultyDashboard(),
-                default                              => $this->defaultDashboard(),
-            };
-
-            // Force-render to catch Blade errors
-            return response($view->render());
-        } catch (\Throwable $e) {
-            return response()->json([
-                'error'   => $e->getMessage(),
-                'file'    => $e->getFile(),
-                'line'    => $e->getLine(),
-                'trace'   => collect($e->getTrace())->take(10)->map(fn($t) => [
-                    'file'     => $t['file'] ?? '?',
-                    'line'     => $t['line'] ?? '?',
-                    'function' => ($t['class'] ?? '') . ($t['type'] ?? '') . ($t['function'] ?? ''),
-                ]),
-            ], 500);
-        }
+        return match (true) {
+            $user->can('view-admin-dashboard')   => $this->adminDashboard(),
+            $user->can('view-dean-dashboard')    => $this->deanDashboard(),
+            $user->can('view-student-dashboard') => $this->studentDashboard(),
+            $user->can('view-hr-dashboard')      => $this->hrDashboard(),
+            $user->can('view-faculty-dashboard') => $this->facultyDashboard(),
+            default                              => $this->defaultDashboard(),
+        };
     }
 
     private function adminDashboard(): View

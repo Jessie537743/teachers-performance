@@ -12,18 +12,6 @@ use Illuminate\Support\Facades\Route;
 // Root: redirect unauthenticated visitors to the login page
 Route::get('/', fn() => redirect()->route('login'));
 
-// Temporary: diagnose 500 — no middleware, no layout
-Route::get('/healthcheck', function () {
-    $checks = [];
-    try { \Illuminate\Support\Facades\DB::select('SELECT 1'); $checks['db'] = 'ok'; } catch (\Throwable $e) { $checks['db'] = $e->getMessage(); }
-    try { $checks['tables'] = \Illuminate\Support\Facades\DB::select("SHOW TABLES"); } catch (\Throwable $e) { $checks['tables'] = $e->getMessage(); }
-    try { $checks['settings_count'] = \App\Models\Setting::count(); } catch (\Throwable $e) { $checks['settings'] = $e->getMessage(); }
-    try { $checks['user'] = auth()->user()?->email ?? 'not logged in'; } catch (\Throwable $e) { $checks['user'] = $e->getMessage(); }
-    try { $checks['permissions'] = \App\Enums\Permission::forRole('admin'); } catch (\Throwable $e) { $checks['permissions'] = $e->getMessage(); }
-    try { $checks['migration_status'] = \Illuminate\Support\Facades\DB::table('migrations')->pluck('migration')->last(); } catch (\Throwable $e) { $checks['migrations'] = $e->getMessage(); }
-    return response()->json($checks);
-});
-
 
 // -------------------------------------------------------------------------
 // Change password (auth required; intentionally excluded from must.change.password

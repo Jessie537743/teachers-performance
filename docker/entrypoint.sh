@@ -37,7 +37,9 @@ if [ "${APP_ENV:-production}" = "production" ]; then
     php artisan view:clear    || true
     php artisan config:cache  || true
     php artisan route:cache   || true
-    php artisan view:cache    || true
+    # Skip view:cache — custom pagination views under vendor/ are not resolved
+    # correctly when pre-compiled; let Blade compile on-demand instead.
+    # php artisan view:cache
 fi
 
 # Hand off to supervisord (php-fpm + nginx).
