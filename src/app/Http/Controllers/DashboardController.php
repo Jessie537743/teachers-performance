@@ -15,18 +15,32 @@ class DashboardController extends Controller
 {
     use LoadsFacultyPerformance;
 
-    public function index(): View
+    public function index(): View|\Illuminate\Http\JsonResponse
     {
-        $user = auth()->user();
+        try {
+            $user = auth()->user();
 
-        return match (true) {
-            $user->can('view-admin-dashboard')   => $this->adminDashboard(),
-            $user->can('view-dean-dashboard')    => $this->deanDashboard(),
-            $user->can('view-student-dashboard') => $this->studentDashboard(),
-            $user->can('view-hr-dashboard')      => $this->hrDashboard(),
-            $user->can('view-faculty-dashboard') => $this->facultyDashboard(),
-            default                              => $this->defaultDashboard(),
-        };
+            return match (true) {
+                $user->can('view-admin-dashboard')   => $this->adminDashboard(),
+                $user->can('view-dean-dashboard')    => $this->deanDashboard(),
+                $user->can('view-student-dashboard') => $this->studentDashboard(),
+                $user->can('view-hr-dashboard')      => $this->hrDashboard(),
+                $user->can('view-faculty-dashboard') => $this->facultyDashboard(),
+                default                              => $this->defaultDashboard(),
+            };
+        } catch (\Throwable $e) {
+            // Temporary debug — remove after diagnosing
+            return response()->json([
+                'error'   => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+                'trace'   => collect($e->getTrace())->take(8)->map(fn($t) => [
+                    'file'     => $t['file'] ?? '?',
+                    'line'     => $t['line'] ?? '?',
+                    'function' => ($t['class'] ?? '') . ($t['type'] ?? '') . ($t['function'] ?? ''),
+                ]),
+            ], 500);
+        }
     }
 
     private function adminDashboard(): View
