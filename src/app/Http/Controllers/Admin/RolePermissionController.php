@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Enums\Permission;
+use App\Models\AuditLog;
 use App\Models\RolePermission;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -65,6 +66,8 @@ class RolePermissionController extends Controller
 
         Permission::clearCache($role);
 
+        AuditLog::log('updated', "Permissions updated for role: {$role}", null, null, ['role' => $role, 'permissions' => $permissions]);
+
         return back()->with('success', 'Permissions for ' . Permission::roleLabel($role) . ' updated successfully.');
     }
 
@@ -84,6 +87,8 @@ class RolePermissionController extends Controller
         }
 
         Permission::clearCache();
+
+        AuditLog::log('updated', 'All role permissions reset to defaults', null);
 
         return back()->with('success', 'All role permissions have been reset to defaults.');
     }

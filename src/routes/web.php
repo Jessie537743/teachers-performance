@@ -125,6 +125,9 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     Route::post('/settings/general', [Admin\SettingsController::class, 'updateGeneral'])->name('settings.update-general');
     Route::delete('/settings/logo', [Admin\SettingsController::class, 'removeLogo'])->name('settings.remove-logo');
 
+    // Audit Logs
+    Route::get('/audit-logs', [Admin\AuditLogController::class, 'index'])->name('audit-logs.index');
+
     // Sentiment Lexicon Management
     Route::get('/sentiment-lexicon', [Admin\SentimentLexiconController::class, 'index'])->name('sentiment-lexicon.index');
     Route::post('/sentiment-lexicon', [Admin\SentimentLexiconController::class, 'store'])->name('sentiment-lexicon.store');

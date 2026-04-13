@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+use App\Models\AuditLog;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -40,6 +41,8 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        AuditLog::logAuth('login', $user, 'Login successful');
+
         // Send to change-password screen if required
         if ($user->must_change_password) {
             return redirect()->route('password.change');
@@ -53,7 +56,11 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = Auth::user();
+
         Auth::guard('web')->logout();
+
+        AuditLog::logAuth('logout', $user, 'Logout');
 
         $request->session()->invalidate();
 

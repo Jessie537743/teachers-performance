@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AiFeatureImportance;
+use App\Models\AuditLog;
 use App\Models\AiModelMetric;
 use App\Models\EvaluationPeriod;
 use App\Services\MlApiService;
@@ -94,6 +95,8 @@ class ModelTrainingController extends Controller
         $scope = ($semester && $schoolYear)
             ? "for {$semester} {$schoolYear}"
             : 'for all historical terms';
+
+        AuditLog::log('trained', 'ML model trained' . ($semester ? " for {$semester} {$schoolYear}" : ' (all terms)'), null);
 
         return redirect()
             ->route('model-training.index')

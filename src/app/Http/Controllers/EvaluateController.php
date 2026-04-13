@@ -12,6 +12,7 @@ use App\Models\EvaluationFeedback;
 use App\Models\FacultyPeerEvaluationAnswer;
 use App\Models\FacultyPeerEvaluationFeedback;
 use App\Models\FacultyProfile;
+use App\Models\AuditLog;
 use App\Models\Question;
 use App\Models\SelfEvaluationResult;
 use App\Models\Subject;
@@ -630,6 +631,8 @@ class EvaluateController extends Controller
             ]);
         });
 
+        AuditLog::log('submitted', "Evaluation submitted (dean) for faculty #{$facultyId}", null);
+
         return redirect()->route('evaluate.index')
             ->with('success', 'Evaluation submitted successfully.');
     }
@@ -969,6 +972,8 @@ class EvaluateController extends Controller
             }
         });
 
+        AuditLog::log('submitted', "Evaluation submitted ({$type}) for faculty #{$evaluateeId}", null);
+
         return redirect()->route('evaluate.index')
             ->with('success', 'Evaluation submitted successfully.');
     }
@@ -1157,6 +1162,8 @@ class EvaluateController extends Controller
                 'created_at'        => now(),
             ]);
         });
+
+        AuditLog::log('submitted', "Evaluation submitted (student) for faculty #{$facultyId}", null);
 
         return redirect()->route('evaluate.index')
             ->with('success', 'Evaluation submitted successfully. Thank you!');

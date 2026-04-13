@@ -3,8 +3,19 @@
 namespace App\Providers;
 
 use App\Enums\Permission;
+use App\Models\Course;
+use App\Models\Criterion;
 use App\Models\Department;
+use App\Models\EvaluationPeriod;
 use App\Models\FacultyProfile;
+use App\Models\PermissionDelegation;
+use App\Models\RolePermission;
+use App\Models\SentimentLexicon;
+use App\Models\Setting;
+use App\Models\StudentProfile;
+use App\Models\Subject;
+use App\Models\User;
+use App\Observers\AuditObserver;
 use App\Policies\DepartmentPolicy;
 use App\Policies\FacultyProfilePolicy;
 use Illuminate\Pagination\Paginator;
@@ -27,6 +38,17 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::defaultView('vendor.pagination.simple');
+
+        // Register audit observer on key models
+        $auditableModels = [
+            User::class, Department::class, Course::class, Subject::class,
+            FacultyProfile::class, StudentProfile::class, EvaluationPeriod::class,
+            Criterion::class, SentimentLexicon::class, PermissionDelegation::class,
+            RolePermission::class, Setting::class,
+        ];
+        foreach ($auditableModels as $model) {
+            $model::observe(AuditObserver::class);
+        }
 
         // Register all permission gates derived from Permission constants
         $permissions = (new \ReflectionClass(Permission::class))->getConstants();

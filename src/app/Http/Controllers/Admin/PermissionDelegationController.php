@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\Permission;
+use App\Models\AuditLog;
 use App\Http\Controllers\Controller;
 use App\Models\PermissionDelegation;
 use App\Models\User;
@@ -76,13 +77,16 @@ class PermissionDelegationController extends Controller
             return back()->with('error', 'An active delegation already exists between these users. Revoke it first.');
         }
 
-        PermissionDelegation::create([
+        $delegation = PermissionDelegation::create([
             'delegator_id' => $data['delegator_id'],
             'delegatee_id' => $data['delegatee_id'],
             'permissions'  => $permissions,
             'starts_at'    => $data['starts_at'] ?? null,
             'expires_at'   => $data['expires_at'] ?? null,
         ]);
+
+        $delegatee = User::findOrFail($data['delegatee_id']);
+        AuditLog::log('delegated', "Delegation created: {$delegator->name} → {$delegatee->name}", $delegation);
 
         return back()->with('success', 'Delegation created successfully.');
     }
@@ -94,6 +98,9 @@ class PermissionDelegationController extends Controller
         if ($delegation->revoked_at === null) {
             $delegation->update(['revoked_at' => now()]);
         }
+
+        $delegation->loadMissing(['delegator', 'delegatee']);
+        AuditLog::log('revoked', "Delegation revoked: {$delegation->delegator->name} → {$delegation->delegatee->name}", $delegation);
 
         return back()->with('success', 'Delegation revoked.');
     }
