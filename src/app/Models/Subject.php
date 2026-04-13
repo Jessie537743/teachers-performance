@@ -20,7 +20,15 @@ class Subject extends Model
         'semester',
         'school_year',
         'catalog_id',
+        'is_active',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
 
     // -------------------------------------------------------------------------
     // Relationships

@@ -98,6 +98,8 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
         ->name('subjects.bulk-template');
     Route::resource('subjects', Admin\SubjectController::class)
         ->except(['create']);
+    Route::post('subjects/{subject}/reactivate', [Admin\SubjectController::class, 'reactivate'])
+        ->name('subjects.reactivate');
 
     Route::resource('courses', Admin\CourseController::class)
         ->except(['create', 'show', 'edit']);

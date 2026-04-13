@@ -126,7 +126,10 @@
                     <th class="bg-gray-50 text-slate-700 font-bold text-sm px-4 py-3.5 border-b border-gray-200 text-left">Section</th>
                     <th class="bg-gray-50 text-slate-700 font-bold text-sm px-4 py-3.5 border-b border-gray-200 text-left">Semester</th>
                     <th class="bg-gray-50 text-slate-700 font-bold text-sm px-4 py-3.5 border-b border-gray-200 text-left">Teacher Assigned</th>
-                    @can('manage-subjects')<th class="bg-gray-50 text-slate-700 font-bold text-sm px-4 py-3.5 border-b border-gray-200 text-left">Actions</th>@endcan
+                    @can('manage-subjects')
+                    <th class="bg-gray-50 text-slate-700 font-bold text-sm px-4 py-3.5 border-b border-gray-200 text-left">Status</th>
+                    <th class="bg-gray-50 text-slate-700 font-bold text-sm px-4 py-3.5 border-b border-gray-200 text-left">Actions</th>
+                    @endcan
                 </tr>
             </thead>
             <tbody>
@@ -147,6 +150,13 @@
                     </td>
                     @can('manage-subjects')
                     <td class="px-4 py-3.5 border-b border-gray-200 align-middle">
+                        @if($subject->is_active)
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">Active</span>
+                        @else
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-500">Inactive</span>
+                        @endif
+                    </td>
+                    <td class="px-4 py-3.5 border-b border-gray-200 align-middle">
                         <div class="flex flex-wrap gap-1.5">
                             <a href="{{ route('subjects.show', $subject) }}" class="inline-flex items-center gap-2 bg-slate-100 text-slate-800 px-3 py-1.5 rounded-xl text-sm font-semibold hover:bg-slate-200 transition">
                                 Details
@@ -154,18 +164,25 @@
                             <a href="{{ route('subjects.edit', $subject) }}" class="inline-flex items-center gap-2 bg-gray-200 text-slate-900 px-3 py-1.5 rounded-xl text-sm font-semibold hover:bg-gray-300 transition">
                                 Edit
                             </a>
-                            <form method="POST" action="{{ route('subjects.destroy', $subject->id) }}"
-                                  onsubmit="return confirm('Delete this subject?')">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="inline-flex items-center gap-2 bg-red-600 text-white px-3 py-1.5 rounded-xl text-sm font-semibold hover:bg-red-700 transition">Delete</button>
-                            </form>
+                            @if($subject->is_active)
+                                <form method="POST" action="{{ route('subjects.destroy', $subject->id) }}"
+                                      onsubmit="return confirm('Deactivate this subject?')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="inline-flex items-center gap-2 bg-red-600 text-white px-3 py-1.5 rounded-xl text-sm font-semibold hover:bg-red-700 transition">Deactivate</button>
+                                </form>
+                            @else
+                                <form method="POST" action="{{ route('subjects.reactivate', $subject->id) }}">
+                                    @csrf
+                                    <button type="submit" class="inline-flex items-center gap-2 bg-green-600 text-white px-3 py-1.5 rounded-xl text-sm font-semibold hover:bg-green-700 transition">Reactivate</button>
+                                </form>
+                            @endif
                         </div>
                     </td>
                     @endcan
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="10" class="text-center text-gray-500 py-8 px-4">
+                    <td colspan="11" class="text-center text-gray-500 py-8 px-4">
                         @if(request()->filled('search') || request()->filled('department_id') || request()->filled('semester'))
                             No subjects match your filters.
                         @else

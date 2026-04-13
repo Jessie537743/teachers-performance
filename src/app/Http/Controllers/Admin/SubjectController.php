@@ -352,10 +352,20 @@ class SubjectController extends Controller
     {
         Gate::authorize('manage-subjects');
 
-        $subject->delete();
+        $subject->update(['is_active' => false]);
 
         return redirect()->route('subjects.index')
-            ->with('success', 'Subject deleted.');
+            ->with('success', 'Subject deactivated.');
+    }
+
+    public function reactivate(Subject $subject): RedirectResponse
+    {
+        Gate::authorize('manage-subjects');
+
+        $subject->update(['is_active' => true]);
+
+        return redirect()->route('subjects.index')
+            ->with('success', 'Subject reactivated.');
     }
 
     public function bulkUpload(Request $request): RedirectResponse
