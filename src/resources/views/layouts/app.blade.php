@@ -288,9 +288,11 @@
 
     /* Toast notifications */
     #toastContainer { position: fixed; top: 1rem; right: 1rem; z-index: 9998; display: flex; flex-direction: column; gap: 0.5rem; pointer-events: none; }
-    .toast { pointer-events: auto; display: flex; align-items: flex-start; gap: 0.75rem; min-width: 320px; max-width: 420px; padding: 0.875rem 1rem; border-radius: 0.75rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,.15), 0 4px 6px -2px rgba(0,0,0,.08); opacity: 0; transform: translateX(40px); transition: transform .4s cubic-bezier(.4,0,.2,1), opacity .4s ease; }
-    .toast.show { transform: translateX(0) !important; opacity: 1 !important; }
-    .toast.hide { transform: translateX(40px); opacity: 0; }
+    .toast { pointer-events: auto; display: flex; align-items: flex-start; gap: 0.75rem; min-width: 320px; max-width: 420px; padding: 0.875rem 1rem; border-radius: 0.75rem; box-shadow: 0 10px 25px -5px rgba(0,0,0,.15), 0 4px 6px -2px rgba(0,0,0,.08); }
+    @keyframes toastIn { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes toastOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(30px); } }
+    .toast { animation: toastIn .35s ease-out forwards; }
+    .toast.hide { animation: toastOut .3s ease-in forwards; }
     .toast-success { background: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
     .toast-error   { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
     .toast-info    { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; }
@@ -351,13 +353,9 @@ function showToast(type, message) {
         + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'
         + '<div class="toast-progress"></div>';
     container.appendChild(toast);
-    // Force reflow then animate in
-    toast.offsetHeight;
-    setTimeout(function() { toast.classList.add('show'); }, 10);
     setTimeout(function() {
-        toast.classList.remove('show');
         toast.classList.add('hide');
-        setTimeout(function() { toast.remove(); }, 400);
+        setTimeout(function() { toast.remove(); }, 350);
     }, 4000);
 }
 
