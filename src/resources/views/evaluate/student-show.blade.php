@@ -12,7 +12,7 @@
     <div>
         <h1 class="text-2xl font-bold text-gray-900">Evaluate Faculty</h1>
         <p class="text-sm text-gray-500 mt-1">
-            Period: {{ $period->school_year }} &mdash; {{ format_semester($period->semester) }}
+            Period: {{ $period->school_year }} &mdash; {{ $period->semester }}
         </p>
     </div>
     <a href="{{ route('dashboard') }}" class="bg-gray-200 text-slate-900 px-4 py-2.5 rounded-xl font-semibold hover:bg-gray-300 transition">Back to Dashboard</a>
@@ -36,7 +36,7 @@
         <div class="p-5">
             <div class="text-xs uppercase tracking-wider text-gray-400 mb-1">Subject</div>
             <div class="text-lg font-bold text-gray-900">{{ $subject->title }}</div>
-            <div class="text-gray-400 text-sm">{{ $subject->code }} &bull; {{ format_semester($subject->semester) }} {{ $subject->school_year }}</div>
+            <div class="text-gray-400 text-sm">{{ $subject->code }} &bull; {{ $subject->semester }} {{ $subject->school_year }}</div>
         </div>
     </div>
 </div>
@@ -85,6 +85,7 @@
     <input type="hidden" name="faculty_id" value="{{ $facultyProfile->id }}">
     <input type="hidden" name="subject_id" value="{{ $subject->id }}">
 
+    @php $evaluatorCommentPlaced = false; @endphp
     @forelse($criteria as $criterion)
     <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden mb-4">
         <div class="px-5 py-3.5 border-b border-gray-200 flex justify-between items-center gap-3">
@@ -120,6 +121,10 @@
             @endforeach
         </div>
     </div>
+    @if(! $evaluatorCommentPlaced && str_contains(strtoupper($criterion->name), 'GENERAL OBSERVATION'))
+        @php $evaluatorCommentPlaced = true; @endphp
+        @include('evaluate.partials.evaluator-comment-section')
+    @endif
     @empty
     <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
         <div class="p-10 text-center text-gray-400">
@@ -129,20 +134,9 @@
     @endforelse
 
     @if($criteria->count() > 0)
-    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden mb-4">
-        <div class="px-5 py-3.5 border-b border-gray-200 flex justify-between items-center gap-3">
-            <span class="font-semibold text-gray-900">Comments</span>
-        </div>
-        <div class="p-5">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5" for="comment">Additional Comments (optional)</label>
-                <textarea name="comment" id="comment"
-                          class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                          placeholder="Share any additional feedback..."
-                          maxlength="2000">{{ old('comment') }}</textarea>
-            </div>
-        </div>
-    </div>
+    @if(! $evaluatorCommentPlaced)
+        @include('evaluate.partials.evaluator-comment-section')
+    @endif
 
     <div class="flex gap-3 items-center">
         <button type="submit" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition shadow-sm"

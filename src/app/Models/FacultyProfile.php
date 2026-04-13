@@ -15,6 +15,7 @@ class FacultyProfile extends Model
         'user_id',
         'department_id',
         'department_position',
+        'account_comment',
         'created_at',
     ];
 
@@ -82,10 +83,30 @@ class FacultyProfile extends Model
 
         return match ($t) {
             'dean_head_teaching' => 'Dean/Head (teaching dept.)',
-            'dean_head_non_teaching' => 'Dean/Head (non-teaching dept.)',
+            'dean_head_non_teaching' => 'Administrator/Head (non-teaching dept.)',
             'non-teaching' => 'Non-teaching personnel',
             default => 'Teaching personnel',
         };
+    }
+
+    public function departmentPositionLabel(): string
+    {
+        $position = $this->department_position;
+        if (! $position instanceof FacultyDepartmentPosition) {
+            return '—';
+        }
+
+        if ($position !== FacultyDepartmentPosition::DeanHead) {
+            return $position->label();
+        }
+
+        $dept = $this->relationLoaded('department')
+            ? $this->department
+            : $this->department()->first();
+
+        return ($dept && $dept->department_type === 'non-teaching')
+            ? 'Administrator / Head'
+            : 'Dean / Head';
     }
 
     public function isDeanOrDepartmentHead(): bool

@@ -15,6 +15,12 @@
 @can('print-or-generate-comment')
 <a href="{{ route('reports.employee-comments') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('reports.employee-comments') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Employee Comments</a>
 @endcan
+@canany(['generate-report', 'view-generated-report'])
+<a href="{{ route('reports.individual-evaluation') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('reports.individual-evaluation') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Individual Evaluation Reports</a>
+<a href="{{ route('reports.department') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('reports.department') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Department Report</a>
+<a href="{{ route('reports.low-performance-personnel') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('reports.low-performance-personnel') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Low performance personnel</a>
+<a href="{{ route('reports.chronic-low-performance') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('reports.chronic-low-performance') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Sustained Low Performance</a>
+@endcanany
 @can('manage-criteria')
 <a href="{{ route('criteria.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('criteria.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Criteria</a>
 @endcan

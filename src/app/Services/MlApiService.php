@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Client\HttpClientException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 
@@ -41,13 +42,26 @@ class MlApiService
         int   $responseCount,
         float $previousScore   = 0.0,
         float $improvementRate = 0.0,
+        ?string $semester = null,
+        ?string $schoolYear = null,
     ): array {
-        $response = $this->client(10)->post("{$this->baseUrl}/predict", [
+        $payload = array_merge([
             'avg_score'        => $avgScore,
             'response_count'   => $responseCount,
             'previous_score'   => $previousScore,
             'improvement_rate' => $improvementRate,
-        ]);
+        ], array_filter([
+            'semester'    => $semester,
+            'school_year' => $schoolYear,
+        ], fn ($value) => filled($value)));
+
+        try {
+            $response = $this->client(10)->post("{$this->baseUrl}/predict", $payload);
+        } catch (HttpClientException $e) {
+            return [
+                'error' => $this->connectionErrorMessage($e),
+            ];
+        }
 
         if ($response->failed()) {
             return [
@@ -70,7 +84,13 @@ class MlApiService
             'school_year' => $schoolYear,
         ], fn ($value) => filled($value));
 
-        $response = $this->client(60)->post("{$this->baseUrl}/train-current-term", $payload);
+        try {
+            $response = $this->client(60)->post("{$this->baseUrl}/train-current-term", $payload);
+        } catch (HttpClientException $e) {
+            return [
+                'error' => $this->connectionErrorMessage($e),
+            ];
+        }
 
         if ($response->failed()) {
             return [
@@ -88,12 +108,30 @@ class MlApiService
      */
     public function health(): array
     {
-        $response = $this->client(5)->get("{$this->baseUrl}/health");
+        try {
+            $response = $this->client(5)->get("{$this->baseUrl}/health");
+        } catch (HttpClientException $e) {
+            return [
+                'status' => 'down',
+                'error'  => $this->connectionErrorMessage($e),
+            ];
+        }
 
         if ($response->failed()) {
             return ['status' => 'down'];
         }
 
         return $response->json();
+    }
+
+    private function connectionErrorMessage(HttpClientException $e): string
+    {
+        $base = rtrim($this->baseUrl, '/');
+
+        return sprintf(
+            'Cannot reach ML API at %s. Start the ML service (e.g. uvicorn in personnels-performance/ml_api) or fix ML_API_URL in .env. (%s)',
+            $base,
+            $e->getMessage()
+        );
     }
 }

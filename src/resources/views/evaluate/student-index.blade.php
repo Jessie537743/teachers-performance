@@ -7,7 +7,7 @@
 <div class="mb-5 animate-slide-up">
     <p class="text-sm text-gray-500">
         @if($period)
-            Evaluation Period: {{ $period->school_year }} &mdash; {{ format_semester($period->semester) }}
+            Evaluation Period: {{ $period->school_year }} &mdash; {{ $period->semester }}
             &nbsp;<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">Open</span>
         @else
             No evaluation period is currently open.
@@ -52,7 +52,7 @@
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 ml-2">{{ $item['subject']->code }}</span>
         </div>
         <span class="text-sm text-gray-400">
-            {{ format_semester($item['subject']->semester) }} &bull; {{ $item['subject']->school_year }}
+            {{ $item['subject']->semester }} &bull; {{ $item['subject']->school_year }}
         </span>
     </div>
     <div class="px-5 py-4">

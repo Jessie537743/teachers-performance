@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 class SubjectController extends Controller
@@ -76,6 +77,40 @@ class SubjectController extends Controller
         ));
     }
 
+    public function show(Subject $subject): View
+    {
+        Gate::authorize('manage-subjects');
+
+        $subject->load(['department', 'assignments.faculty.user']);
+
+        $offerings = $this->subjectOfferingCluster($subject);
+
+        return view('subjects.show', compact('subject', 'offerings'));
+    }
+
+    public function edit(Subject $subject): View
+    {
+        Gate::authorize('manage-subjects');
+
+        $subject->load(['department', 'assignments.faculty.user']);
+
+        $departments = Department::where('is_active', true)->orderBy('name')->get();
+        $faculties = FacultyProfile::with(['user', 'department:id,code'])
+            ->whereHas('user', fn ($q) => $q->where('is_active', true))
+            ->get()
+            ->sortBy(fn (FacultyProfile $f) => mb_strtolower($f->user?->name ?? 'zz'))
+            ->values();
+
+        $facultyListForSubjects = $faculties->map(fn (FacultyProfile $f) => [
+            'id' => $f->id,
+            'department_id' => $f->department_id,
+            'name' => $f->user?->name ?? ('Faculty #'.$f->id),
+            'dept_code' => $f->department?->code ?? '',
+        ])->values();
+
+        return view('subjects.edit', compact('subject', 'departments', 'facultyListForSubjects'));
+    }
+
     public function store(Request $request): RedirectResponse
     {
         Gate::authorize('manage-subjects');
@@ -94,7 +129,8 @@ class SubjectController extends Controller
             'course_keys.*'      => ['string', 'max:120'],
             'faculty_id'         => ['nullable', 'integer', 'exists:faculty_profiles,id'],
             'year_level'         => ['required', 'integer', 'min:1', 'max:6'],
-            'section'            => ['required', 'string', 'max:50'],
+            'sections'           => ['required', 'array', 'min:1'],
+            'sections.*'         => ['required', 'string', 'max:50'],
             'semester'           => ['required', 'string', 'max:20'],
             'school_year'        => ['nullable', 'string', 'max:20'],
         ]);
@@ -167,45 +203,66 @@ class SubjectController extends Controller
 
         $facultyId = $validated['faculty_id'] ?? null;
 
+        $sections = array_values(array_unique(array_filter(array_map(
+            fn ($s) => $this->normalizeSectionLabel((string) $s),
+            $validated['sections'] ?? []
+        ))));
+
+        if ($sections === []) {
+            return back()
+                ->withInput()
+                ->withErrors(['sections' => 'Select at least one valid section.']);
+        }
+
         $createdCount = 0;
         $duplicateCount = 0;
 
-        DB::transaction(function () use ($validated, $pairs, $facultyId, &$createdCount, &$duplicateCount) {
+        DB::transaction(function () use ($validated, $pairs, $facultyId, $sections, &$createdCount, &$duplicateCount) {
             foreach ($pairs as $row) {
                 $deptId = $row['department_id'];
                 $courseCode = $row['course'];
 
-                $exists = Subject::where('code', $validated['code'])
-                    ->where('department_id', $deptId)
-                    ->where('course', $courseCode)
-                    ->where('year_level', (string) $validated['year_level'])
-                    ->where('semester', $validated['semester'])
-                    ->where('section', $validated['section'])
-                    ->exists();
+                foreach ($sections as $sectionStr) {
+                    $exists = Subject::where('code', $validated['code'])
+                        ->where('department_id', $deptId)
+                        ->where('course', $courseCode)
+                        ->where('year_level', (string) $validated['year_level'])
+                        ->where('semester', $validated['semester'])
+                        ->where('section', $sectionStr)
+                        ->when(
+                            isset($validated['school_year']) && $validated['school_year'] !== null && $validated['school_year'] !== '',
+                            fn ($q) => $q->where('school_year', $validated['school_year']),
+                            fn ($q) => $q->where(function ($w) {
+                                $w->whereNull('school_year')->orWhere('school_year', '');
+                            })
+                        )
+                        ->exists();
 
-                if ($exists) {
-                    $duplicateCount++;
-                    continue;
-                }
+                    if ($exists) {
+                        $duplicateCount++;
 
-                $subject = Subject::create([
-                    'code'          => $validated['code'],
-                    'title'         => $validated['title'],
-                    'department_id' => $deptId,
-                    'course'        => $courseCode,
-                    'year_level'    => $validated['year_level'],
-                    'section'       => $validated['section'],
-                    'semester'      => $validated['semester'],
-                    'school_year'   => $validated['school_year'] ?? null,
-                ]);
+                        continue;
+                    }
 
-                if ($facultyId !== null) {
-                    $subject->assignments()->create([
-                        'faculty_id' => $facultyId,
+                    $subject = Subject::create([
+                        'code'          => $validated['code'],
+                        'title'         => $validated['title'],
+                        'department_id' => $deptId,
+                        'course'        => $courseCode,
+                        'year_level'    => $validated['year_level'],
+                        'section'       => $sectionStr,
+                        'semester'      => $validated['semester'],
+                        'school_year'   => $validated['school_year'] ?? null,
                     ]);
-                }
 
-                $createdCount++;
+                    if ($facultyId !== null) {
+                        $subject->assignments()->create([
+                            'faculty_id' => $facultyId,
+                        ]);
+                    }
+
+                    $createdCount++;
+                }
             }
         });
 
@@ -231,6 +288,10 @@ class SubjectController extends Controller
     {
         Gate::authorize('manage-subjects');
 
+        if (! $request->filled('faculty_id')) {
+            $request->merge(['faculty_id' => null]);
+        }
+
         $validated = $request->validate([
             'code'          => ['required', 'string', 'max:50'],
             'title'         => ['required', 'string', 'max:255'],
@@ -240,14 +301,30 @@ class SubjectController extends Controller
             'section'       => ['required', 'string', 'max:50'],
             'semester'      => ['required', 'string', 'max:20'],
             'school_year'   => ['nullable', 'string', 'max:20'],
-            'faculty_id'    => ['required', 'integer', 'exists:faculty_profiles,id'],
+            'faculty_id'    => ['nullable', 'integer', 'exists:faculty_profiles,id'],
         ]);
+
+        $validated['section'] = $this->normalizeSectionLabel($validated['section']);
+        if ($validated['section'] === '') {
+            return back()
+                ->withInput()
+                ->withErrors(['section' => 'Enter a valid section.']);
+        }
 
         $duplicate = Subject::where('code', $validated['code'])
             ->where('department_id', $validated['department_id'])
+            ->where('course', $validated['course'])
+            ->where('year_level', (string) $validated['year_level'])
             ->where('semester', $validated['semester'])
             ->where('section', $validated['section'])
             ->where('id', '!=', $subject->id)
+            ->when(
+                filled($validated['school_year'] ?? null),
+                fn ($q) => $q->where('school_year', $validated['school_year']),
+                fn ($q) => $q->where(function ($w) {
+                    $w->whereNull('school_year')->orWhere('school_year', '');
+                })
+            )
             ->exists();
 
         if ($duplicate) {
@@ -260,9 +337,11 @@ class SubjectController extends Controller
             $subject->update(collect($validated)->except('faculty_id')->all());
 
             $subject->assignments()->delete();
-            $subject->assignments()->create([
-                'faculty_id' => $validated['faculty_id'],
-            ]);
+            if (($validated['faculty_id'] ?? null) !== null) {
+                $subject->assignments()->create([
+                    'faculty_id' => $validated['faculty_id'],
+                ]);
+            }
         });
 
         return redirect()->route('subjects.index')
@@ -613,5 +692,54 @@ class SubjectController extends Controller
             ' ',
             preg_replace('/[^a-z0-9]+/iu', ' ', preg_replace('/\b(mr|ms|mrs|dr|prof)\.?\b/iu', ' ', mb_strtolower($name)) ?? '') ?? ''
         ));
+    }
+
+    /**
+     * Same program offering across sections (one row per section in the database).
+     *
+     * @return Collection<int, Subject>
+     */
+    private function subjectOfferingCluster(Subject $subject): Collection
+    {
+        $q = Subject::query()
+            ->where('code', $subject->code)
+            ->where('department_id', $subject->department_id)
+            ->where('course', $subject->course)
+            ->where('year_level', $subject->year_level)
+            ->where('semester', $subject->semester);
+
+        $sy = $subject->school_year;
+        if ($sy === null || $sy === '') {
+            $q->where(function ($w) {
+                $w->whereNull('school_year')->orWhere('school_year', '');
+            });
+        } else {
+            $q->where('school_year', $sy);
+        }
+
+        return $q->with(['department', 'assignments.faculty.user'])
+            ->orderBy('section')
+            ->get();
+    }
+
+    /**
+     * Normalize section for subject offerings (numeric "01" → "1"; keep "A","B" as-is to avoid colliding with "1").
+     */
+    private function normalizeSectionLabel(string $value): string
+    {
+        $section = trim($value);
+        if ($section === '') {
+            return '';
+        }
+
+        if (preg_match('/^section\s*([0-9]+)$/i', $section, $matches)) {
+            return (string) ((int) $matches[1]);
+        }
+
+        if (preg_match('/^[0-9]+$/', $section)) {
+            return (string) ((int) $section);
+        }
+
+        return preg_replace('/\s+/', ' ', $section) ?? $section;
     }
 }

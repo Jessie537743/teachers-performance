@@ -5,26 +5,35 @@ services:
       dockerfile: Dockerfile
     container_name: tp-app
     restart: unless-stopped
-    ports:
-      - "8081:80"
-    environment:
-      APP_KEY: base64:hnHTON4auAk7nX2PClMWomIfUognfDVzSgBhqxRk0BE=
-      APP_ENV: local
-      APP_DEBUG: "true"
-      PORT: "80"
-      RUN_MIGRATIONS: "true"
-      RUN_SEEDERS: "true"
-      DB_CONNECTION: mysql
-      DB_HOST: db
-      DB_PORT: 3306
-      DB_DATABASE: teachers_performance
-      DB_USERNAME: tp_user
-      DB_PASSWORD: secret
+    volumes:
+      - ./src:/var/www
     networks:
       - tp-network
     depends_on:
       db:
         condition: service_healthy
+    # Override DB_* from .env so Artisan/queue inside the container use the MySQL service (not 127.0.0.1).
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: teachers_performance
+      DB_USERNAME: tp_user
+      DB_PASSWORD: secret
+
+  nginx:
+    image: nginx:alpine
+    container_name: tp-nginx
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    volumes:
+      - ./src:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - tp-network
+    depends_on:
+      - app
 
   db:
     image: mysql:8.0

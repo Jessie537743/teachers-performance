@@ -16,7 +16,6 @@
         @csrf
         <button type="submit" class="inline-flex items-center gap-2 bg-red-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-red-700 transition">Reset All to Defaults</button>
     </form>
-    <a href="{{ route('roles.delegations.index') }}" class="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition">Manage Delegations</a>
 </div>
 
 <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden transition hover:shadow-md">

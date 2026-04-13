@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             DeanRecommendationCriterionSeeder::class,
             AcademicAdministratorsCriteriaSeeder::class,
             InterventionSeeder::class,
+            SentimentLexiconSeeder::class,
             // SampleEvaluationDataSeeder::class, // optional: php artisan db:seed --class=Database\\Seeders\\SampleEvaluationDataSeeder
         ]);
     }

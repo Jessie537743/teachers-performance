@@ -19,7 +19,7 @@
             @endif
         </h1>
         <p class="text-sm text-gray-500 mt-1">
-            Period: {{ $period->school_year }} &mdash; {{ format_semester($period->semester) }}
+            Period: {{ $period->school_year }} &mdash; {{ $period->semester }}
         </p>
     </div>
     <a href="{{ route('evaluate.index') }}" class="bg-gray-200 text-slate-900 px-4 py-2.5 rounded-xl font-semibold hover:bg-gray-300 transition">Back</a>
@@ -111,6 +111,7 @@
     <input type="hidden" name="evaluatee_faculty_id" value="{{ $targetProfile->id }}">
     <input type="hidden" name="type" value="{{ $type }}">
 
+    @php $evaluatorCommentPlaced = false; @endphp
     @forelse($criteria as $criterion)
     @php
         $onlyRecommendation = $criterion->questions->isNotEmpty()
@@ -161,6 +162,10 @@
             @endforeach
         </div>
     </div>
+    @if(! $evaluatorCommentPlaced && str_contains(strtoupper($criterion->name), 'GENERAL OBSERVATION'))
+        @php $evaluatorCommentPlaced = true; @endphp
+        @include('evaluate.partials.evaluator-comment-section')
+    @endif
     @empty
     <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
         <div class="p-10 text-center text-gray-400">
@@ -169,71 +174,50 @@
     </div>
     @endforelse
 
+    @if(EvaluationService::isDeanHeadEvaluateePersonnelType((string) ($personnelType ?? '')) && isset($deanRecommendationQuestions) && $deanRecommendationQuestions->isNotEmpty())
+    @php
+        $recommendationQuestion = $deanRecommendationQuestions->first();
+        $recommendationInputName = $recommendationQuestion
+            ? 'ratings['.$recommendationQuestion->id.']'
+            : 'recommendation_choice';
+        $oldRecommendation = $recommendationQuestion
+            ? (int) old('ratings.'.$recommendationQuestion->id, 0)
+            : match (old('recommendation_choice')) {
+                'retention' => 1,
+                'promotion' => 2,
+                'reassignment' => 3,
+                default => 0,
+            };
+    @endphp
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden mb-4">
+        <div class="px-5 py-3.5 border-b border-gray-200">
+            <div class="text-base font-bold text-blue-600">{{ optional(optional($recommendationQuestion)->criterion)->name ?: 'E. WHAT RECOMMENDATIONS WILL YOU MAKE FOR YOUR ACADEMIC ADMINISTRATOR?' }}</div>
+        </div>
+        <div class="p-5">
+            <div class="flex flex-wrap gap-x-10 gap-y-3 items-center">
+                @foreach([
+                    1 => 'Retention',
+                    2 => 'Promotion',
+                    3 => 'Re-assignment',
+                ] as $val => $label)
+                <label class="inline-flex items-center gap-2.5 cursor-pointer text-sm font-medium text-slate-800 select-none">
+                    <input type="radio"
+                           name="{{ $recommendationInputName }}"
+                           value="{{ $val }}"
+                           class="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
+                           {{ $oldRecommendation === $val ? 'checked' : '' }}
+                           @if($loop->first) required @endif>
+                    <span>{{ $label }}</span>
+                </label>
+                @endforeach
+            </div>
+        </div>
+    </div>
+    @endif
+
     @if($criteria->count() > 0)
-    @if($deanRecommendationQuestions->isNotEmpty())
-    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden mb-4">
-        <div class="p-5 space-y-6">
-            @foreach($deanRecommendationQuestions as $question)
-            @php
-                $oldVal = (int) old('ratings.'.$question->id, 0);
-            @endphp
-            <div class="border-b border-gray-100 pb-6 last:border-b-0 last:pb-0">
-                <div class="text-base font-bold text-sky-600 uppercase tracking-wide mb-5 leading-snug">
-                    E. WHAT RECOMMENDATIONS WILL YOU MAKE FOR YOUR ACADEMIC ADMINISTRATOR?
-                </div>
-                @if(filled($question->question_text) && $question->question_text !== 'Select one recommendation below.')
-                    <p class="text-sm text-gray-600 mb-4">{{ $question->question_text }}</p>
-                @endif
-                <div class="flex flex-wrap gap-x-10 gap-y-3 items-center">
-                    @foreach([
-                        1 => 'Retention',
-                        2 => 'Promotion',
-                        3 => 'Re-assignment',
-                    ] as $val => $label)
-                    <label class="inline-flex items-center gap-2.5 cursor-pointer text-sm font-medium text-slate-800 select-none">
-                        <input type="radio"
-                               name="ratings[{{ $question->id }}]"
-                               value="{{ $val }}"
-                               class="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
-                               {{ $oldVal === $val ? 'checked' : '' }}
-                               @if($loop->first) required @endif>
-                        <span>{{ $label }}</span>
-                    </label>
-                    @endforeach
-                </div>
-            </div>
-            @endforeach
-        </div>
-    </div>
-    @endif
-
-    @if($type === 'peer')
-    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden mb-4">
-        <div class="px-5 py-3.5 border-b border-gray-200 flex justify-between items-center gap-3">
-            <span class="font-semibold text-gray-900">Comments</span>
-        </div>
-        <div class="p-5">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1.5" for="comment">Additional Comments (optional)</label>
-                <textarea name="comment" id="comment"
-                          class="w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                          placeholder="Provide constructive feedback for your colleague..."
-                          maxlength="2000">{{ old('comment') }}</textarea>
-            </div>
-        </div>
-    </div>
-    @endif
-
-    @if($type === 'self' && EvaluationService::isDeanHeadEvaluateePersonnelType((string) ($personnelType ?? '')))
-    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden mb-4">
-        <div class="p-5">
-            <label for="self_evaluation_comment" class="block text-sm font-medium text-gray-600 mb-2">F. Please write your comments here.</label>
-            <textarea name="comment" id="self_evaluation_comment"
-                      class="w-full min-h-[140px] rounded-xl border border-gray-300 px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-                      placeholder=""
-                      maxlength="2000">{{ old('comment') }}</textarea>
-        </div>
-    </div>
+    @if(! $evaluatorCommentPlaced)
+        @include('evaluate.partials.evaluator-comment-section')
     @endif
 
     <div class="flex gap-3 items-center">

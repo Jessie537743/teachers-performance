@@ -15,6 +15,7 @@ class EvaluationPeriodController extends Controller
     public function index(): View
     {
         Gate::authorize('manage-evaluation-periods');
+        EvaluationService::getOpenEvaluationPeriod();
 
         $periods = EvaluationPeriod::orderBy('school_year', 'desc')
             ->orderBy('semester')
@@ -28,26 +29,14 @@ class EvaluationPeriodController extends Controller
         Gate::authorize('manage-evaluation-periods');
 
         $validated = $request->validate([
-            'school_year' => ['required', 'string', 'max:20', 'regex:/^\d{4}-\d{4}$/'],
-            'semester'    => ['required', 'string', 'max:20', 'in:1st Semester,2nd Semester,Summer'],
+            'school_year' => ['required', 'string', 'max:20'],
+            'semester'    => ['required', 'string', 'max:20'],
             'start_date'  => ['required', 'date'],
             'end_date'    => ['required', 'date', 'after_or_equal:start_date'],
             'is_open'     => ['sometimes', 'boolean'],
-        ], [
-            'school_year.regex' => 'School year must be in the format YYYY-YYYY (e.g. 2025-2026).',
-            'semester.in'       => 'Semester must be 1st Semester, 2nd Semester, or Summer.',
         ]);
 
-        // Reject illogical year ranges (e.g. 2026-2024).
-        [$startYear, $endYear] = array_map('intval', explode('-', $validated['school_year']));
-        if ($endYear !== $startYear + 1) {
-            return back()
-                ->withErrors(['school_year' => 'School year must span two consecutive years (e.g. 2025-2026).'])
-                ->withInput();
-        }
-
-        $validated['semester'] = canonical_semester($validated['semester']) ?? $validated['semester'];
-        $validated['is_open']  = $request->boolean('is_open', false);
+        $validated['is_open'] = $request->boolean('is_open', false);
 
         // If this period is being opened, close all others
         if ($validated['is_open']) {
@@ -67,26 +56,14 @@ class EvaluationPeriodController extends Controller
         Gate::authorize('manage-evaluation-periods');
 
         $validated = $request->validate([
-            'school_year' => ['required', 'string', 'max:20', 'regex:/^\d{4}-\d{4}$/'],
-            'semester'    => ['required', 'string', 'max:20', 'in:1st Semester,2nd Semester,Summer'],
+            'school_year' => ['required', 'string', 'max:20'],
+            'semester'    => ['required', 'string', 'max:20'],
             'start_date'  => ['required', 'date'],
             'end_date'    => ['required', 'date', 'after_or_equal:start_date'],
             'is_open'     => ['sometimes', 'boolean'],
-        ], [
-            'school_year.regex' => 'School year must be in the format YYYY-YYYY (e.g. 2025-2026).',
-            'semester.in'       => 'Semester must be 1st Semester, 2nd Semester, or Summer.',
         ]);
 
-        // Reject illogical year ranges (e.g. 2026-2024).
-        [$startYear, $endYear] = array_map('intval', explode('-', $validated['school_year']));
-        if ($endYear !== $startYear + 1) {
-            return back()
-                ->withErrors(['school_year' => 'School year must span two consecutive years (e.g. 2025-2026).'])
-                ->withInput();
-        }
-
-        $validated['semester'] = canonical_semester($validated['semester']) ?? $validated['semester'];
-        $validated['is_open']  = $request->boolean('is_open', false);
+        $validated['is_open'] = $request->boolean('is_open', false);
 
         // Only one period may be open at a time
         if ($validated['is_open'] && !$evaluationPeriod->is_open) {

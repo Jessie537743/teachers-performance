@@ -85,7 +85,7 @@ class Permission
             'Evaluation Management' => [
                 self::MANAGE_CRITERIA           => 'Manage Criteria',
                 self::MANAGE_EVALUATION_PERIODS => 'Manage Evaluation Periods',
-                self::MONITOR_NOT_EVALUATED     => "Monitoring of student didn't evaluate",
+                self::MONITOR_NOT_EVALUATED     => 'Monitor faculty & student evaluation compliance (institution-wide for HR)',
             ],
             'Academic' => [
                 self::MANAGE_COURSES  => 'Manage Courses',
@@ -184,12 +184,27 @@ class Permission
                 self::MANAGE_DEPARTMENTS,
                 self::MANAGE_FACULTY,
                 self::VIEW_USERS,
+                self::MONITOR_NOT_EVALUATED,
             ],
-            'school_president', 'vp_acad', 'vp_admin' => [
+            'school_president' => [
                 self::VIEW_ADMIN_DASHBOARD,
                 self::VIEW_ANALYTICS,
                 self::GENERATE_REPORT,
                 self::VIEW_GENERATED_REPORT,
+                self::SUBMIT_DEAN_EVALUATION,
+            ],
+            'vp_admin' => [
+                self::VIEW_ADMIN_DASHBOARD,
+                self::VIEW_ANALYTICS,
+                self::GENERATE_REPORT,
+                self::VIEW_GENERATED_REPORT,
+            ],
+            'vp_acad' => [
+                self::VIEW_ADMIN_DASHBOARD,
+                self::VIEW_ANALYTICS,
+                self::GENERATE_REPORT,
+                self::VIEW_GENERATED_REPORT,
+                self::SUBMIT_DEAN_EVALUATION,
             ],
             'staff' => [
                 self::VIEW_HR_DASHBOARD,

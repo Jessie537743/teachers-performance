@@ -3,10 +3,15 @@
 namespace App\Services;
 
 use App\Models\EvaluationPeriod;
+use App\Models\StudentProfile;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 
 class EvaluationService
 {
+    private const MAX_STUDENT_YEAR_LEVEL = 4;
+
     public static function isDeanHeadEvaluateePersonnelType(string $personnelType): bool
     {
         return in_array($personnelType, ['dean_head_teaching', 'dean_head_non_teaching'], true);
@@ -124,6 +129,29 @@ class EvaluationService
         return in_array($performanceLevel, ['Fair', 'Poor'], true);
     }
 
+    /**
+     * Labels for HR reports — must stay aligned with {@see qualifiesForPerformanceIntervention()}.
+     *
+     * @return list<array{category: string, levels: string}>
+     */
+    public static function interventionLowBandReportLines(): array
+    {
+        return [
+            [
+                'category' => 'Teaching (instructional rubric)',
+                'levels' => 'Fair, Poor',
+            ],
+            [
+                'category' => 'Non-teaching personnel',
+                'levels' => 'Below Average, Poor',
+            ],
+            [
+                'category' => 'Dean, Head, or Administrator (academic administrators rubric)',
+                'levels' => 'Below Average, Unsatisfactory',
+            ],
+        ];
+    }
+
     public static function performanceBadgeClass(string $level): string
     {
         return match ($level) {
@@ -193,6 +221,8 @@ class EvaluationService
 
     public static function getOpenEvaluationPeriod(): ?EvaluationPeriod
     {
+        self::closeEndedOpenPeriodsAndPromoteStudents();
+
         $id = Cache::remember('open_evaluation_period_id', 60, function () {
             return EvaluationPeriod::where('is_open', true)
                 ->where('start_date', '<=', now())
@@ -211,5 +241,70 @@ class EvaluationService
     public static function isEvaluationOpen(): bool
     {
         return self::getOpenEvaluationPeriod() !== null;
+    }
+
+    /**
+     * Roles that evaluate Dean/Head personnel across all departments (VP Academic, School President).
+     *
+     * @return list<string>
+     */
+    public static function institutionLeaderDeanEvaluatorRoles(): array
+    {
+        return ['vp_acad', 'school_president'];
+    }
+
+    public static function isInstitutionLeaderDeanEvaluator(?User $user): bool
+    {
+        return $user !== null
+            && in_array($user->role, self::institutionLeaderDeanEvaluatorRoles(), true);
+    }
+
+    private static function closeEndedOpenPeriodsAndPromoteStudents(): void
+    {
+        $endedOpenPeriods = EvaluationPeriod::query()
+            ->where('is_open', true)
+            ->whereDate('end_date', '<', now()->toDateString())
+            ->orderBy('end_date')
+            ->orderBy('id')
+            ->get();
+
+        if ($endedOpenPeriods->isEmpty()) {
+            return;
+        }
+
+        foreach ($endedOpenPeriods as $period) {
+            DB::transaction(function () use ($period) {
+                self::promoteStudentsForPeriod($period);
+
+                $period->update([
+                    'is_open' => false,
+                ]);
+            });
+        }
+
+        self::clearCache();
+    }
+
+    private static function promoteStudentsForPeriod(EvaluationPeriod $period): void
+    {
+        StudentProfile::query()
+            ->where(function ($query) use ($period) {
+                $query->whereNull('last_promoted_school_year')
+                    ->orWhere('last_promoted_school_year', '!=', $period->school_year);
+            })
+            ->orderBy('id')
+            ->chunkById(300, function ($profiles) use ($period) {
+                foreach ($profiles as $profile) {
+                    $currentYear = (int) trim((string) $profile->year_level);
+                    $normalizedYear = $currentYear > 0 ? $currentYear : 1;
+                    $nextYear = min($normalizedYear + 1, self::MAX_STUDENT_YEAR_LEVEL);
+
+                    $profile->update([
+                        'year_level' => (string) $nextYear,
+                        'last_promoted_school_year' => (string) $period->school_year,
+                        'last_promoted_semester' => (string) $period->semester,
+                    ]);
+                }
+            });
     }
 }

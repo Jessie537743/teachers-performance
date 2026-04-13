@@ -6,101 +6,98 @@ use App\Models\DeanEvaluationFeedback;
 use App\Models\EvaluationFeedback;
 use App\Models\FacultyPeerEvaluationFeedback;
 use App\Models\FacultyProfile;
-use App\Models\StudentSubjectAssignment;
 use App\Models\Subject;
 use App\Models\SubjectAssignment;
-use App\Http\Controllers\Traits\NormalizesComparableValues;
 use App\Models\User;
 use App\Services\EvaluationService;
+use App\Services\StudentEvaluationSubjectService;
 
 class EvaluationPolicy
 {
-    use NormalizesComparableValues;
     /**
      * Student can evaluate a faculty member for a specific subject if:
      * 1. Evaluation period is open
-     * 2. The subject is scheduled for the open evaluation period
-     *    (matching semester + school year)
-     * 3. The subject's course matches the student's course
-     * 4. The subject's year level matches the student's year level
-     * 5. Faculty is assigned to teach that subject
-     * 6. Student hasn't already submitted this evaluation for this term
-     *
-     * Section gating is intentionally relaxed because section data is
-     * inconsistent across the dataset; course + year level is sufficient
-     * to scope the cohort.
+     * 2. Subject matches the student's course, year level, and section (same rules as the student subject list)
+     * 3. Faculty is assigned to teach that subject
+     * 4. Student hasn't already submitted this evaluation
      */
     public function submitStudentEvaluation(User $student, FacultyProfile $faculty, Subject $subject): bool
     {
-        if (!EvaluationService::isEvaluationOpen()) return false;
-
-        $studentProfile = $student->studentProfile;
-        if (!$studentProfile) return false;
+        if (! EvaluationService::isEvaluationOpen()) {
+            return false;
+        }
 
         $period = EvaluationService::getOpenEvaluationPeriod();
-        if (!$period) return false;
-
-        // Subject must belong to the open evaluation period.
-        $subjectSemester = $this->normalizeComparableValue((string) $subject->semester);
-        $periodSemester  = $this->normalizeComparableValue((string) $period->semester);
-        if ($subjectSemester === '' || $subjectSemester !== $periodSemester) {
-            return false;
-        }
-        if ((string) $subject->school_year !== (string) $period->school_year) {
+        if (! $period) {
             return false;
         }
 
-        // Course must match.
-        $subjectCourse = $this->normalizeComparableValue((string) $subject->course);
-        $studentCourse = $this->normalizeComparableValue((string) $studentProfile->course);
-        if ($subjectCourse === '' || $studentCourse === '' || $subjectCourse !== $studentCourse) {
+        $studentProfile = $student->studentProfile;
+        if (! $studentProfile) {
             return false;
         }
 
-        // Year level must match.
-        $subjectYear = trim((string) $subject->year_level);
-        $studentYear = trim((string) $studentProfile->year_level);
-        if ($subjectYear === '' || $studentYear === '' || $subjectYear !== $studentYear) {
+        if (! StudentEvaluationSubjectService::subjectAppliesToStudent($subject, $studentProfile, $period)) {
             return false;
         }
 
         $teaches = SubjectAssignment::where('faculty_id', $faculty->id)
             ->where('subject_id', $subject->id)
             ->exists();
-        if (!$teaches) return false;
+        if (! $teaches) {
+            return false;
+        }
 
         $alreadyEvaluated = EvaluationFeedback::where('student_id', $student->id)
             ->where('faculty_id', $faculty->id)
             ->where('subject_id', $subject->id)
-            ->where('semester', $period->semester)
-            ->where('school_year', $period->school_year)
             ->exists();
 
-        return !$alreadyEvaluated;
+        return ! $alreadyEvaluated;
     }
 
     /**
-     * Dean can evaluate a faculty member if:
-     * 1. Evaluation period is open
-     * 2. Faculty belongs to the dean's department
-     * 3. Dean hasn't already evaluated this faculty for this period
+     * Dean/Head can evaluate faculty in their department. VP Academic and School President
+     * evaluate all Dean/Head personnel institution-wide (teaching deans and non-teaching administrators).
      */
-    public function submitDeanEvaluation(User $dean, FacultyProfile $faculty): bool
+    public function submitDeanEvaluation(User $evaluator, FacultyProfile $faculty): bool
     {
-        if (!EvaluationService::isEvaluationOpen()) return false;
-
-        if ($faculty->department_id !== $dean->department_id) return false;
+        if (! EvaluationService::isEvaluationOpen()) {
+            return false;
+        }
 
         $period = EvaluationService::getOpenEvaluationPeriod();
-        if (!$period) return false;
+        if (! $period) {
+            return false;
+        }
 
-        $alreadyEvaluated = DeanEvaluationFeedback::where('dean_user_id', $dean->id)
+        $faculty->loadMissing('user');
+        $evaluateeUser = $faculty->user;
+        if (! $evaluateeUser) {
+            return false;
+        }
+
+        if ($evaluator->id === $evaluateeUser->id) {
+            return false;
+        }
+
+        if (EvaluationService::isInstitutionLeaderDeanEvaluator($evaluator)) {
+            $isLeaderByPosition = $faculty->isDeanOrDepartmentHead();
+            $isLeaderByRole = in_array($evaluateeUser->role, ['dean', 'head'], true);
+            if (! $isLeaderByPosition && ! $isLeaderByRole) {
+                return false;
+            }
+        } elseif ($faculty->department_id !== $evaluator->department_id) {
+            return false;
+        }
+
+        $alreadyEvaluated = DeanEvaluationFeedback::where('dean_user_id', $evaluator->id)
             ->where('faculty_id', $faculty->id)
             ->where('semester', $period->semester)
             ->where('school_year', $period->school_year)
             ->exists();
 
-        return !$alreadyEvaluated;
+        return ! $alreadyEvaluated;
     }
 
     /**
