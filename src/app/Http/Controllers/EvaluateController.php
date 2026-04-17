@@ -765,7 +765,10 @@ class EvaluateController extends Controller
             ->get();
 
         $deanRecommendationQuestions = collect();
-        if (EvaluationService::isDeanHeadEvaluateePersonnelType($personnelType)) {
+        $loadAcademicAdministratorRecommendation = $type === 'self'
+            || EvaluationService::isDeanHeadEvaluateePersonnelType($personnelType);
+
+        if ($loadAcademicAdministratorRecommendation) {
             foreach ($criteria as $criterion) {
                 foreach ($criterion->questions as $q) {
                     if (($q->response_type ?? 'likert') === 'dean_recommendation') {
@@ -856,8 +859,9 @@ class EvaluateController extends Controller
 
         $questionIds = $this->keepSingleDeanRecommendationQuestion($questionIds);
 
-        // Non–Dean/Head evaluatees: peer/self forms use Likert only (no academic-administrator recommendation).
-        if (! EvaluationService::isDeanHeadEvaluateePersonnelType($evaluateePersonnel)) {
+        // Non–Dean/Head peer evaluations: Likert only (no academic-administrator recommendation).
+        // Self-evaluations for teaching/non-teaching include Section E when configured in criteria.
+        if (! EvaluationService::isDeanHeadEvaluateePersonnelType($evaluateePersonnel) && $type === 'peer') {
             $questionIds = Question::query()
                 ->whereIn('id', $questionIds)
                 ->where(function ($query) {
