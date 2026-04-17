@@ -174,7 +174,15 @@
     </div>
     @endforelse
 
-    @if(EvaluationService::isDeanHeadEvaluateePersonnelType((string) ($personnelType ?? '')) && isset($deanRecommendationQuestions) && $deanRecommendationQuestions->isNotEmpty())
+    @php
+        $showAcademicAdministratorRecommendation = isset($deanRecommendationQuestions)
+            && $deanRecommendationQuestions->isNotEmpty()
+            && (
+                ($type ?? '') === 'self'
+                || EvaluationService::isDeanHeadEvaluateePersonnelType((string) ($personnelType ?? ''))
+            );
+    @endphp
+    @if($showAcademicAdministratorRecommendation)
     @php
         $recommendationQuestion = $deanRecommendationQuestions->first();
         $recommendationInputName = $recommendationQuestion

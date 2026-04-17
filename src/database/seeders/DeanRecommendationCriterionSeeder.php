@@ -24,9 +24,7 @@ class DeanRecommendationCriterionSeeder extends Seeder
             );
         }
 
-        $criterion->personnelTypes()->whereIn('personnel_type', ['teaching', 'non-teaching'])->delete();
-
-        foreach (['dean_head_teaching', 'dean_head_non_teaching'] as $pt) {
+        foreach (['teaching', 'non-teaching', 'dean_head_teaching', 'dean_head_non_teaching'] as $pt) {
             $criterion->personnelTypes()->firstOrCreate(
                 ['personnel_type' => $pt],
                 []
