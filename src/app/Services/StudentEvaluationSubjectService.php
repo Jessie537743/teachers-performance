@@ -12,6 +12,7 @@ use Illuminate\Support\Collection;
 
 /**
  * Lists subjects from the catalog for a student using course, year level, and section.
+ * Subjects are limited to the open evaluation period’s semester + school year (when set on the row).
  * Does not require student_subject_assignments rows.
  */
 class StudentEvaluationSubjectService
@@ -22,19 +23,83 @@ class StudentEvaluationSubjectService
             return false;
         }
 
+        if (! self::subjectMatchesEvaluationPeriod($subject, $period)) {
+            return false;
+        }
+
         if (! self::coursesMatch((string) ($subject->course ?? ''), (string) ($profile->course ?? ''))) {
             return false;
         }
 
-        $subjectYear = trim((string) ($subject->year_level ?? ''));
         $profileYear = trim((string) ($profile->year_level ?? ''));
-        if ($subjectYear !== '' && $profileYear !== '') {
-            if (! self::yearLevelsMatch($subjectYear, $profileYear)) {
-                return false;
-            }
+        if ($profileYear === '') {
+            return false;
+        }
+
+        $subjectYear = trim((string) ($subject->year_level ?? ''));
+        if ($subjectYear === '' || ! self::yearLevelsMatch($subjectYear, $profileYear)) {
+            return false;
         }
 
         return self::sectionValuesOverlap((string) ($subject->section ?? ''), (string) ($profile->section ?? ''));
+    }
+
+    /**
+     * Subject row must match the active evaluation window: same semester, same school year when the subject row specifies one.
+     */
+    public static function subjectMatchesEvaluationPeriod(Subject $subject, EvaluationPeriod $period): bool
+    {
+        if (! self::semestersMatch((string) ($subject->semester ?? ''), (string) $period->semester)) {
+            return false;
+        }
+
+        return self::schoolYearsMatch((string) ($subject->school_year ?? ''), (string) $period->school_year);
+    }
+
+    public static function semestersMatch(string $subjectSemester, string $periodSemester): bool
+    {
+        $a = self::normalizeSemesterToken($subjectSemester);
+        $b = self::normalizeSemesterToken($periodSemester);
+
+        return $a !== '' && $b !== '' && $a === $b;
+    }
+
+    /**
+     * If the subject has no school_year (legacy), treat as matching any period school year once semester matches.
+     */
+    public static function schoolYearsMatch(string $subjectSchoolYear, string $periodSchoolYear): bool
+    {
+        $per = trim($periodSchoolYear);
+        if ($per === '') {
+            return false;
+        }
+
+        $sub = trim($subjectSchoolYear);
+        if ($sub === '') {
+            return true;
+        }
+
+        return self::normalizeComparableValue($sub) === self::normalizeComparableValue($per);
+    }
+
+    private static function normalizeSemesterToken(string $raw): string
+    {
+        $v = mb_strtolower(trim($raw));
+        if ($v === '') {
+            return '';
+        }
+
+        if (preg_match('/\b(1st|first)\b/i', $raw)) {
+            return '1st';
+        }
+        if (preg_match('/\b(2nd|second)\b/i', $raw)) {
+            return '2nd';
+        }
+        if (str_contains($v, 'summer')) {
+            return 'summer';
+        }
+
+        return '';
     }
 
     public static function coursesMatch(string $subjectCourse, string $profileCourse): bool
@@ -66,7 +131,9 @@ class StudentEvaluationSubjectService
         $q = Subject::query()
             ->with('department')
             ->whereNotNull('course')
-            ->where('course', '!=', '');
+            ->where('course', '!=', '')
+            ->whereNotNull('semester')
+            ->where('semester', '!=', '');
 
         if ($profile->department_id) {
             $q->where('department_id', $profile->department_id);
@@ -140,6 +207,18 @@ class StudentEvaluationSubjectService
                 'faculty_list' => $facultyList,
             ];
         })->values();
+    }
+
+    /**
+     * Total evaluation slots for this period: sum of subject–faculty assignments (each faculty per subject counts once).
+     */
+    public static function countEvaluationSlotsForStudent(User $student, StudentProfile $profile, EvaluationPeriod $period): int
+    {
+        $items = self::buildSubjectItemsForStudent($student, $profile, $period);
+
+        return (int) $items->sum(function (array $row) {
+            return $row['faculty_list']->count();
+        });
     }
 
     public static function yearLevelsMatch(string $subjectYearLevel, string $profileYearLevel): bool

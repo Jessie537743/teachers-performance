@@ -4,7 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Request;
 
 class AuditLog extends Model
@@ -57,42 +59,68 @@ class AuditLog extends Model
         ?Model $model = null,
         ?array $oldValues = null,
         ?array $newValues = null
-    ): self {
+    ): ?self {
         $user = Auth::user();
 
-        return static::create([
-            'user_id'    => $user?->id,
-            'user_name'  => $user?->name ?? 'System',
-            'user_roles' => $user ? implode(', ', $user->roles ?? []) : null,
-            'action'     => $action,
-            'model_type' => $model ? class_basename($model) : null,
-            'model_id'   => $model?->getKey(),
-            'description'=> $description,
-            'old_values' => $oldValues,
-            'new_values' => $newValues,
-            'ip_address' => Request::ip(),
-            'user_agent' => substr(Request::userAgent() ?? '', 0, 255),
-            'created_at' => now(),
-        ]);
+        try {
+            return static::create([
+                'user_id'    => $user?->id,
+                'user_name'  => $user?->name ?? 'System',
+                'user_roles' => $user ? implode(', ', $user->roles ?? []) : null,
+                'action'     => $action,
+                'model_type' => $model ? class_basename($model) : null,
+                'model_id'   => $model?->getKey(),
+                'description'=> $description,
+                'old_values' => $oldValues,
+                'new_values' => $newValues,
+                'ip_address' => Request::ip(),
+                'user_agent' => substr(Request::userAgent() ?? '', 0, 255),
+                'created_at' => now(),
+            ]);
+        } catch (QueryException $e) {
+            if (self::isMissingAuditTable($e)) {
+                Log::debug('audit_logs skipped (table missing); run php artisan migrate');
+
+                return null;
+            }
+            throw $e;
+        }
     }
 
     /**
      * Log an authentication event (login/logout).
      */
-    public static function logAuth(string $action, User $user, string $description = ''): self
+    public static function logAuth(string $action, User $user, string $description = ''): ?self
     {
-        return static::create([
-            'user_id'    => $user->id,
-            'user_name'  => $user->name,
-            'user_roles' => implode(', ', $user->roles ?? []),
-            'action'     => $action,
-            'model_type' => 'User',
-            'model_id'   => $user->id,
-            'description'=> $description ?: ucfirst($action) . ' successful',
-            'ip_address' => Request::ip(),
-            'user_agent' => substr(Request::userAgent() ?? '', 0, 255),
-            'created_at' => now(),
-        ]);
+        try {
+            return static::create([
+                'user_id'    => $user->id,
+                'user_name'  => $user->name,
+                'user_roles' => implode(', ', $user->roles ?? []),
+                'action'     => $action,
+                'model_type' => 'User',
+                'model_id'   => $user->id,
+                'description'=> $description ?: ucfirst($action) . ' successful',
+                'ip_address' => Request::ip(),
+                'user_agent' => substr(Request::userAgent() ?? '', 0, 255),
+                'created_at' => now(),
+            ]);
+        } catch (QueryException $e) {
+            if (self::isMissingAuditTable($e)) {
+                Log::debug('audit_logs skipped (table missing); run php artisan migrate');
+
+                return null;
+            }
+            throw $e;
+        }
+    }
+
+    private static function isMissingAuditTable(QueryException $e): bool
+    {
+        $msg = $e->getMessage();
+
+        return str_contains($msg, 'audit_logs')
+            && (str_contains($msg, "doesn't exist") || str_contains($msg, 'Base table or view not found'));
     }
 
     // -------------------------------------------------------------------------

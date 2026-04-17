@@ -9,11 +9,29 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Schema;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    protected static function booted(): void
+    {
+        // Legacy DBs still have a single `role` enum; app code expects `roles` JSON array.
+        // syncOriginal() so the virtual `roles` attribute is not dirty — otherwise save() would
+        // try to UPDATE a non-existent `roles` column (e.g. change password).
+        static::retrieved(function (User $user): void {
+            if (Schema::hasColumn($user->getTable(), 'roles')) {
+                return;
+            }
+            $attrs = $user->getAttributes();
+            if (array_key_exists('role', $attrs)) {
+                $user->setAttribute('roles', [$attrs['role']]);
+                $user->syncOriginal();
+            }
+        });
+    }
 
     protected $fillable = [
         'name',
@@ -222,15 +240,23 @@ class User extends Authenticatable
     {
         $roles = (array) $roles;
 
-        if (count($roles) === 1) {
-            return $query->whereJsonContains('roles', $roles[0]);
+        if (Schema::hasColumn((new static)->getTable(), 'roles')) {
+            if (count($roles) === 1) {
+                return $query->whereJsonContains('roles', $roles[0]);
+            }
+
+            return $query->where(function ($q) use ($roles) {
+                foreach ($roles as $role) {
+                    $q->orWhereJsonContains('roles', $role);
+                }
+            });
         }
 
-        return $query->where(function ($q) use ($roles) {
-            foreach ($roles as $role) {
-                $q->orWhereJsonContains('roles', $role);
-            }
-        });
+        if (count($roles) === 1) {
+            return $query->where('role', $roles[0]);
+        }
+
+        return $query->whereIn('role', $roles);
     }
 
     // -------------------------------------------------------------------------
