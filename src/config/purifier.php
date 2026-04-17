@@ -34,7 +34,7 @@ return [
             'HTML.Doctype'            => 'HTML 4.01 Transitional',
             'HTML.Allowed'            => 'p,br,strong,em,a[href|title|rel|target],ul,ol,li,blockquote,code,pre,h2,h3,h4,hr,table,thead,tbody,tr,th,td',
             'HTML.TargetBlank'        => true,
-            'HTML.Nofollow'           => false,
+            'HTML.TargetNoreferrer'   => true,
             'Attr.AllowedFrameTargets'=> ['_blank'],
             'AutoFormat.AutoParagraph' => false,
             'AutoFormat.RemoveEmpty'  => true,
