@@ -115,6 +115,10 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     Route::resource('criteria', Admin\CriteriaController::class)
         ->except(['create', 'show', 'edit']);
 
+    // List-only UI: no detail page — GET /evaluation-periods/{id} would otherwise 405 (resource has no show).
+    Route::get('evaluation-periods/{evaluation_period}', [Admin\EvaluationPeriodController::class, 'show'])
+        ->name('evaluation-periods.show');
+
     Route::resource('evaluation-periods', Admin\EvaluationPeriodController::class)
         ->except(['create', 'show', 'edit']);
 

@@ -17,7 +17,7 @@ class EvaluationPolicy
     /**
      * Student can evaluate a faculty member for a specific subject if:
      * 1. Evaluation period is open
-     * 2. Subject matches the student's course, year level, and section (same rules as the student subject list)
+     * 2. Subject matches the open period’s semester and school year, student course/year level/section (same as the student subject list)
      * 3. Faculty is assigned to teach that subject
      * 4. Student hasn't already submitted this evaluation
      */
@@ -51,6 +51,8 @@ class EvaluationPolicy
         $alreadyEvaluated = EvaluationFeedback::where('student_id', $student->id)
             ->where('faculty_id', $faculty->id)
             ->where('subject_id', $subject->id)
+            ->where('semester', $period->semester)
+            ->where('school_year', $period->school_year)
             ->exists();
 
         return ! $alreadyEvaluated;

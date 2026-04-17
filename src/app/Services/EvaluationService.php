@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Jobs\RunStudentPromotionForPeriodJob;
+use App\Models\EvaluationFeedback;
 use App\Models\EvaluationPeriod;
 use App\Models\StudentProfile;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class EvaluationService
 {
@@ -259,6 +261,16 @@ class EvaluationService
             && $user->hasRole(self::institutionLeaderDeanEvaluatorRoles());
     }
 
+    /**
+     * Run year-level promotion when a period is closed (manual close, replaced by another open period, or overdue).
+     */
+    public static function runStudentPromotionForClosedPeriod(EvaluationPeriod $period): void
+    {
+        DB::transaction(function () use ($period) {
+            self::promoteStudentsForPeriod($period);
+        });
+    }
+
     private static function closeEndedOpenPeriodsAndPromoteStudents(): void
     {
         $endedOpenPeriods = EvaluationPeriod::query()
@@ -273,21 +285,41 @@ class EvaluationService
         }
 
         foreach ($endedOpenPeriods as $period) {
-            DB::transaction(function () use ($period) {
-                self::promoteStudentsForPeriod($period);
+            $periodId = $period->id;
+            $period->update([
+                'is_open' => false,
+            ]);
 
-                $period->update([
-                    'is_open' => false,
-                ]);
-            });
+            if (app()->runningInConsole()) {
+                $fresh = EvaluationPeriod::query()->find($periodId);
+                if ($fresh !== null) {
+                    self::runStudentPromotionForClosedPeriod($fresh);
+                }
+            } else {
+                RunStudentPromotionForPeriodJob::dispatch($periodId)->afterResponse();
+            }
         }
 
         self::clearCache();
     }
 
+    /**
+     * Year-level promotion when a period closes (e.g. admin opens a new school year and the prior period is closed).
+     *
+     * - Evaluations are **per semester** (feedback is stored with that period’s semester + school_year).
+     * - **Promotion** advances year level **once per school year**: by default only when the **closed period is 2nd semester**
+     *   (end of school year), not after 1st-semester-only closes. Set EVALUATION_PROMOTION_SECOND_SEMESTER_ONLY=false to test.
+     * - Eligibility: student must have submitted **more than half** of their **subject–faculty assignment slots**
+     *   (same totals as the evaluate UI: each assigned faculty per subject = one slot).
+     */
     private static function promoteStudentsForPeriod(EvaluationPeriod $period): void
     {
+        if (! self::promotionSemesterGate($period)) {
+            return;
+        }
+
         StudentProfile::query()
+            ->with('user')
             ->where(function ($query) use ($period) {
                 $query->whereNull('last_promoted_school_year')
                     ->orWhere('last_promoted_school_year', '!=', $period->school_year);
@@ -295,6 +327,22 @@ class EvaluationService
             ->orderBy('id')
             ->chunkById(300, function ($profiles) use ($period) {
                 foreach ($profiles as $profile) {
+                    $user = $profile->user;
+                    if ($user === null || ! $user->isStudent()) {
+                        continue;
+                    }
+
+                    $requiredSlots = StudentEvaluationSubjectService::countEvaluationSlotsForStudent($user, $profile, $period);
+                    if ($requiredSlots === 0) {
+                        continue;
+                    }
+
+                    $completedSlots = self::countCompletedEvaluationSlotsForPeriod($user->id, $period);
+                    // Strictly more than half of assignment slots (per-semester counts for this period)
+                    if (($completedSlots * 2) <= $requiredSlots) {
+                        continue;
+                    }
+
                     $currentYear = (int) trim((string) $profile->year_level);
                     $normalizedYear = $currentYear > 0 ? $currentYear : 1;
                     $nextYear = min($normalizedYear + 1, self::MAX_STUDENT_YEAR_LEVEL);
@@ -306,5 +354,41 @@ class EvaluationService
                     ]);
                 }
             });
+    }
+
+    /**
+     * Distinct subject–faculty pairs with a student evaluation row for this period.
+     */
+    private static function countCompletedEvaluationSlotsForPeriod(int $studentUserId, EvaluationPeriod $period): int
+    {
+        return (int) EvaluationFeedback::query()
+            ->where('student_id', $studentUserId)
+            ->where('evaluator_type', 'student')
+            ->where('semester', $period->semester)
+            ->where('school_year', $period->school_year)
+            ->selectRaw('COUNT(DISTINCT CONCAT(subject_id, ?, faculty_id)) as c', [':'])
+            ->value('c');
+    }
+
+    private static function promotionSemesterGate(EvaluationPeriod $period): bool
+    {
+        $onlySecond = filter_var(
+            env('EVALUATION_PROMOTION_SECOND_SEMESTER_ONLY', true),
+            FILTER_VALIDATE_BOOLEAN
+        );
+
+        if (! $onlySecond) {
+            return true;
+        }
+
+        return self::periodIsSecondSemester($period);
+    }
+
+    private static function periodIsSecondSemester(EvaluationPeriod $period): bool
+    {
+        $v = mb_strtolower(trim((string) $period->semester));
+
+        return $v !== ''
+            && (str_contains($v, '2nd') || str_contains($v, 'second'));
     }
 }

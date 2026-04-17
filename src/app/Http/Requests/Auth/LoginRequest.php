@@ -9,6 +9,7 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -53,9 +54,13 @@ class LoginRequest extends FormRequest
             $attempted = Auth::attempt(['email' => $login, 'password' => $password], $remember);
         } else {
             // Student-only username login (student_id).
-            $user = User::whereJsonContains('roles', 'student')
-                ->where('username', $login)
-                ->first();
+            $query = User::query()->where('username', $login);
+            if (Schema::hasColumn((new User)->getTable(), 'roles')) {
+                $user = $query->whereJsonContains('roles', 'student')->first();
+            } else {
+                // Legacy schema: single `role` enum before roles JSON migration
+                $user = $query->where('role', 'student')->first();
+            }
             if ($user && Hash::check($password, $user->password)) {
                 Auth::login($user, $remember);
                 $attempted = true;

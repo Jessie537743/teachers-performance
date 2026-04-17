@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\RunStudentPromotionForPeriodJob;
 use App\Models\EvaluationPeriod;
 use App\Services\EvaluationService;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +25,16 @@ class EvaluationPeriodController extends Controller
         return view('evaluation-periods.index', compact('periods'));
     }
 
+    /**
+     * Resource omits show — redirect accidental GET /evaluation-periods/{id} (bookmarks, bad links) to the list.
+     */
+    public function show(EvaluationPeriod $evaluationPeriod): RedirectResponse
+    {
+        Gate::authorize('manage-evaluation-periods');
+
+        return redirect()->route('evaluation-periods.index');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         Gate::authorize('manage-evaluation-periods');
@@ -38,9 +49,13 @@ class EvaluationPeriodController extends Controller
 
         $validated['is_open'] = $request->boolean('is_open', false);
 
-        // If this period is being opened, close all others
+        // If this period is being opened, promote for each currently open period, then close them
         if ($validated['is_open']) {
+            $toPromoteIds = EvaluationPeriod::where('is_open', true)->pluck('id');
             EvaluationPeriod::where('is_open', true)->update(['is_open' => false]);
+            foreach ($toPromoteIds as $periodId) {
+                RunStudentPromotionForPeriodJob::dispatch($periodId)->afterResponse();
+            }
         }
 
         EvaluationPeriod::create($validated);
@@ -64,15 +79,27 @@ class EvaluationPeriodController extends Controller
         ]);
 
         $validated['is_open'] = $request->boolean('is_open', false);
+        $wasOpen = $evaluationPeriod->is_open;
 
-        // Only one period may be open at a time
-        if ($validated['is_open'] && !$evaluationPeriod->is_open) {
+        // Opening this period: promote for every other open period, then close them
+        if ($validated['is_open'] && ! $evaluationPeriod->is_open) {
+            $otherIds = EvaluationPeriod::where('is_open', true)
+                ->where('id', '!=', $evaluationPeriod->id)
+                ->pluck('id');
             EvaluationPeriod::where('is_open', true)
                 ->where('id', '!=', $evaluationPeriod->id)
                 ->update(['is_open' => false]);
+            foreach ($otherIds as $periodId) {
+                RunStudentPromotionForPeriodJob::dispatch($periodId)->afterResponse();
+            }
         }
 
         $evaluationPeriod->update($validated);
+
+        // Closing this period: run promotion after save (period row still has correct semester/school_year)
+        if ($wasOpen && ! $validated['is_open']) {
+            RunStudentPromotionForPeriodJob::dispatch($evaluationPeriod->id)->afterResponse();
+        }
 
         EvaluationService::clearCache();
 
