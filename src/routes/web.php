@@ -9,6 +9,7 @@ use App\Http\Controllers\EvaluateController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin;
+use App\Http\Controllers\AnnouncementController;
 use Illuminate\Support\Facades\Route;
 
 // Root: redirect unauthenticated visitors to the login page
@@ -47,6 +48,13 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
 
     // Help Center — accessible to all authenticated users
     Route::get('/help', [HelpController::class, 'index'])->name('help.index');
+
+    // Announcements — visible to every authenticated user
+    Route::get('/announcements',                           [AnnouncementController::class, 'index'])->name('announcements.index');
+    Route::post('/announcements/mark-read-batch',          [AnnouncementController::class, 'markReadBatch'])->name('announcements.read-batch');
+    Route::get('/announcements/{announcement}',            [AnnouncementController::class, 'show'])->name('announcements.show');
+    Route::post('/announcements/{announcement}/read',      [AnnouncementController::class, 'markRead'])->name('announcements.read');
+    Route::post('/announcements/{announcement}/ack',       [AnnouncementController::class, 'acknowledge'])->name('announcements.ack');
 
     // Dashboard — single entry point, controller resolves the right view per role
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -136,6 +144,13 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     Route::get('/settings', [Admin\SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings/general', [Admin\SettingsController::class, 'updateGeneral'])->name('settings.update-general');
     Route::delete('/settings/logo', [Admin\SettingsController::class, 'removeLogo'])->name('settings.remove-logo');
+
+    // Announcements — admin CRUD (policy-gated by AnnouncementPolicy)
+    Route::resource('admin/announcements', Admin\AnnouncementManagementController::class)
+        ->except(['show'])
+        ->names('admin.announcements');
+    Route::post('admin/announcements/{announcement}/archive', [Admin\AnnouncementManagementController::class, 'archive'])
+        ->name('admin.announcements.archive');
 
     // Audit Logs
     Route::get('/audit-logs', [Admin\AuditLogController::class, 'index'])->name('audit-logs.index');
