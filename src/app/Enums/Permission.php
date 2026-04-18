@@ -165,6 +165,7 @@ class Permission
                 self::VIEW_USERS,
                 self::PRINT_OR_GENERATE_COMMENT,
                 self::MONITOR_NOT_EVALUATED,
+                self::MANAGE_ANNOUNCEMENTS_SYSTEM,
             ],
             'dean', 'head' => [
                 self::VIEW_DEAN_DASHBOARD,
