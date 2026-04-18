@@ -12,11 +12,16 @@
 
     <article class="rounded-xl border border-gray-200 bg-white p-6">
         <div class="flex items-center gap-2 mb-3">
-            @if($announcement->priority === 'critical')
-                <span class="inline-flex items-center rounded bg-red-100 text-red-800 px-2 py-0.5 text-[11px] font-semibold">Critical</span>
-            @endif
+            @php
+                $priorityClasses = [
+                    'critical' => 'bg-red-100 text-red-800',
+                    'normal'   => 'bg-amber-100 text-amber-800',
+                    'info'     => 'bg-blue-100 text-blue-800',
+                ][$announcement->priority] ?? 'bg-slate-100 text-slate-800';
+            @endphp
+            <span class="inline-flex items-center rounded {{ $priorityClasses }} px-2 py-0.5 text-[11px] font-semibold">{{ ucfirst($announcement->priority) }}</span>
             @if($announcement->is_pinned)
-                <span class="inline-flex items-center rounded bg-amber-100 text-amber-800 px-2 py-0.5 text-[11px] font-semibold">Pinned</span>
+                <span class="inline-flex items-center rounded bg-purple-100 text-purple-800 px-2 py-0.5 text-[11px] font-semibold">Pinned</span>
             @endif
             <span class="text-xs text-slate-400">{{ ($announcement->publish_at ?? $announcement->created_at)->format('M j, Y g:i a') }}</span>
         </div>

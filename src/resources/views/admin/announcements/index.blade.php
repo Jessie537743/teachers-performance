@@ -40,11 +40,20 @@
                 @forelse($announcements as $a)
                     <tr class="border-t border-gray-100">
                         <td class="px-4 py-3">
-                            @if($a->is_pinned) <span class="mr-1 text-amber-600">★</span>@endif
+                            @if($a->is_pinned) <span class="mr-1 text-purple-600">★</span>@endif
                             {{ $a->title }}
                             @if($a->show_on_login) <span class="ml-1 text-[11px] text-blue-600">(login)</span>@endif
                         </td>
-                        <td class="px-4 py-3">{{ ucfirst($a->priority) }}</td>
+                        <td class="px-4 py-3">
+                            @php
+                                $priorityClasses = [
+                                    'critical' => 'bg-red-100 text-red-800',
+                                    'normal'   => 'bg-amber-100 text-amber-800',
+                                    'info'     => 'bg-blue-100 text-blue-800',
+                                ][$a->priority] ?? 'bg-slate-100 text-slate-800';
+                            @endphp
+                            <span class="inline-flex items-center rounded {{ $priorityClasses }} px-2 py-0.5 text-[11px] font-semibold">{{ ucfirst($a->priority) }}</span>
+                        </td>
                         <td class="px-4 py-3">{{ $a->everyone ? 'Everyone' : 'Targeted' }}</td>
                         <td class="px-4 py-3">{{ $a->publish_at?->format('M j, Y') ?? '—' }}</td>
                         <td class="px-4 py-3">{{ $a->expires_at?->format('M j, Y') ?? '—' }}</td>
