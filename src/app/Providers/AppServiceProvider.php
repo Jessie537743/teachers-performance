@@ -15,11 +15,15 @@ use App\Models\Setting;
 use App\Models\StudentProfile;
 use App\Models\Subject;
 use App\Models\User;
+use App\Models\Announcement;
 use App\Observers\AuditObserver;
+use App\Policies\AnnouncementPolicy;
 use App\Policies\DepartmentPolicy;
 use App\Policies\FacultyProfilePolicy;
+use App\View\Composers\AnnouncementComposer;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -44,7 +48,7 @@ class AppServiceProvider extends ServiceProvider
             User::class, Department::class, Course::class, Subject::class,
             FacultyProfile::class, StudentProfile::class, EvaluationPeriod::class,
             Criterion::class, SentimentLexicon::class, PermissionDelegation::class,
-            RolePermission::class, Setting::class,
+            RolePermission::class, Setting::class, Announcement::class,
         ];
         foreach ($auditableModels as $model) {
             $model::observe(AuditObserver::class);
@@ -70,5 +74,8 @@ class AppServiceProvider extends ServiceProvider
         // Explicit policy registrations (supplements auto-discovery)
         Gate::policy(Department::class, DepartmentPolicy::class);
         Gate::policy(FacultyProfile::class, FacultyProfilePolicy::class);
+        Gate::policy(Announcement::class, AnnouncementPolicy::class);
+
+        View::composer(['layouts.app', 'layouts.guest'], AnnouncementComposer::class);
     }
 }
