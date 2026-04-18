@@ -122,64 +122,104 @@
     </div>
 </div>
 
-@php
-    $appName = \App\Models\Setting::get('app_name', 'Evaluation System');
-@endphp
-<div class="flex w-full min-h-screen bg-white">
+<div class="flex w-full min-h-screen">
+    {{-- Left panel — branding --}}
+    <div class="hidden md:flex md:w-1/2 relative overflow-hidden bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900 items-center justify-center flex-col text-white p-10">
 
-    {{-- Left panel — form --}}
-    <div class="w-full md:w-[45%] flex flex-col bg-white px-6 md:px-14 py-8 relative z-10">
+        {{-- Floating decorative shapes --}}
+        <div class="shape w-64 h-64 -top-20 -left-20" style="animation: floatSlow 7s ease-in-out infinite;"></div>
+        <div class="shape w-40 h-40 top-1/4 right-10" style="animation: float 5s ease-in-out infinite 1s;"></div>
+        <div class="shape w-32 h-32 bottom-20 left-16" style="animation: floatSlow 6s ease-in-out infinite 0.5s;"></div>
+        <div class="shape w-20 h-20 bottom-1/3 right-1/4" style="animation: float 4s ease-in-out infinite 2s;"></div>
+        <div class="shape w-48 h-48 -bottom-16 -right-16" style="animation: floatSlow 8s ease-in-out infinite 1.5s;"></div>
 
-        {{-- Brand row --}}
-        <div class="flex items-center gap-2" style="animation: fadeInUp 0.4s ease-out both;">
-            <img src="{{ $customLogo ? asset('storage/' . $customLogo) : asset('images/smcc_logo.png') }}" alt="Logo" class="w-9 h-9 object-contain">
-            <span class="text-lg font-semibold text-slate-800 truncate">{{ $appName }}</span>
+        <div class="relative z-10 flex flex-col items-center justify-center text-center max-w-md">
+            {{-- Logo with entrance animation --}}
+            <div class="mb-8" style="animation: scaleIn 0.7s ease-out both;">
+                <div class="relative inline-block">
+                    <div class="absolute inset-0 rounded-full bg-white/10" style="animation: pulse-ring 2.5s ease-out infinite;"></div>
+                    <img src="{{ $customLogo ? asset('storage/' . $customLogo) : asset('images/smcc_logo.png') }}" alt="Logo"
+                         class="relative w-44 h-44 md:w-52 md:h-52 object-contain rounded-full bg-white/10 p-3 shadow-2xl ring-2 ring-white/20">
+                </div>
+            </div>
+
+            {{-- Auto-scroll slider (replaces marquee) --}}
+            <div class="w-full overflow-hidden" style="animation: fadeInUp 0.6s ease-out 0.3s both;">
+                <div class="slider-track">
+                    @php
+                        $appName = \App\Models\Setting::get('app_name', 'Evaluation System');
+                        $phrases = [
+                            $appName,
+                            'Faculty Performance Evaluation',
+                            'Data-Driven Insights',
+                            'Continuous Improvement',
+                            $appName,
+                            'Faculty Performance Evaluation',
+                            'Data-Driven Insights',
+                            'Continuous Improvement',
+                        ];
+                    @endphp
+                    @foreach($phrases as $phrase)
+                        <span class="text-xl md:text-2xl font-bold tracking-wide whitespace-nowrap px-8 text-white/90">{{ $phrase }}</span>
+                        <span class="text-white/30 text-2xl px-2">&bull;</span>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Subtitle --}}
+            <p class="text-blue-100/70 text-sm mt-6 max-w-xs" style="animation: fadeInUp 0.6s ease-out 0.5s both;">
+                Empowering academic excellence through transparent, data-driven faculty evaluation.
+            </p>
         </div>
+    </div>
 
-        {{-- Form block centered vertically --}}
-        <div class="flex-1 flex flex-col justify-center">
-            <div class="w-full max-w-sm mx-auto" style="animation: fadeInUp 0.5s ease-out 0.1s both;">
+    {{-- Right panel — login form --}}
+    <div class="w-full md:w-1/2 flex items-center justify-center bg-gray-50 p-6">
+        <div class="w-full max-w-md" style="animation: fadeInRight 0.6s ease-out 0.2s both;">
+            @include('layouts.partials.login-announcements')
+            <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-10">
 
-                {{-- Welcome --}}
-                <p class="text-sm text-slate-500 mb-1">Welcome to</p>
-                <h1 class="text-3xl md:text-4xl font-bold text-slate-900 mb-8 leading-tight">{{ $appName }}</h1>
+                {{-- Mobile logo (hidden on desktop) --}}
+                <div class="flex justify-center mb-6 md:hidden" style="animation: scaleIn 0.5s ease-out both;">
+                    <img src="{{ $customLogo ? asset('storage/' . $customLogo) : asset('images/smcc_logo.png') }}" alt="Logo" class="w-20 h-20 object-contain rounded-full bg-blue-50 p-2 ring-2 ring-blue-100">
+                </div>
 
-                {{-- Announcements (login-visible) --}}
-                @include('layouts.partials.login-announcements')
+                <div class="mb-8 text-center" style="animation: fadeInUp 0.5s ease-out 0.3s both;">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">Welcome</h2>
+                    <p class="text-sm text-gray-500">Personnel sign in with email. Students sign in with Student ID.</p>
+                </div>
 
                 @if(session('error'))
-                    <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{{ session('error') }}</div>
+                    <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm" style="animation: fadeInUp 0.3s ease-out both;">{{ session('error') }}</div>
                 @endif
                 @if($errors->any())
-                    <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm">{{ $errors->first() }}</div>
+                    <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm" style="animation: fadeInUp 0.3s ease-out both;">{{ $errors->first() }}</div>
                 @endif
 
-                <form method="POST" action="{{ route('login') }}" id="loginForm" class="space-y-4">
+                <form method="POST" action="{{ route('login') }}" id="loginForm">
                     @csrf
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide" for="login">Username</label>
+                    <div class="mb-5" style="animation: fadeInUp 0.5s ease-out 0.4s both;">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5" for="login">Email or Student ID</label>
                         <input
                             type="text"
                             name="login"
                             id="login"
-                            class="w-full px-4 py-3 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
-                            placeholder="Email or Student ID"
+                            class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all duration-200"
+                            placeholder="Enter your email or student ID"
                             value="{{ old('login') }}"
                             required
                             autofocus
                             autocomplete="username"
                         >
                     </div>
-
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wide" for="password">Password</label>
+                    <div class="mb-6" style="animation: fadeInUp 0.5s ease-out 0.5s both;">
+                        <label class="block text-sm font-semibold text-gray-700 mb-1.5" for="password">Password</label>
                         <div class="relative">
                             <input
                                 type="password"
                                 name="password"
                                 id="password"
-                                class="w-full px-4 py-3 pr-12 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                                class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all duration-200 pr-12"
                                 placeholder="Enter your password"
                                 required
                                 autocomplete="current-password"
@@ -191,80 +231,19 @@
                             </button>
                         </div>
                     </div>
-
-                    <div class="flex items-center justify-between text-sm">
-                        <label class="inline-flex items-center gap-2 text-slate-500 cursor-pointer">
-                            <input type="checkbox" name="remember" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-                            <span>Remember me</span>
-                        </label>
-                        <a href="{{ route('forgot-password.form') }}" class="text-blue-600 hover:text-blue-800 font-medium transition">Forgot Password?</a>
+                    <div style="animation: fadeInUp 0.5s ease-out 0.6s both;">
+                        <button type="submit" id="loginBtn"
+                                class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-xl text-sm transition-all duration-300 cursor-pointer shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none">
+                            Sign In
+                        </button>
                     </div>
-
-                    <button type="submit" id="loginBtn"
-                            class="w-full py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg text-sm tracking-wide uppercase transition-all duration-300 cursor-pointer shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none">
-                        Login
-                    </button>
                 </form>
 
-                <p class="mt-5 text-center text-sm text-slate-500">
-                    Need access? <a href="{{ route('forgot-password.form') }}" class="text-blue-600 hover:text-blue-800 font-semibold">Request an account</a>
-                </p>
-            </div>
-        </div>
+                <div class="mt-4 text-center" style="animation: fadeInUp 0.5s ease-out 0.65s both;">
+                    <a href="{{ route('forgot-password.form') }}" class="text-sm text-blue-600 hover:text-blue-800 font-medium transition">Forgot Password?</a>
+                </div>
 
-        {{-- Footer --}}
-        <div class="text-center text-xs text-slate-400 mt-6">
-            <a href="{{ route('help.index') }}" class="hover:text-slate-600">FAQ</a>
-            <span class="mx-2">|</span>
-            <span>{{ $appName }}</span>
-            <span class="mx-2">|</span>
-            <a href="mailto:support@localhost" class="hover:text-slate-600">Support</a>
-        </div>
-    </div>
-
-    {{-- Right panel — info with curved left edge --}}
-    <div class="hidden md:block relative md:w-[55%]">
-        {{-- Curved blue background --}}
-        <div class="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900 overflow-hidden"
-             style="clip-path: ellipse(118% 140% at 100% 50%);">
-
-            {{-- Giant watermark text (covers most of the panel vertically) --}}
-            <div class="absolute right-[-1rem] top-1/2 -translate-y-1/2 text-white/[0.06] font-black leading-none select-none pointer-events-none whitespace-nowrap tracking-tighter"
-                 style="font-size: clamp(12rem, 22vw, 24rem);" aria-hidden="true">
-                LOGIN
-            </div>
-
-            {{-- Subtle floating orbs --}}
-            <div class="shape w-72 h-72 -top-16 right-28" style="animation: floatSlow 7s ease-in-out infinite;"></div>
-            <div class="shape w-40 h-40 top-1/3 right-16" style="animation: float 5s ease-in-out infinite 1s;"></div>
-            <div class="shape w-24 h-24 bottom-1/4 right-1/3" style="animation: float 4s ease-in-out infinite 2s;"></div>
-            <div class="shape w-56 h-56 -bottom-16 -right-10" style="animation: floatSlow 8s ease-in-out infinite 1.5s;"></div>
-        </div>
-
-        {{-- Content --}}
-        <div class="relative z-10 h-full flex items-center px-10 lg:px-16 py-16 text-white" style="animation: fadeInRight 0.6s ease-out 0.2s both;">
-            <div class="max-w-lg">
-
-                <h2 class="text-2xl font-bold mb-3">About {{ $appName }}</h2>
-                <p class="text-blue-100/90 text-sm leading-relaxed mb-8">
-                    A data-driven faculty performance evaluation platform. Students, peers, deans, and heads submit evaluations; the system aggregates and surfaces actionable insights to help the institution support continuous teaching improvement.
-                </p>
-
-                <h2 class="text-2xl font-bold mb-3">Features</h2>
-                <ul class="space-y-3 text-sm text-blue-100/90">
-                    <li class="flex gap-2">
-                        <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-white/70 flex-shrink-0"></span>
-                        <span>Structured student, peer, self, and dean evaluations with tailored criteria per role.</span>
-                    </li>
-                    <li class="flex gap-2">
-                        <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-white/70 flex-shrink-0"></span>
-                        <span>Period-scoped analytics and sentiment analysis of qualitative comments.</span>
-                    </li>
-                    <li class="flex gap-2">
-                        <span class="mt-1.5 w-1.5 h-1.5 rounded-full bg-white/70 flex-shrink-0"></span>
-                        <span>Department and institution-wide reports with intervention recommendations.</span>
-                    </li>
-                </ul>
+                <div class="mt-8 text-center text-xs text-gray-400" style="animation: fadeInUp 0.5s ease-out 0.7s both;">Secure access to the evaluation system</div>
             </div>
         </div>
     </div>
