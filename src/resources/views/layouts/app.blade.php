@@ -31,7 +31,7 @@
         }
     </script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8/dist/turbo.es2017.esm.js" type="module"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8/dist/turbo.es2017-esm.js" type="module"></script>
     <style>
         .turbo-progress-bar { height: 3px; background: #2563eb; }
         [x-cloak] { display: none !important; }
