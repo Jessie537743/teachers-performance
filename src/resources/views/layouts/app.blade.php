@@ -30,6 +30,7 @@
             }
         }
     </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8/dist/turbo.es2017.esm.js" type="module"></script>
     <style>
         .turbo-progress-bar { height: 3px; background: #2563eb; }
@@ -130,6 +131,9 @@
             <div class="flex items-center gap-3.5">
                 <button class="menu-toggle-btn hidden h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-lg text-slate-900 hover:bg-gray-50" id="menuToggle">&#9776;</button>
                 <h1 class="text-xl font-bold">@yield('page-title', 'Dashboard')</h1>
+            </div>
+            <div class="flex items-center gap-2 mr-2">
+                @include('layouts.partials.announcement-bell')
             </div>
             <div class="relative" id="userChip">
                 <button onclick="document.getElementById('userDropdown').classList.toggle('show')" class="flex items-center gap-2.5 rounded-full border border-gray-200 bg-white px-3 py-2 transition-all hover:border-primary-light hover:shadow-sm">
