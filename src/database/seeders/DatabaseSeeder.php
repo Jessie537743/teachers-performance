@@ -28,5 +28,7 @@ class DatabaseSeeder extends Seeder
             SentimentLexiconSeeder::class,
             // SampleEvaluationDataSeeder::class, // optional: php artisan db:seed --class=Database\\Seeders\\SampleEvaluationDataSeeder
         ]);
+
+        $this->call(\Database\Seeders\AnnouncementPermissionsSeeder::class);
     }
 }
