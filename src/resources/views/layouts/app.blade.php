@@ -124,6 +124,7 @@
 
     {{-- Main --}}
     <main class="main-ml flex min-w-0 flex-1 flex-col">
+        @include('layouts.partials.announcement-banner')
         {{-- Topbar --}}
         <header class="sticky top-0 z-[900] flex h-[72px] items-center justify-between border-b border-gray-200 bg-white/80 px-5 backdrop-blur-xl">
             <div class="flex items-center gap-3.5">
