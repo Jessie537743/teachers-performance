@@ -12,6 +12,13 @@ class ReadStateTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // Disable CSRF verification for feature tests that use POST/PUT/DELETE.
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
+    }
+
     public function test_archive_index_marks_non_critical_read(): void
     {
         $u = User::factory()->create(['roles' => ['faculty']]);

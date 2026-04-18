@@ -4,6 +4,7 @@ namespace Tests\Feature\Announcements;
 
 use App\Models\Announcement;
 use App\Models\AnnouncementRead;
+use App\Models\Department;
 use App\Models\RolePermission;
 use App\Models\User;
 use App\Enums\Permission;
@@ -17,6 +18,9 @@ class LifecycleTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Disable CSRF verification for feature tests that use POST/PUT/DELETE.
+        $this->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class);
 
         // Ensure role_permissions reflects Permission::defaultsForRole() (see Batch A notes).
         RolePermission::query()->delete();
@@ -53,7 +57,8 @@ class LifecycleTest extends TestCase
 
     public function test_store_rejects_out_of_scope_for_dept_author(): void
     {
-        $head = User::factory()->create(['roles' => ['head'], 'department_id' => 42]);
+        $dept = Department::factory()->create();
+        $head = User::factory()->create(['roles' => ['head'], 'department_id' => $dept->id]);
 
         $this->actingAs($head)->post(route('admin.announcements.store'), [
             'title'         => 'x',
