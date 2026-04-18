@@ -47,6 +47,10 @@ class Permission
     const MANAGE_ROLES = 'manage-roles';
     const VIEW_USERS = 'view-users';
 
+    // Announcements
+    const MANAGE_ANNOUNCEMENTS_SYSTEM     = 'manage-announcements-system';
+    const MANAGE_ANNOUNCEMENTS_DEPARTMENT = 'manage-announcements-department';
+
     // All available roles in the system
     public static function allRoles(): array
     {
@@ -100,6 +104,10 @@ class Permission
                 self::MANAGE_SETTINGS => 'Manage Settings',
                 self::MANAGE_ROLES    => 'Manage Roles & Permissions',
                 self::VIEW_USERS      => 'View All Users',
+            ],
+            'Announcements' => [
+                self::MANAGE_ANNOUNCEMENTS_SYSTEM     => 'Manage System-Wide Announcements',
+                self::MANAGE_ANNOUNCEMENTS_DEPARTMENT => 'Manage Department Announcements',
             ],
         ];
     }
@@ -157,6 +165,7 @@ class Permission
                 self::VIEW_USERS,
                 self::PRINT_OR_GENERATE_COMMENT,
                 self::MONITOR_NOT_EVALUATED,
+                self::MANAGE_ANNOUNCEMENTS_SYSTEM,
             ],
             'dean', 'head' => [
                 self::VIEW_DEAN_DASHBOARD,
@@ -165,6 +174,7 @@ class Permission
                 self::VIEW_GENERATED_REPORT,
                 self::SUBMIT_DEAN_EVALUATION,
                 self::MONITOR_NOT_EVALUATED,
+                self::MANAGE_ANNOUNCEMENTS_DEPARTMENT,
             ],
             'faculty' => [
                 self::VIEW_FACULTY_DASHBOARD,
@@ -185,6 +195,7 @@ class Permission
                 self::MANAGE_FACULTY,
                 self::VIEW_USERS,
                 self::MONITOR_NOT_EVALUATED,
+                self::MANAGE_ANNOUNCEMENTS_SYSTEM,
             ],
             'school_president' => [
                 self::VIEW_ADMIN_DASHBOARD,
@@ -192,6 +203,7 @@ class Permission
                 self::GENERATE_REPORT,
                 self::VIEW_GENERATED_REPORT,
                 self::SUBMIT_DEAN_EVALUATION,
+                self::MANAGE_ANNOUNCEMENTS_SYSTEM,
             ],
             'vp_admin' => [
                 self::VIEW_ADMIN_DASHBOARD,
@@ -205,6 +217,7 @@ class Permission
                 self::GENERATE_REPORT,
                 self::VIEW_GENERATED_REPORT,
                 self::SUBMIT_DEAN_EVALUATION,
+                self::MANAGE_ANNOUNCEMENTS_SYSTEM,
             ],
             'staff' => [
                 self::VIEW_HR_DASHBOARD,

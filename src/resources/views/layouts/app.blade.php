@@ -30,7 +30,8 @@
             }
         }
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8/dist/turbo.es2017.esm.js" type="module"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@hotwired/turbo@8/dist/turbo.es2017-esm.js" type="module"></script>
     <style>
         .turbo-progress-bar { height: 3px; background: #2563eb; }
         [x-cloak] { display: none !important; }
@@ -124,13 +125,16 @@
 
     {{-- Main --}}
     <main class="main-ml flex min-w-0 flex-1 flex-col">
+        @include('layouts.partials.announcement-banner')
         {{-- Topbar --}}
         <header class="sticky top-0 z-[900] flex h-[72px] items-center justify-between border-b border-gray-200 bg-white/80 px-5 backdrop-blur-xl">
             <div class="flex items-center gap-3.5">
                 <button class="menu-toggle-btn hidden h-11 w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-lg text-slate-900 hover:bg-gray-50" id="menuToggle">&#9776;</button>
                 <h1 class="text-xl font-bold">@yield('page-title', 'Dashboard')</h1>
             </div>
-            <div class="relative" id="userChip">
+            <div class="flex items-center gap-3">
+                @include('layouts.partials.announcement-bell')
+                <div class="relative" id="userChip">
                 <button onclick="document.getElementById('userDropdown').classList.toggle('show')" class="flex items-center gap-2.5 rounded-full border border-gray-200 bg-white px-3 py-2 transition-all hover:border-primary-light hover:shadow-sm">
                     <div class="grid h-9 w-9 place-items-center rounded-full bg-primary font-bold text-white">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
                     <span class="hidden sm:inline text-sm font-medium">{{ auth()->user()->name }}</span>
@@ -170,6 +174,7 @@
                             Logout
                         </button>
                     </form>
+                </div>
                 </div>
             </div>
         </header>
@@ -282,6 +287,24 @@
         var overlay = document.getElementById('formLoadingOverlay');
         if (overlay) { overlay.classList.add('hidden'); overlay.classList.remove('flex'); }
     });
+
+    // Defensive: on every page load ensure no stray full-screen overlay is visible
+    // (catches stuck loginOverlay from bfcache, form-submit overlay left over from
+    // a redirect, and any mobile sidebar class left on <body> from a previous view).
+    function hideAllOverlays() {
+        var ids = ['formLoadingOverlay', 'loginOverlay', 'confirmOverlay'];
+        ids.forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('active', 'flex');
+            el.classList.add('hidden');
+            el.style.display = 'none';
+        });
+        document.body.classList.remove('sidebar-open');
+    }
+    document.addEventListener('DOMContentLoaded', hideAllOverlays);
+    document.addEventListener('turbo:load', hideAllOverlays);
+    window.addEventListener('pageshow', hideAllOverlays);
 </script>
 <style>
     .user-dropdown.show { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }

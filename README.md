@@ -79,6 +79,19 @@ docker exec tp-app npm run build
 | ML API Docs      | http://localhost:8001/docs    |
 | MySQL            | `localhost:3307`              |
 
+## Default Login Credentials (local dev only)
+
+These accounts are created by `php artisan db:seed` and are intended for local development only. **Never ship or reuse these in production.** Change the admin password on first login or re-run the seeders with different values.
+
+| Role               | Email                     | Password   |
+|--------------------|---------------------------|------------|
+| System Administrator | `admin@sample.com`      | `admin123` |
+| Dean (CCIS)        | `dean.ccis@sample.com`    | `admin123` |
+
+The `admin` account has the `admin` role, which bypasses every permission gate (including the new Announcements permissions) via `Gate::before` in `AppServiceProvider`. For testing tiered announcement authoring, use `dean.ccis@sample.com` to exercise the `manage-announcements-department` path.
+
+Other seeded users (other deans, faculty, students, institution leaders) have real-world bcrypt hashes imported from production dumps and are **not** accessible with a known default password.
+
 ## ML API Endpoints
 
 | Method | Endpoint              | Description                              |
