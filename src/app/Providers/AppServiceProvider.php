@@ -76,6 +76,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(FacultyProfile::class, FacultyProfilePolicy::class);
         Gate::policy(Announcement::class, AnnouncementPolicy::class);
 
-        View::composer(['layouts.app', 'layouts.guest'], AnnouncementComposer::class);
+        View::composer(['layouts.app', 'layouts.guest', 'auth.login'], AnnouncementComposer::class);
     }
 }

@@ -176,6 +176,7 @@
     {{-- Right panel — login form --}}
     <div class="w-full md:w-1/2 flex items-center justify-center bg-gray-50 p-6">
         <div class="w-full max-w-md" style="animation: fadeInRight 0.6s ease-out 0.2s both;">
+            @include('layouts.partials.login-announcements')
             <div class="bg-white rounded-2xl shadow-xl border border-gray-100 p-10">
 
                 {{-- Mobile logo (hidden on desktop) --}}
