@@ -287,6 +287,24 @@
         var overlay = document.getElementById('formLoadingOverlay');
         if (overlay) { overlay.classList.add('hidden'); overlay.classList.remove('flex'); }
     });
+
+    // Defensive: on every page load ensure no stray full-screen overlay is visible
+    // (catches stuck loginOverlay from bfcache, form-submit overlay left over from
+    // a redirect, and any mobile sidebar class left on <body> from a previous view).
+    function hideAllOverlays() {
+        var ids = ['formLoadingOverlay', 'loginOverlay', 'confirmOverlay'];
+        ids.forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove('active', 'flex');
+            el.classList.add('hidden');
+            el.style.display = 'none';
+        });
+        document.body.classList.remove('sidebar-open');
+    }
+    document.addEventListener('DOMContentLoaded', hideAllOverlays);
+    document.addEventListener('turbo:load', hideAllOverlays);
+    window.addEventListener('pageshow', hideAllOverlays);
 </script>
 <style>
     .user-dropdown.show { opacity: 1; visibility: visible; transform: translateY(0) scale(1); }
