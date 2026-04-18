@@ -226,22 +226,23 @@
     <div class="hidden md:block relative md:w-[55%]">
         {{-- Curved blue background --}}
         <div class="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-900 overflow-hidden"
-             style="clip-path: ellipse(115% 140% at 100% 50%);">
+             style="clip-path: ellipse(118% 140% at 100% 50%);">
 
-            {{-- Floating decorative shapes --}}
-            <div class="shape w-72 h-72 -top-24 right-20" style="animation: floatSlow 7s ease-in-out infinite;"></div>
-            <div class="shape w-40 h-40 top-1/3 right-10" style="animation: float 5s ease-in-out infinite 1s;"></div>
-            <div class="shape w-24 h-24 bottom-1/4 right-1/3" style="animation: float 4s ease-in-out infinite 2s;"></div>
-            <div class="shape w-56 h-56 -bottom-16 -right-10" style="animation: floatSlow 8s ease-in-out infinite 1.5s;"></div>
-
-            {{-- Oversized watermark text, fades into gradient --}}
-            <div class="absolute right-6 top-6 text-white/5 text-[10rem] font-bold leading-none select-none pointer-events-none" aria-hidden="true">
+            {{-- Giant watermark text (covers most of the panel vertically) --}}
+            <div class="absolute right-[-1rem] top-1/2 -translate-y-1/2 text-white/[0.06] font-black leading-none select-none pointer-events-none whitespace-nowrap tracking-tighter"
+                 style="font-size: clamp(12rem, 22vw, 24rem);" aria-hidden="true">
                 LOGIN
             </div>
+
+            {{-- Subtle floating orbs --}}
+            <div class="shape w-72 h-72 -top-16 right-28" style="animation: floatSlow 7s ease-in-out infinite;"></div>
+            <div class="shape w-40 h-40 top-1/3 right-16" style="animation: float 5s ease-in-out infinite 1s;"></div>
+            <div class="shape w-24 h-24 bottom-1/4 right-1/3" style="animation: float 4s ease-in-out infinite 2s;"></div>
+            <div class="shape w-56 h-56 -bottom-16 -right-10" style="animation: floatSlow 8s ease-in-out infinite 1.5s;"></div>
         </div>
 
         {{-- Content --}}
-        <div class="relative z-10 h-full flex items-center px-10 lg:px-20 py-16 text-white" style="animation: fadeInRight 0.6s ease-out 0.2s both;">
+        <div class="relative z-10 h-full flex items-center px-10 lg:px-16 py-16 text-white" style="animation: fadeInRight 0.6s ease-out 0.2s both;">
             <div class="max-w-lg">
 
                 <h2 class="text-2xl font-bold mb-3">About {{ $appName }}</h2>
