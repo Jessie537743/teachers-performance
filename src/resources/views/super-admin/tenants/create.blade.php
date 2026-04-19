@@ -49,22 +49,21 @@
         <hr class="border-slate-200">
 
         <div>
-            <label class="block text-sm font-medium text-slate-700 mb-2">Plan</label>
-            <div class="grid grid-cols-3 gap-3">
+            <label for="plan" class="block text-sm font-medium text-slate-700 mb-1">Plan</label>
+            <select id="plan" name="plan" required
+                class="w-full rounded-md border-slate-300 shadow-sm focus:border-slate-500 focus:ring-slate-500">
                 @foreach (config('plans') as $slug => $plan)
-                    <label class="cursor-pointer rounded-lg border-2 border-slate-200 p-4 hover:border-slate-400 has-[:checked]:border-slate-900 has-[:checked]:bg-slate-50">
-                        <input type="radio" name="plan" value="{{ $slug }}" {{ old('plan', 'free') === $slug ? 'checked' : '' }} class="sr-only">
-                        <div class="font-semibold text-slate-900">{{ $plan['name'] }}</div>
-                        <div class="text-xs text-slate-500 mt-1">
-                            @if (is_numeric($plan['price']))
-                                ${{ $plan['price'] }} {{ $plan['period'] }}
-                            @else
-                                {{ $plan['price'] }}
-                            @endif
-                        </div>
-                    </label>
+                    <option value="{{ $slug }}" {{ old('plan', 'free') === $slug ? 'selected' : '' }}>
+                        {{ $plan['name'] }} —
+                        @if (is_numeric($plan['price']))
+                            ${{ $plan['price'] }} {{ $plan['period'] }}
+                        @else
+                            {{ $plan['price'] }}
+                        @endif
+                    </option>
                 @endforeach
-            </div>
+            </select>
+            <p class="mt-1 text-xs text-slate-500">{{ config('plans.' . old('plan', 'free') . '.tagline') }}</p>
             @error('plan') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
         </div>
 
