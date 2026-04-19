@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Jobs\ProvisionTenantJob;
+use App\Models\ActivationCode;
 use App\Models\Tenant;
 use App\Rules\AvailableSubdomain;
 use Illuminate\Http\RedirectResponse;
@@ -25,52 +26,54 @@ class TenantController extends Controller
         return view('super-admin.tenants.create');
     }
 
-    public function store(Request $request): RedirectResponse|View
+    public function store(Request $request): RedirectResponse|\Illuminate\View\View
     {
+        $validPlans = array_keys(config('plans'));
+
         $data = $request->validate([
             'name'        => ['required', 'string', 'max:120'],
             'subdomain'   => ['required', 'string', new AvailableSubdomain()],
             'admin_name'  => ['required', 'string', 'max:120'],
             'admin_email' => ['required', 'email', 'max:255'],
+            'plan'        => ['required', 'string', \Illuminate\Validation\Rule::in($validPlans)],
         ]);
 
         $tenant = Tenant::create([
             'name'      => $data['name'],
             'subdomain' => strtolower($data['subdomain']),
-            'database'  => 'tenant_' . Str::random(8), // placeholder — replaced after insert
+            'database'  => 'tenant_' . Str::random(8),
             'status'    => 'provisioning',
+            'plan'      => $data['plan'],
         ]);
 
-        // Mirror the subdomain into the central `domains` table so the
-        // stancl resolver (DomainTenantResolver) can find this tenant.
         $tenant->domains()->create(['domain' => strtolower($data['subdomain'])]);
 
-        // Now that we have the auto-incremented id, set the canonical
-        // database name. The placeholder above only existed to satisfy
-        // the NOT NULL constraint on the initial insert.
         $tenant->update(['database' => 'tenant_' . $tenant->id]);
         $tenant->refresh();
 
-        $tempPassword = Str::random(12);
-
         try {
-            (new ProvisionTenantJob(
-                tenant: $tenant,
-                adminName: $data['admin_name'],
-                adminEmail: $data['admin_email'],
-                adminTempPassword: $tempPassword,
-            ))->handle();
+            (new ProvisionTenantJob($tenant))->handle();
         } catch (\Throwable $e) {
-            // Job already marked tenant 'failed' and recorded the error.
             return redirect()
                 ->route('admin.tenants.show', $tenant)
                 ->with('error', 'Provisioning failed: ' . $e->getMessage());
         }
 
+        $tenant->update(['status' => 'pending_activation']);
+
+        $activationCode = ActivationCode::create([
+            'tenant_id'            => $tenant->id,
+            'code'                 => ActivationCode::generate(),
+            'plan'                 => $data['plan'],
+            'intended_admin_name'  => $data['admin_name'],
+            'intended_admin_email' => $data['admin_email'],
+            'status'               => 'unredeemed',
+            'expires_at'           => now()->addDays(30),
+        ]);
+
         return view('super-admin.tenants.created', [
-            'tenant'       => $tenant->refresh(),
-            'adminEmail'   => $data['admin_email'],
-            'tempPassword' => $tempPassword,
+            'tenant'         => $tenant->refresh(),
+            'activationCode' => $activationCode,
         ]);
     }
 

@@ -13,16 +13,16 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
+/**
+ * Provisions a tenant DB. Caller decides what status to set on the tenant
+ * after success — typically `pending_activation` for fresh wizard creations
+ * (the school admin will set their password via the activation flow).
+ */
 class ProvisionTenantJob
 {
     use Dispatchable, Queueable, SerializesModels;
 
-    public function __construct(
-        public Tenant $tenant,
-        public string $adminName,
-        public string $adminEmail,
-        public string $adminTempPassword,
-    ) {}
+    public function __construct(public Tenant $tenant) {}
 
     public function handle(): void
     {
@@ -36,9 +36,6 @@ class ProvisionTenantJob
             $this->createDatabase();
             $this->runTenantMigrations();
             $this->seedTemplate();
-            $this->createFirstAdmin();
-
-            $this->tenant->update(['status' => 'active']);
 
             $audit->update([
                 'status'      => 'succeeded',
@@ -66,8 +63,6 @@ class ProvisionTenantJob
     {
         $databaseName = $this->tenant->getAttribute('database');
 
-        // Connect to MySQL on the central host but without selecting a
-        // database, so we can issue CREATE DATABASE.
         $centralConfig = config('database.connections.central');
         Config::set('database.connections._tenant_provisioner', array_merge($centralConfig, ['database' => null]));
         DB::purge('_tenant_provisioner');
@@ -76,9 +71,6 @@ class ProvisionTenantJob
             "CREATE DATABASE IF NOT EXISTS `{$databaseName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
         );
 
-        // The MYSQL_DATABASE/MYSQL_USER docker pair only auto-grants the
-        // initial DB to the user. Subsequent DBs need an explicit GRANT or
-        // the tenant connection (running as tp_user) cannot read them.
         $tenantUser = config('database.connections.mysql.username');
         DB::connection('_tenant_provisioner')->statement(
             "GRANT ALL PRIVILEGES ON `{$databaseName}`.* TO '{$tenantUser}'@'%'"
@@ -88,9 +80,6 @@ class ProvisionTenantJob
 
     protected function runTenantMigrations(): void
     {
-        // Stancl's tenants:migrate command initializes tenancy, runs the
-        // migrations under config('tenancy.migration_parameters'), and
-        // tears down. Pass the tenant id as a string (stancl expects strings).
         Artisan::call('tenants:migrate', [
             '--tenants' => [(string) $this->tenant->id],
             '--force'   => true,
@@ -104,27 +93,5 @@ class ProvisionTenantJob
             '--class'   => 'Database\\Seeders\\TenantTemplateSeeder',
             '--force'   => true,
         ]);
-    }
-
-    protected function createFirstAdmin(): void
-    {
-        tenancy()->initialize($this->tenant);
-
-        try {
-            // While tenancy is initialized, the default `mysql` connection
-            // points at the tenant DB. Use the User model so password
-            // hashing, casts, and role serialization stay consistent with
-            // the rest of the app.
-            \App\Models\User::create([
-                'name'                 => $this->adminName,
-                'email'                => $this->adminEmail,
-                'password'             => $this->adminTempPassword, // 'hashed' cast
-                'roles'                => ['admin'],                // 'array' cast
-                'is_active'            => true,
-                'must_change_password' => true,
-            ]);
-        } finally {
-            tenancy()->end();
-        }
     }
 }
