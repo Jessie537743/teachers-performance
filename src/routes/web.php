@@ -14,7 +14,16 @@ use Illuminate\Support\Facades\Route;
  * exclusively on tenant subdomains.
  */
 
+$adminDomain = env('APP_ADMIN_DOMAIN', 'admin.localhost');
+
 foreach (config('tenancy.central_domains', []) as $centralDomain) {
+    // Skip the admin subdomain — it has its own route file (routes/admin.php)
+    // registered with a domain constraint in bootstrap/app.php. Including it
+    // here would shadow the admin routes since web.php is loaded first.
+    if ($centralDomain === $adminDomain) {
+        continue;
+    }
+
     Route::domain($centralDomain)->get('/', fn () => response()->view('central.landing'))
         ->name('central.landing.' . str_replace('.', '_', $centralDomain));
 }
