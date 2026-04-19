@@ -50,6 +50,7 @@ services:
       - "3307:3306"
     volumes:
       - tp-db-data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     networks:
       - tp-network
     healthcheck:
