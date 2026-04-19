@@ -31,12 +31,22 @@ class TenantSubdomainResolutionTest extends TestCase
         $response->assertSee('Multi-Tenant Platform');
     }
 
-    public function test_admin_placeholder_is_accessible_on_admin_subdomain(): void
+    public function test_admin_subdomain_routes_unauthenticated_root_to_login(): void
     {
+        // Phase 2 replaced the placeholder with the real auth-protected
+        // dashboard. Hitting `/` while unauthenticated bounces through
+        // admin.tenants.index → /login.
         $response = $this->get('http://admin.localhost/');
 
+        $response->assertRedirect('http://admin.localhost/login');
+    }
+
+    public function test_admin_login_page_renders_on_admin_subdomain(): void
+    {
+        $response = $this->get('http://admin.localhost/login');
+
         $response->assertOk();
-        $response->assertSee('Super-admin dashboard');
+        $response->assertSee('Platform Console');
     }
 
     public function test_jcd_subdomain_serves_the_login_page(): void
