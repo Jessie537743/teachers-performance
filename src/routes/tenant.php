@@ -11,6 +11,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\AnnouncementController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Middleware\EnsureTenantIsActive;
 use Stancl\Tenancy\Middleware\InitializeTenancyBySubdomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
@@ -18,6 +19,7 @@ Route::middleware([
     'web',
     PreventAccessFromCentralDomains::class,
     InitializeTenancyBySubdomain::class,
+    EnsureTenantIsActive::class,
 ])->group(function () {
 
 // Root: redirect unauthenticated visitors to the login page

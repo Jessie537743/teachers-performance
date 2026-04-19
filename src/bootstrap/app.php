@@ -32,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'must.change.password' => \App\Http\Middleware\MustChangePassword::class,
             'dept.access'          => \App\Http\Middleware\EnsureDepartmentAccess::class,
             'tenant'               => \Stancl\Tenancy\Middleware\InitializeTenancyBySubdomain::class,
+            'tenant.active'        => \App\Http\Middleware\EnsureTenantIsActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
