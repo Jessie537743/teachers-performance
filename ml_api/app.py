@@ -29,6 +29,18 @@ MODEL_NAME = "Random Forest"
 ML_API_TOKEN = os.getenv("ML_API_TOKEN")
 
 
+def require_tenant_db(x_tenant_db: str | None = Header(default=None)) -> str:
+    """Per-request tenant DB selector. The Laravel client sends this on every
+    data-touching call. Format: `tenant_<id>` or the legacy `teachers_performance`.
+    Validated to allow only [a-zA-Z0-9_] to avoid SQL identifier injection
+    via _db_config()."""
+    if not x_tenant_db:
+        raise HTTPException(status_code=400, detail="Missing X-Tenant-DB header.")
+    if not all(c.isalnum() or c == "_" for c in x_tenant_db):
+        raise HTTPException(status_code=400, detail="Invalid X-Tenant-DB header.")
+    return x_tenant_db
+
+
 # ---------------------------------------------------------------------------
 # Auth
 # ---------------------------------------------------------------------------
@@ -60,23 +72,23 @@ class TrainInput(BaseModel):
 # ---------------------------------------------------------------------------
 # DB helpers
 # ---------------------------------------------------------------------------
-def _db_config() -> dict:
+def _db_config(tenant_db: str) -> dict:
     return {
         "host": os.getenv("DB_HOST", "db"),
         "port": int(os.getenv("DB_PORT", "3306")),
         "user": os.getenv("DB_USER", "tp_user"),
         "password": os.getenv("DB_PASSWORD", "secret"),
-        "database": os.getenv("DB_NAME", "teachers_performance"),
+        "database": tenant_db,
         "connect_timeout": 10,
     }
 
 
-def _get_connection():
-    return pymysql.connect(**_db_config(), cursorclass=pymysql.cursors.DictCursor)
+def _get_connection(tenant_db: str):
+    return pymysql.connect(**_db_config(tenant_db), cursorclass=pymysql.cursors.DictCursor)
 
 
-def _read_query_dataframe(query: str) -> pd.DataFrame:
-    with _get_connection() as connection:
+def _read_query_dataframe(tenant_db: str, query: str) -> pd.DataFrame:
+    with _get_connection(tenant_db) as connection:
         with connection.cursor() as cursor:
             cursor.execute(query)
             rows = cursor.fetchall()
@@ -132,7 +144,7 @@ def _normalize_performance_label(raw_label: str | None) -> str | None:
 # ---------------------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------------------
-def _load_feedback_history_rows() -> pd.DataFrame:
+def _load_feedback_history_rows(tenant_db: str) -> pd.DataFrame:
     query = """
         SELECT faculty_id, semester, school_year,
                CAST(total_average AS DECIMAL(10,4)) AS avg_score,
@@ -150,7 +162,7 @@ def _load_feedback_history_rows() -> pd.DataFrame:
         FROM faculty_peer_evaluation_feedback
         WHERE evaluation_type = 'peer' AND total_average IS NOT NULL
     """
-    return _read_query_dataframe(query)
+    return _read_query_dataframe(tenant_db, query)
 
 
 def _apply_term_filter(df: pd.DataFrame, semester: str | None, school_year: str | None) -> pd.DataFrame:
@@ -163,7 +175,7 @@ def _apply_term_filter(df: pd.DataFrame, semester: str | None, school_year: str 
 
 
 def _prepare_training_data_from_mysql(
-    semester: str | None = None, school_year: str | None = None
+    tenant_db: str, semester: str | None = None, school_year: str | None = None
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict]:
     """Returns (features, labels, groups, metadata).
 
@@ -172,7 +184,7 @@ def _prepare_training_data_from_mysql(
     labels — that would create a circular target where the model just memorizes
     the rule. Rule-vs-model agreement is reported separately as a sanity check.
     """
-    feedback_rows = _load_feedback_history_rows()
+    feedback_rows = _load_feedback_history_rows(tenant_db)
     if feedback_rows.empty:
         raise RuntimeError("No historical feedback rows found.")
 
@@ -240,6 +252,7 @@ def _prepare_training_data_from_mysql(
 # Persistence
 # ---------------------------------------------------------------------------
 def _persist_training_artifacts(
+    tenant_db: str,
     metrics: dict,
     feature_importance: dict[str, float],
     semester: str | None,
@@ -247,7 +260,7 @@ def _persist_training_artifacts(
 ) -> None:
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     try:
-        with _get_connection() as connection:
+        with _get_connection(tenant_db) as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
