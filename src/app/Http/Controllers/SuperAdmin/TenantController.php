@@ -73,4 +73,41 @@ class TenantController extends Controller
             'tempPassword' => $tempPassword,
         ]);
     }
+
+    public function show(Tenant $tenant): View
+    {
+        $jobs = $tenant->load('provisioningJobs')->provisioningJobs()->orderByDesc('id')->get();
+
+        return view('super-admin.tenants.show', ['tenant' => $tenant, 'jobs' => $jobs]);
+    }
+
+    public function suspend(Tenant $tenant): RedirectResponse
+    {
+        if ($tenant->status === 'active') {
+            $tenant->update(['status' => 'suspended']);
+        }
+
+        return redirect()->route('admin.tenants.show', $tenant)
+            ->with('status', "{$tenant->name} suspended.");
+    }
+
+    public function resume(Tenant $tenant): RedirectResponse
+    {
+        if ($tenant->status === 'suspended') {
+            $tenant->update(['status' => 'active']);
+        }
+
+        return redirect()->route('admin.tenants.show', $tenant)
+            ->with('status', "{$tenant->name} resumed.");
+    }
+
+    public function retry(Tenant $tenant): RedirectResponse
+    {
+        if ($tenant->status !== 'failed') {
+            return redirect()->route('admin.tenants.show', $tenant);
+        }
+
+        return redirect()->route('admin.tenants.show', $tenant)
+            ->with('status', 'Retry not implemented for the capstone — investigate provisioning history above and re-create the school manually.');
+    }
 }

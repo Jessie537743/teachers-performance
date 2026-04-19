@@ -33,4 +33,9 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'updated_at',
         ];
     }
+
+    public function provisioningJobs(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\TenantProvisioningJob::class);
+    }
 }
