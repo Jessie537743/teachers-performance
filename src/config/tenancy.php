@@ -22,14 +22,20 @@ return [
 
     'bootstrappers' => [
         Stancl\Tenancy\Bootstrappers\DatabaseTenancyBootstrapper::class,
-        Stancl\Tenancy\Bootstrappers\CacheTenancyBootstrapper::class,
+        // CacheTenancyBootstrapper omitted — requires a tag-supporting cache
+        // driver (redis/memcached/array) and our CACHE_STORE is `file`.
+        // We don't make heavy use of tenant-scoped caching, so DB-only
+        // isolation is sufficient for the capstone.
         Stancl\Tenancy\Bootstrappers\FilesystemTenancyBootstrapper::class,
         Stancl\Tenancy\Bootstrappers\QueueTenancyBootstrapper::class,
     ],
 
     'database' => [
         'central_connection' => 'central',
-        'template_tenant_connection' => null,
+        // Stancl clones this connection's settings (host/credentials) and
+        // swaps in the tenant's database name on initialize. Without it,
+        // DB::connection() does NOT actually swap to the tenant DB.
+        'template_tenant_connection' => 'mysql',
         'prefix'   => 'tenant_',
         'suffix'   => '',
         'managers' => [

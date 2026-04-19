@@ -11,4 +11,11 @@ CREATE DATABASE IF NOT EXISTS `central`
     COLLATE utf8mb4_unicode_ci;
 
 GRANT ALL PRIVILEGES ON `central`.* TO 'tp_user'@'%';
+
+-- Multi-tenancy: Phase 2 super-admin can provision new tenant DBs at runtime
+-- via App\Jobs\ProvisionTenantJob. The job (running as tp_user) needs CREATE
+-- DATABASE on the server and the GRANT OPTION to grant access on each new DB
+-- to itself. Capstone scope; production should use a dedicated provisioner
+-- account with narrower privileges.
+GRANT ALL PRIVILEGES ON *.* TO 'tp_user'@'%' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
