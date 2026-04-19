@@ -32,14 +32,4 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'updated_at',
         ];
     }
-
-    /**
-     * stancl asks each tenant for its DB name when switching connections.
-     * We override the default (which uses the `tenancy_db_name` data key)
-     * to read from our explicit `database` column.
-     */
-    public function getDatabaseName(): string
-    {
-        return $this->getAttribute('database');
-    }
 }

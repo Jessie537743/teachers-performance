@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\Tenant;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Stancl\JobPipeline\JobPipeline;
+use Stancl\Tenancy\DatabaseConfig;
 use Stancl\Tenancy\Events;
 use Stancl\Tenancy\Jobs;
 use Stancl\Tenancy\Listeners;
@@ -99,6 +101,12 @@ class TenancyServiceProvider extends ServiceProvider
 
     public function boot()
     {
+        // Resolve the tenant database name from the explicit `database` column
+        // instead of stancl's default tenancy_db_name data-bag key.
+        DatabaseConfig::generateDatabaseNamesUsing(
+            fn (Tenant $tenant): string => $tenant->getAttribute('database')
+        );
+
         $this->bootEvents();
         $this->mapRoutes();
 
