@@ -29,6 +29,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'subdomain',
             'database',
             'status',
+            'plan',
             'created_at',
             'updated_at',
         ];
@@ -37,5 +38,19 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     public function provisioningJobs(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(\App\Models\TenantProvisioningJob::class);
+    }
+
+    public function activationCodes(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\ActivationCode::class);
+    }
+
+    public function currentUnredeemedCode(): ?\App\Models\ActivationCode
+    {
+        return $this->activationCodes()
+            ->where('status', 'unredeemed')
+            ->where('expires_at', '>', now())
+            ->latest()
+            ->first();
     }
 }
