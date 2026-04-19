@@ -29,6 +29,16 @@ class MlApiService
             $client = $client->withHeaders(['X-ML-Token' => $this->token]);
         }
 
+        // Attach the active tenant DB so the ML API queries the right school.
+        // tenant() is null in central context (super-admin operations); the
+        // ML API will return 400 in that case, which is the correct behavior —
+        // ML calls only make sense from inside a tenant request.
+        if (function_exists('tenant') && tenant() !== null) {
+            $client = $client->withHeaders([
+                'X-Tenant-DB' => tenant()->getAttribute('database'),
+            ]);
+        }
+
         return $client;
     }
 
