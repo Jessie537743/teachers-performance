@@ -33,17 +33,20 @@ class ProvisionTenantTest extends TestCase
             'subdomain'   => $subdomain,
             'admin_name'  => 'Test Admin',
             'admin_email' => 'admin@test.test',
+            'plan'        => 'free',
         ]);
 
         $response->assertOk();
-        $response->assertSee('is ready');
+        $response->assertSee('is provisioned');
         $response->assertSee('admin@test.test');
 
+        // Wizard now leaves the tenant in pending_activation; the activation
+        // flow (separately tested) creates the user + transitions to active.
         $newTenant = Tenant::where('subdomain', $subdomain)->firstOrFail();
-        $this->assertSame('active', $newTenant->status);
+        $this->assertSame('pending_activation', $newTenant->status);
         $this->assertSame('tenant_' . $newTenant->id, $newTenant->getAttribute('database'));
 
-        // Verify the tenant DB has the seeded template data
+        // Verify the tenant DB has the seeded template data and no users
         $tenantDb = $newTenant->getAttribute('database');
         $criteriaCount = DB::connection('mysql')->getPdo()
             ->query("SELECT COUNT(*) FROM `{$tenantDb}`.criteria")->fetchColumn();
@@ -51,7 +54,13 @@ class ProvisionTenantTest extends TestCase
             ->query("SELECT COUNT(*) FROM `{$tenantDb}`.users")->fetchColumn();
 
         $this->assertGreaterThan(0, $criteriaCount, 'Tenant DB should have seeded criteria');
-        $this->assertSame(1, (int) $userCount, 'Tenant DB should have exactly one admin user');
+        $this->assertSame(0, (int) $userCount, 'Wizard must NOT create a user — that is the activation flow\'s job.');
+
+        // An unredeemed activation code should exist for the new tenant
+        $code = $newTenant->activationCodes()->latest()->first();
+        $this->assertNotNull($code);
+        $this->assertSame('unredeemed', $code->status);
+        $this->assertSame('free', $code->plan);
     }
 
     public function test_subdomain_validation_rejects_reserved_words(): void
@@ -63,6 +72,7 @@ class ProvisionTenantTest extends TestCase
             'subdomain'   => 'admin', // reserved
             'admin_name'  => 'X',
             'admin_email' => 'x@y.test',
+            'plan'        => 'free',
         ]);
 
         $response->assertSessionHasErrors('subdomain');
@@ -77,6 +87,7 @@ class ProvisionTenantTest extends TestCase
             'subdomain'   => 'jcd', // already exists
             'admin_name'  => 'X',
             'admin_email' => 'x@y.test',
+            'plan'        => 'free',
         ]);
 
         $response->assertSessionHasErrors('subdomain');

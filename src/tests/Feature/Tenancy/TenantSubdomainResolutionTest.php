@@ -28,7 +28,7 @@ class TenantSubdomainResolutionTest extends TestCase
         $response = $this->get('http://localhost/');
 
         $response->assertOk();
-        $response->assertSee('Multi-Tenant Platform');
+        $response->assertSee('Plans for every school');
     }
 
     public function test_admin_subdomain_routes_unauthenticated_root_to_login(): void
