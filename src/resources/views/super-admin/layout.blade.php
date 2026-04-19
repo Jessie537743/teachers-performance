@@ -14,6 +14,7 @@
             <a href="{{ route('admin.tenants.index') }}" class="font-semibold tracking-tight">Platform Console</a>
             <nav class="flex items-center gap-6 text-sm">
                 <a href="{{ route('admin.tenants.index') }}" class="hover:text-slate-300">Schools</a>
+                <a href="{{ route('admin.plans.index') }}" class="hover:text-slate-300">Plans</a>
                 <span class="text-slate-400">{{ auth('super_admin')->user()->email }}</span>
                 <form method="POST" action="{{ route('admin.logout') }}">
                     @csrf

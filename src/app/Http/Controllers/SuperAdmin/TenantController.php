@@ -14,11 +14,27 @@ use Illuminate\View\View;
 
 class TenantController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $tenants = Tenant::orderByDesc('id')->get();
+        $query = Tenant::orderByDesc('id');
 
-        return view('super-admin.tenants.index', ['tenants' => $tenants]);
+        if ($plan = $request->query('plan')) {
+            $query->where('plan', $plan);
+        }
+
+        if ($status = $request->query('status')) {
+            $query->where('status', $status);
+        }
+
+        $tenants = $query->get();
+        $pendingCount = Tenant::where('status', 'pending_activation')->count();
+
+        return view('super-admin.tenants.index', [
+            'tenants'      => $tenants,
+            'pendingCount' => $pendingCount,
+            'planFilter'   => $plan ?? null,
+            'statusFilter' => $status ?? null,
+        ]);
     }
 
     public function create(): View
@@ -112,5 +128,47 @@ class TenantController extends Controller
 
         return redirect()->route('admin.tenants.show', $tenant)
             ->with('status', 'Retry not implemented for the capstone — investigate provisioning history above and re-create the school manually.');
+    }
+
+    public function regenerateCode(Tenant $tenant): RedirectResponse
+    {
+        // Revoke any current unredeemed code(s)
+        $tenant->activationCodes()
+            ->where('status', 'unredeemed')
+            ->update(['status' => 'revoked', 'revoked_at' => now()]);
+
+        $previous = $tenant->activationCodes()->latest()->first();
+        $plan = $previous?->plan ?? $tenant->plan;
+        $intendedName = $previous?->intended_admin_name ?? 'Admin';
+        $intendedEmail = $previous?->intended_admin_email ?? 'admin@' . $tenant->subdomain . '.test';
+
+        $code = ActivationCode::create([
+            'tenant_id'            => $tenant->id,
+            'code'                 => ActivationCode::generate(),
+            'plan'                 => $plan,
+            'intended_admin_name'  => $intendedName,
+            'intended_admin_email' => $intendedEmail,
+            'status'               => 'unredeemed',
+            'expires_at'           => now()->addDays(30),
+        ]);
+
+        return redirect()
+            ->route('admin.tenants.show', $tenant)
+            ->with('status', "New activation code: {$code->code}");
+    }
+
+    public function revokeCode(Tenant $tenant, ActivationCode $code): RedirectResponse
+    {
+        if ($code->tenant_id !== $tenant->id) {
+            abort(404);
+        }
+
+        if ($code->status === 'unredeemed') {
+            $code->update(['status' => 'revoked', 'revoked_at' => now()]);
+        }
+
+        return redirect()
+            ->route('admin.tenants.show', $tenant)
+            ->with('status', 'Code revoked.');
     }
 }

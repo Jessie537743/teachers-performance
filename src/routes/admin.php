@@ -23,4 +23,12 @@ Route::middleware('auth:super_admin')->group(function () {
     Route::post('/tenants/{tenant}/suspend', [TenantController::class, 'suspend'])->name('admin.tenants.suspend');
     Route::post('/tenants/{tenant}/resume', [TenantController::class, 'resume'])->name('admin.tenants.resume');
     Route::post('/tenants/{tenant}/retry', [TenantController::class, 'retry'])->name('admin.tenants.retry');
+
+    Route::get('/plans', [\App\Http\Controllers\SuperAdmin\PlanController::class, 'index'])
+        ->name('admin.plans.index');
+
+    Route::post('/tenants/{tenant}/codes/regenerate', [TenantController::class, 'regenerateCode'])
+        ->name('admin.tenants.codes.regenerate');
+    Route::post('/tenants/{tenant}/codes/{code}/revoke', [TenantController::class, 'revokeCode'])
+        ->name('admin.tenants.codes.revoke');
 });

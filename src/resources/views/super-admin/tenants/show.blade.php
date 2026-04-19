@@ -38,6 +38,51 @@
     </dl>
 </div>
 
+@php $currentCode = $tenant->currentUnredeemedCode(); @endphp
+@php $latestCode = $tenant->activationCodes()->latest()->first(); @endphp
+
+<div class="bg-white shadow rounded-lg p-6 mb-6">
+    <h2 class="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Activation</h2>
+    @if ($currentCode)
+        <dl class="space-y-3 text-sm">
+            <div>
+                <dt class="text-slate-500 mb-1">Code (active)</dt>
+                <dd class="font-mono text-lg tracking-wider select-all bg-yellow-50 border border-yellow-200 rounded px-3 py-2 inline-block">{{ $currentCode->code }}</dd>
+            </div>
+            <div>
+                <dt class="text-slate-500 mb-1">Activation URL</dt>
+                <dd class="font-mono text-xs select-all">{{ url('/activate?code=' . $currentCode->code) }}</dd>
+            </div>
+            <div class="text-slate-500">
+                Expires {{ $currentCode->expires_at->diffForHumans() }} —
+                intended for <code class="font-mono">{{ $currentCode->intended_admin_email }}</code>
+            </div>
+        </dl>
+        <div class="mt-4 flex gap-2">
+            <form method="POST" action="{{ route('admin.tenants.codes.revoke', [$tenant, $currentCode]) }}" onsubmit="return confirm('Revoke + regenerate? The current code stops working.');">
+                @csrf
+                <button class="rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50">Revoke</button>
+            </form>
+            <form method="POST" action="{{ route('admin.tenants.codes.regenerate', $tenant) }}">
+                @csrf
+                <button class="rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800">Revoke + Regenerate</button>
+            </form>
+        </div>
+    @elseif ($latestCode && $latestCode->status === 'redeemed')
+        <p class="text-sm text-slate-700">
+            Activated by <code class="font-mono">{{ $latestCode->intended_admin_email }}</code> on {{ $latestCode->redeemed_at->toDayDateTimeString() }}.
+        </p>
+    @elseif ($latestCode)
+        <p class="text-sm text-slate-700 mb-3">Last code was {{ $latestCode->status }} ({{ $latestCode->code }}).</p>
+        <form method="POST" action="{{ route('admin.tenants.codes.regenerate', $tenant) }}">
+            @csrf
+            <button class="rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800">Regenerate</button>
+        </form>
+    @else
+        <p class="text-sm text-slate-500">No activation codes have been generated for this school.</p>
+    @endif
+</div>
+
 @if ($jobs->isNotEmpty())
 <div class="bg-white shadow rounded-lg p-6 mb-6">
     <h2 class="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Provisioning history</h2>
