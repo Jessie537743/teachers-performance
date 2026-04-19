@@ -23,8 +23,8 @@ FEATURE_NAMES = ["avg_score", "response_count", "previous_score", "improvement_r
 MODEL_DIR = Path("models")
 MODEL_PATH_DEFAULT = MODEL_DIR / "faculty_performance_rf.joblib"
 MODEL_LOCK = Lock()
-# Cache keyed by (semester, school_year) so term-scoped training does not pollute the default model.
-MODEL_CACHE: dict[tuple[str | None, str | None], RandomForestClassifier] = {}
+MODEL_CACHE: dict[tuple[str, str | None, str | None], RandomForestClassifier] = {}
+# key = (tenant_db, semester, school_year) — one cache entry per tenant × term combination
 MODEL_NAME = "Random Forest"
 ML_API_TOKEN = os.getenv("ML_API_TOKEN")
 
@@ -304,15 +304,16 @@ def _split_grouped(features, labels, groups):
     return features[train_idx], features[test_idx], labels[train_idx], labels[test_idx]
 
 
-def _model_path_for(semester: str | None, school_year: str | None) -> Path:
+def _model_path_for(tenant_db: str, semester: str | None, school_year: str | None) -> Path:
+    tenant_dir = MODEL_DIR / tenant_db
     if not semester and not school_year:
-        return MODEL_PATH_DEFAULT
+        return tenant_dir / "faculty_performance_rf.joblib"
     tag = f"{semester or 'all'}_{school_year or 'all'}".replace("/", "-").replace(" ", "-")
-    return MODEL_DIR / f"faculty_performance_rf__{tag}.joblib"
+    return tenant_dir / f"faculty_performance_rf__{tag}.joblib"
 
 
-def _train_random_forest(semester: str | None = None, school_year: str | None = None) -> dict:
-    features, labels, groups, dataset_meta = _prepare_training_data_from_mysql(semester, school_year)
+def _train_random_forest(tenant_db: str, semester: str | None = None, school_year: str | None = None) -> dict:
+    features, labels, groups, dataset_meta = _prepare_training_data_from_mysql(tenant_db, semester, school_year)
     x_train, x_test, y_train, y_test = _split_grouped(features, labels, groups)
 
     model = RandomForestClassifier(
@@ -337,11 +338,11 @@ def _train_random_forest(semester: str | None = None, school_year: str | None = 
     ])
     rule_agreement = float(np.mean(predictions == rule_labels)) if len(rule_labels) else 0.0
 
-    MODEL_DIR.mkdir(parents=True, exist_ok=True)
-    model_path = _model_path_for(semester, school_year)
+    model_path = _model_path_for(tenant_db, semester, school_year)
+    model_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": model, "feature_names": FEATURE_NAMES}, model_path)
 
-    cache_key = (semester, school_year)
+    cache_key = (tenant_db, semester, school_year)
     MODEL_CACHE[cache_key] = model
 
     importance = _feature_importance(model)
@@ -360,7 +361,7 @@ def _train_random_forest(semester: str | None = None, school_year: str | None = 
     }
 
     _persist_training_artifacts(
-        model_metrics, importance,
+        tenant_db, model_metrics, importance,
         dataset_meta["requested_semester"], dataset_meta["requested_school_year"],
     )
 
@@ -376,9 +377,9 @@ def _train_random_forest(semester: str | None = None, school_year: str | None = 
 
 
 def _get_or_train_model(
-    semester: str | None = None, school_year: str | None = None
+    tenant_db: str, semester: str | None = None, school_year: str | None = None
 ) -> RandomForestClassifier:
-    cache_key = (semester, school_year)
+    cache_key = (tenant_db, semester, school_year)
     cached = MODEL_CACHE.get(cache_key)
     if cached is not None:
         return cached
@@ -388,13 +389,13 @@ def _get_or_train_model(
         if cached is not None:
             return cached
 
-        path = _model_path_for(semester, school_year)
+        path = _model_path_for(tenant_db, semester, school_year)
         if path.exists():
             stored = joblib.load(path)
             MODEL_CACHE[cache_key] = stored["model"]
             return MODEL_CACHE[cache_key]
 
-        return _train_random_forest(semester, school_year)["model"]
+        return _train_random_forest(tenant_db, semester, school_year)["model"]
 
 
 def _feature_importance(model: RandomForestClassifier) -> dict[str, float]:
@@ -422,19 +423,25 @@ def health():
 
 
 @app.post("/train-current-term", dependencies=[Depends(require_token)])
-def train_current_term(payload: TrainInput | None = None):
+def train_current_term(
+    payload: TrainInput | None = None,
+    tenant_db: str = Depends(require_tenant_db),
+):
     payload = payload or TrainInput()
     with MODEL_LOCK:
         try:
             result = _train_random_forest(
-                semester=payload.semester, school_year=payload.school_year
+                tenant_db,
+                semester=payload.semester,
+                school_year=payload.school_year,
             )
         except Exception as exc:
-            log.exception("Training failed")
+            log.exception("Training failed for tenant %s", tenant_db)
             raise HTTPException(status_code=400, detail=f"Training failed: {exc}") from exc
 
     return {
         "status": "trained",
+        "tenant_db": tenant_db,
         "model_used": MODEL_NAME,
         "data_source": f"MySQL {result['dataset_source']}",
         "requested_semester": result["requested_semester"],
@@ -456,13 +463,16 @@ def train_current_term(payload: TrainInput | None = None):
 
 
 @app.post("/predict", dependencies=[Depends(require_token)])
-def predict(data: PredictInput):
+def predict(
+    data: PredictInput,
+    tenant_db: str = Depends(require_tenant_db),
+):
     try:
-        model = _get_or_train_model(data.semester, data.school_year)
+        model = _get_or_train_model(tenant_db, data.semester, data.school_year)
     except Exception as exc:
         raise HTTPException(
             status_code=503,
-            detail=f"Model unavailable. Run /train-current-term first. Reason: {exc}",
+            detail=f"Model unavailable for tenant {tenant_db}. Run /train-current-term first. Reason: {exc}",
         ) from exc
 
     row = np.array(
@@ -476,6 +486,7 @@ def predict(data: PredictInput):
     )
 
     return {
+        "tenant_db": tenant_db,
         "predicted_performance": label,
         "rule_label": rule_label,
         "agrees_with_rule": label == rule_label,
