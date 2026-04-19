@@ -27,3 +27,17 @@ foreach (config('tenancy.central_domains', []) as $centralDomain) {
     Route::domain($centralDomain)->get('/', fn () => response()->view('central.landing'))
         ->name('central.landing.' . str_replace('.', '_', $centralDomain));
 }
+
+foreach (config('tenancy.central_domains', []) as $centralDomain) {
+    if ($centralDomain === $adminDomain) {
+        continue;
+    }
+
+    Route::domain($centralDomain)->group(function () {
+        Route::get('/activate', [\App\Http\Controllers\Central\ActivationController::class, 'show'])
+            ->name('central.activate.show');
+        Route::post('/activate', [\App\Http\Controllers\Central\ActivationController::class, 'submit'])
+            ->middleware('throttle:5,1')
+            ->name('central.activate.submit');
+    });
+}
