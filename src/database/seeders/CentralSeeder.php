@@ -23,7 +23,7 @@ class CentralSeeder extends Seeder
 
         // Existing JCD school registered as tenant id 1.
         // Points at the existing teachers_performance DB — no data movement.
-        Tenant::firstOrCreate(
+        $jcd = Tenant::firstOrCreate(
             ['subdomain' => 'jcd'],
             [
                 'id'       => 1,
@@ -32,5 +32,9 @@ class CentralSeeder extends Seeder
                 'status'   => 'active',
             ],
         );
+
+        // Stancl's InitializeTenancyBySubdomain middleware looks up tenants
+        // through the `domains` table. Mirror the subdomain there.
+        $jcd->domains()->firstOrCreate(['domain' => 'jcd']);
     }
 }

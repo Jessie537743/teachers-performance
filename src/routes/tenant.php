@@ -16,8 +16,8 @@ use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
 Route::middleware([
     'web',
-    InitializeTenancyBySubdomain::class,
     PreventAccessFromCentralDomains::class,
+    InitializeTenancyBySubdomain::class,
 ])->group(function () {
 
 // Root: redirect unauthenticated visitors to the login page
