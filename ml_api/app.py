@@ -23,10 +23,22 @@ FEATURE_NAMES = ["avg_score", "response_count", "previous_score", "improvement_r
 MODEL_DIR = Path("models")
 MODEL_PATH_DEFAULT = MODEL_DIR / "faculty_performance_rf.joblib"
 MODEL_LOCK = Lock()
-# Cache keyed by (semester, school_year) so term-scoped training does not pollute the default model.
-MODEL_CACHE: dict[tuple[str | None, str | None], RandomForestClassifier] = {}
+MODEL_CACHE: dict[tuple[str, str | None, str | None], RandomForestClassifier] = {}
+# key = (tenant_db, semester, school_year) — one cache entry per tenant × term combination
 MODEL_NAME = "Random Forest"
 ML_API_TOKEN = os.getenv("ML_API_TOKEN")
+
+
+def require_tenant_db(x_tenant_db: str | None = Header(default=None)) -> str:
+    """Per-request tenant DB selector. The Laravel client sends this on every
+    data-touching call. Format: `tenant_<id>` or the legacy `teachers_performance`.
+    Validated to allow only [a-zA-Z0-9_] to avoid SQL identifier injection
+    via _db_config()."""
+    if not x_tenant_db:
+        raise HTTPException(status_code=400, detail="Missing X-Tenant-DB header.")
+    if not all(c.isalnum() or c == "_" for c in x_tenant_db):
+        raise HTTPException(status_code=400, detail="Invalid X-Tenant-DB header.")
+    return x_tenant_db
 
 
 # ---------------------------------------------------------------------------
@@ -60,23 +72,23 @@ class TrainInput(BaseModel):
 # ---------------------------------------------------------------------------
 # DB helpers
 # ---------------------------------------------------------------------------
-def _db_config() -> dict:
+def _db_config(tenant_db: str) -> dict:
     return {
         "host": os.getenv("DB_HOST", "db"),
         "port": int(os.getenv("DB_PORT", "3306")),
         "user": os.getenv("DB_USER", "tp_user"),
         "password": os.getenv("DB_PASSWORD", "secret"),
-        "database": os.getenv("DB_NAME", "teachers_performance"),
+        "database": tenant_db,
         "connect_timeout": 10,
     }
 
 
-def _get_connection():
-    return pymysql.connect(**_db_config(), cursorclass=pymysql.cursors.DictCursor)
+def _get_connection(tenant_db: str):
+    return pymysql.connect(**_db_config(tenant_db), cursorclass=pymysql.cursors.DictCursor)
 
 
-def _read_query_dataframe(query: str) -> pd.DataFrame:
-    with _get_connection() as connection:
+def _read_query_dataframe(tenant_db: str, query: str) -> pd.DataFrame:
+    with _get_connection(tenant_db) as connection:
         with connection.cursor() as cursor:
             cursor.execute(query)
             rows = cursor.fetchall()
@@ -132,7 +144,7 @@ def _normalize_performance_label(raw_label: str | None) -> str | None:
 # ---------------------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------------------
-def _load_feedback_history_rows() -> pd.DataFrame:
+def _load_feedback_history_rows(tenant_db: str) -> pd.DataFrame:
     query = """
         SELECT faculty_id, semester, school_year,
                CAST(total_average AS DECIMAL(10,4)) AS avg_score,
@@ -150,7 +162,7 @@ def _load_feedback_history_rows() -> pd.DataFrame:
         FROM faculty_peer_evaluation_feedback
         WHERE evaluation_type = 'peer' AND total_average IS NOT NULL
     """
-    return _read_query_dataframe(query)
+    return _read_query_dataframe(tenant_db, query)
 
 
 def _apply_term_filter(df: pd.DataFrame, semester: str | None, school_year: str | None) -> pd.DataFrame:
@@ -163,7 +175,7 @@ def _apply_term_filter(df: pd.DataFrame, semester: str | None, school_year: str 
 
 
 def _prepare_training_data_from_mysql(
-    semester: str | None = None, school_year: str | None = None
+    tenant_db: str, semester: str | None = None, school_year: str | None = None
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, dict]:
     """Returns (features, labels, groups, metadata).
 
@@ -172,7 +184,7 @@ def _prepare_training_data_from_mysql(
     labels — that would create a circular target where the model just memorizes
     the rule. Rule-vs-model agreement is reported separately as a sanity check.
     """
-    feedback_rows = _load_feedback_history_rows()
+    feedback_rows = _load_feedback_history_rows(tenant_db)
     if feedback_rows.empty:
         raise RuntimeError("No historical feedback rows found.")
 
@@ -240,6 +252,7 @@ def _prepare_training_data_from_mysql(
 # Persistence
 # ---------------------------------------------------------------------------
 def _persist_training_artifacts(
+    tenant_db: str,
     metrics: dict,
     feature_importance: dict[str, float],
     semester: str | None,
@@ -247,7 +260,7 @@ def _persist_training_artifacts(
 ) -> None:
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     try:
-        with _get_connection() as connection:
+        with _get_connection(tenant_db) as connection:
             with connection.cursor() as cursor:
                 cursor.execute(
                     """
@@ -291,15 +304,16 @@ def _split_grouped(features, labels, groups):
     return features[train_idx], features[test_idx], labels[train_idx], labels[test_idx]
 
 
-def _model_path_for(semester: str | None, school_year: str | None) -> Path:
+def _model_path_for(tenant_db: str, semester: str | None, school_year: str | None) -> Path:
+    tenant_dir = MODEL_DIR / tenant_db
     if not semester and not school_year:
-        return MODEL_PATH_DEFAULT
+        return tenant_dir / "faculty_performance_rf.joblib"
     tag = f"{semester or 'all'}_{school_year or 'all'}".replace("/", "-").replace(" ", "-")
-    return MODEL_DIR / f"faculty_performance_rf__{tag}.joblib"
+    return tenant_dir / f"faculty_performance_rf__{tag}.joblib"
 
 
-def _train_random_forest(semester: str | None = None, school_year: str | None = None) -> dict:
-    features, labels, groups, dataset_meta = _prepare_training_data_from_mysql(semester, school_year)
+def _train_random_forest(tenant_db: str, semester: str | None = None, school_year: str | None = None) -> dict:
+    features, labels, groups, dataset_meta = _prepare_training_data_from_mysql(tenant_db, semester, school_year)
     x_train, x_test, y_train, y_test = _split_grouped(features, labels, groups)
 
     model = RandomForestClassifier(
@@ -324,11 +338,11 @@ def _train_random_forest(semester: str | None = None, school_year: str | None = 
     ])
     rule_agreement = float(np.mean(predictions == rule_labels)) if len(rule_labels) else 0.0
 
-    MODEL_DIR.mkdir(parents=True, exist_ok=True)
-    model_path = _model_path_for(semester, school_year)
+    model_path = _model_path_for(tenant_db, semester, school_year)
+    model_path.parent.mkdir(parents=True, exist_ok=True)
     joblib.dump({"model": model, "feature_names": FEATURE_NAMES}, model_path)
 
-    cache_key = (semester, school_year)
+    cache_key = (tenant_db, semester, school_year)
     MODEL_CACHE[cache_key] = model
 
     importance = _feature_importance(model)
@@ -347,7 +361,7 @@ def _train_random_forest(semester: str | None = None, school_year: str | None = 
     }
 
     _persist_training_artifacts(
-        model_metrics, importance,
+        tenant_db, model_metrics, importance,
         dataset_meta["requested_semester"], dataset_meta["requested_school_year"],
     )
 
@@ -363,9 +377,9 @@ def _train_random_forest(semester: str | None = None, school_year: str | None = 
 
 
 def _get_or_train_model(
-    semester: str | None = None, school_year: str | None = None
+    tenant_db: str, semester: str | None = None, school_year: str | None = None
 ) -> RandomForestClassifier:
-    cache_key = (semester, school_year)
+    cache_key = (tenant_db, semester, school_year)
     cached = MODEL_CACHE.get(cache_key)
     if cached is not None:
         return cached
@@ -375,13 +389,13 @@ def _get_or_train_model(
         if cached is not None:
             return cached
 
-        path = _model_path_for(semester, school_year)
+        path = _model_path_for(tenant_db, semester, school_year)
         if path.exists():
             stored = joblib.load(path)
             MODEL_CACHE[cache_key] = stored["model"]
             return MODEL_CACHE[cache_key]
 
-        return _train_random_forest(semester, school_year)["model"]
+        return _train_random_forest(tenant_db, semester, school_year)["model"]
 
 
 def _feature_importance(model: RandomForestClassifier) -> dict[str, float]:
@@ -409,19 +423,25 @@ def health():
 
 
 @app.post("/train-current-term", dependencies=[Depends(require_token)])
-def train_current_term(payload: TrainInput | None = None):
+def train_current_term(
+    payload: TrainInput | None = None,
+    tenant_db: str = Depends(require_tenant_db),
+):
     payload = payload or TrainInput()
     with MODEL_LOCK:
         try:
             result = _train_random_forest(
-                semester=payload.semester, school_year=payload.school_year
+                tenant_db,
+                semester=payload.semester,
+                school_year=payload.school_year,
             )
         except Exception as exc:
-            log.exception("Training failed")
+            log.exception("Training failed for tenant %s", tenant_db)
             raise HTTPException(status_code=400, detail=f"Training failed: {exc}") from exc
 
     return {
         "status": "trained",
+        "tenant_db": tenant_db,
         "model_used": MODEL_NAME,
         "data_source": f"MySQL {result['dataset_source']}",
         "requested_semester": result["requested_semester"],
@@ -443,13 +463,16 @@ def train_current_term(payload: TrainInput | None = None):
 
 
 @app.post("/predict", dependencies=[Depends(require_token)])
-def predict(data: PredictInput):
+def predict(
+    data: PredictInput,
+    tenant_db: str = Depends(require_tenant_db),
+):
     try:
-        model = _get_or_train_model(data.semester, data.school_year)
+        model = _get_or_train_model(tenant_db, data.semester, data.school_year)
     except Exception as exc:
         raise HTTPException(
             status_code=503,
-            detail=f"Model unavailable. Run /train-current-term first. Reason: {exc}",
+            detail=f"Model unavailable for tenant {tenant_db}. Run /train-current-term first. Reason: {exc}",
         ) from exc
 
     row = np.array(
@@ -463,6 +486,7 @@ def predict(data: PredictInput):
     )
 
     return {
+        "tenant_db": tenant_db,
         "predicted_performance": label,
         "rule_label": rule_label,
         "agrees_with_rule": label == rule_label,

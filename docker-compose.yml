@@ -29,7 +29,7 @@ services:
       DB_DATABASE: teachers_performance
       DB_USERNAME: tp_user
       DB_PASSWORD: secret
-      SESSION_DRIVER: database
+      SESSION_DRIVER: file
       CACHE_STORE: file
       QUEUE_CONNECTION: database
       BROADCAST_CONNECTION: log
@@ -50,6 +50,7 @@ services:
       - "3307:3306"
     volumes:
       - tp-db-data:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
     networks:
       - tp-network
     healthcheck:

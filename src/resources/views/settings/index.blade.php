@@ -51,7 +51,7 @@
                             <img src="{{ asset('storage/' . $appLogo) }}" alt="App Logo"
                                  class="max-w-[56px] max-h-[56px] object-contain">
                         @else
-                            <img src="{{ asset('images/smcc_logo.png') }}" alt="Default Logo"
+                            <img src="{{ asset(config('app.default_logo')) }}" alt="Default Logo"
                                  class="max-w-[56px] max-h-[56px] object-contain">
                         @endif
                     </div>

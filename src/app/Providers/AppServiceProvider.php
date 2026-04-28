@@ -23,6 +23,7 @@ use App\Policies\FacultyProfilePolicy;
 use App\View\Composers\AnnouncementComposer;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -33,7 +34,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(\App\Services\PlanFeatures::class);
     }
 
     /**
@@ -77,5 +78,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Announcement::class, AnnouncementPolicy::class);
 
         View::composer(['layouts.app', 'layouts.guest', 'auth.login'], AnnouncementComposer::class);
+
+        // @plan('ai_predictions') ... @endplan — hide UI when capability is off.
+        // Inverse: @unlessplan('ai_predictions') ... @endunlessplan
+        Blade::if('plan', fn (string $capability) => plan()->has($capability));
     }
 }
