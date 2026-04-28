@@ -127,12 +127,37 @@ class TenantController extends Controller
         $tenant->load([
             'activationCodes' => fn ($q) => $q->orderByDesc('id'),
             'provisioningJobs' => fn ($q) => $q->orderByDesc('id'),
+            'subscriptions' => fn ($q) => $q->orderByDesc('id')->limit(20),
         ]);
 
         return view('super-admin.tenants.show', [
             'tenant' => $tenant,
             'jobs'   => $tenant->provisioningJobs,
         ]);
+    }
+
+    public function chargeNow(Tenant $tenant, \App\Services\BillingService $billing): RedirectResponse
+    {
+        if (! in_array($tenant->subscription_status, ['active', 'grace'], true)) {
+            return back()->with('error', "Tenant subscription is '{$tenant->subscription_status}' — cannot charge.");
+        }
+
+        $sub = $billing->chargeNextPeriod($tenant);
+
+        return redirect()->route('admin.tenants.show', $tenant)->with(
+            'status',
+            $sub->status === 'paid'
+                ? "Charged {$sub->formatted_amount}. Next charge: " . $tenant->fresh()->next_charge_at?->toDayDateTimeString()
+                : "Charge failed: {$sub->failure_reason}. Retry scheduled."
+        );
+    }
+
+    public function cancelSubscription(Tenant $tenant, \App\Services\BillingService $billing): RedirectResponse
+    {
+        $billing->cancel($tenant);
+
+        return redirect()->route('admin.tenants.show', $tenant)
+            ->with('status', "Subscription canceled. Access continues until {$tenant->current_period_end?->toDayDateTimeString()}.");
     }
 
     public function suspend(Tenant $tenant): RedirectResponse

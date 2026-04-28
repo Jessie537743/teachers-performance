@@ -274,14 +274,30 @@
     {{-- Pricing --}}
     <section id="pricing" class="py-24 bg-white">
         <div class="max-w-6xl mx-auto px-6">
-            <div class="text-center max-w-2xl mx-auto mb-14">
+            <div class="text-center max-w-2xl mx-auto mb-10">
                 <span class="inline-block text-xs font-semibold uppercase tracking-widest text-blue-600 mb-3">Simple, transparent pricing</span>
                 <h2 class="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight mb-4">Plans that scale with your school.</h2>
                 <p class="text-slate-600">Switch or upgrade anytime. No setup fees. Cancel whenever.</p>
             </div>
 
+            {{-- Billing cycle toggle --}}
+            <div class="flex justify-center mb-10">
+                <div class="inline-flex items-center gap-1 p-1 rounded-full bg-slate-100 ring-1 ring-slate-200">
+                    <button type="button" data-cycle="monthly" class="cycle-btn px-5 py-2 rounded-full text-sm font-semibold bg-white text-slate-900 shadow-sm transition">Monthly</button>
+                    <button type="button" data-cycle="yearly"  class="cycle-btn px-5 py-2 rounded-full text-sm font-semibold text-slate-600 hover:text-slate-900 transition inline-flex items-center gap-2">
+                        Yearly
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">Save 17%</span>
+                    </button>
+                </div>
+            </div>
+
             <div class="grid md:grid-cols-3 gap-6">
                 @foreach (config('plans') as $slug => $plan)
+                    @php
+                        $monthlyPrice = $plan['prices']['monthly'] ?? null;
+                        $yearlyPrice  = $plan['prices']['yearly']  ?? null;
+                        $isCustom     = ! is_numeric($monthlyPrice);
+                    @endphp
                     <div class="relative rounded-2xl bg-white p-8 flex flex-col transition
                                 {{ $plan['highlight']
                                     ? 'border-2 border-blue-600 shadow-xl shadow-blue-900/10 -translate-y-1'
@@ -297,11 +313,13 @@
                         <p class="text-sm text-slate-500 mt-1 mb-5">{{ $plan['tagline'] }}</p>
 
                         <div class="mb-6">
-                            @if (is_numeric($plan['price']))
-                                <span class="text-5xl font-extrabold tracking-tight text-slate-900">${{ $plan['price'] }}</span>
-                                <span class="text-slate-500 text-sm ml-1">{{ $plan['period'] }}</span>
+                            @if ($isCustom)
+                                <span class="text-5xl font-extrabold tracking-tight text-slate-900">Custom</span>
                             @else
-                                <span class="text-5xl font-extrabold tracking-tight text-slate-900">{{ $plan['price'] }}</span>
+                                <span class="text-5xl font-extrabold tracking-tight text-slate-900">
+                                    $<span class="price-amount" data-monthly="{{ $monthlyPrice }}" data-yearly="{{ $yearlyPrice }}">{{ $monthlyPrice }}</span>
+                                </span>
+                                <span class="text-slate-500 text-sm ml-1 price-period">@if((int)$monthlyPrice===0)forever @else per month @endif</span>
                             @endif
                         </div>
 
@@ -316,14 +334,16 @@
                             @endforeach
                         </ul>
 
-                        @if ($slug === 'enterprise' || ! is_numeric($plan['price']))
+                        @if ($slug === 'enterprise' || $isCustom)
                             <a href="mailto:sales@platform.test?subject=Interested in the {{ $plan['name'] }} plan"
                                class="inline-flex items-center justify-center rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50 px-4 py-3 text-sm font-semibold transition">
                                 Contact sales
                             </a>
                         @else
-                            <a href="{{ route('central.subscribe.show', ['plan' => $slug]) }}"
-                               class="inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition
+                            <a href="{{ route('central.subscribe.show', ['plan' => $slug, 'cycle' => 'monthly']) }}"
+                               data-monthly-href="{{ route('central.subscribe.show', ['plan' => $slug, 'cycle' => 'monthly']) }}"
+                               data-yearly-href="{{ route('central.subscribe.show', ['plan' => $slug, 'cycle' => 'yearly']) }}"
+                               class="plan-cta inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition
                                       {{ $plan['highlight']
                                           ? 'bg-gradient-to-r from-blue-600 to-blue-800 text-white hover:from-blue-700 hover:to-blue-900 shadow-md'
                                           : 'bg-slate-900 text-white hover:bg-slate-800' }}">
@@ -339,6 +359,38 @@
                 All plans include encrypted data, daily backups, and 99.9% uptime SLA.
             </p>
         </div>
+
+        <script>
+            (function () {
+                const buttons = document.querySelectorAll('.cycle-btn');
+                let activeCycle = 'monthly';
+
+                function setCycle(cycle) {
+                    activeCycle = cycle;
+                    buttons.forEach(b => {
+                        const isActive = b.dataset.cycle === cycle;
+                        b.classList.toggle('bg-white', isActive);
+                        b.classList.toggle('text-slate-900', isActive);
+                        b.classList.toggle('shadow-sm', isActive);
+                        b.classList.toggle('text-slate-600', !isActive);
+                    });
+                    document.querySelectorAll('.price-amount').forEach(el => {
+                        const v = el.dataset[cycle];
+                        if (v != null) el.textContent = v;
+                    });
+                    document.querySelectorAll('.price-period').forEach(el => {
+                        const isFree = el.parentElement.querySelector('.price-amount')?.textContent === '0';
+                        if (isFree) { el.textContent = 'forever'; return; }
+                        el.textContent = cycle === 'yearly' ? 'per year' : 'per month';
+                    });
+                    document.querySelectorAll('.plan-cta').forEach(a => {
+                        const href = a.dataset[cycle + 'Href'];
+                        if (href) a.setAttribute('href', href);
+                    });
+                }
+                buttons.forEach(b => b.addEventListener('click', () => setCycle(b.dataset.cycle)));
+            })();
+        </script>
     </section>
 
     {{-- Testimonial --}}

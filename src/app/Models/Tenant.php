@@ -30,8 +30,24 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'database',
             'status',
             'plan',
+            'billing_cycle',
+            'subscription_status',
+            'current_period_start',
+            'current_period_end',
+            'next_charge_at',
+            'last_charge_at',
             'created_at',
             'updated_at',
+        ];
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'current_period_start' => 'datetime',
+            'current_period_end'   => 'datetime',
+            'next_charge_at'       => 'datetime',
+            'last_charge_at'       => 'datetime',
         ];
     }
 
@@ -43,6 +59,11 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     public function activationCodes(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(\App\Models\ActivationCode::class);
+    }
+
+    public function subscriptions(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\Subscription::class);
     }
 
     public function currentUnredeemedCode(): ?\App\Models\ActivationCode

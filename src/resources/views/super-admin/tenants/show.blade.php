@@ -128,6 +128,104 @@
             </div>
         @endif
 
+        {{-- Billing summary --}}
+        <div class="mt-6 pt-6 border-t border-slate-100">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-brand-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/></svg>
+                    Billing
+                </h3>
+                @php
+                    $subColor = match($tenant->subscription_status) {
+                        'active'   => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+                        'grace'    => 'bg-amber-50 text-amber-700 ring-amber-200',
+                        'canceled' => 'bg-slate-100 text-slate-700 ring-slate-200',
+                        default    => 'bg-slate-100 text-slate-500 ring-slate-200',
+                    };
+                @endphp
+                <span class="inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold ring-1 {{ $subColor }}">
+                    {{ str_replace('_', ' ', $tenant->subscription_status) }}
+                </span>
+            </div>
+
+            @if ($tenant->subscription_status === 'none')
+                <p class="text-sm text-slate-500">No subscription on file (free plan or pre-billing tenant).</p>
+            @else
+                <dl class="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm mb-4">
+                    <div>
+                        <dt class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Cycle</dt>
+                        <dd class="text-slate-900 font-semibold mt-0.5 capitalize">{{ $tenant->billing_cycle ?? '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Amount</dt>
+                        <dd class="text-slate-900 font-semibold mt-0.5">
+                            ${{ config('plans.' . $tenant->plan . '.prices.' . ($tenant->billing_cycle ?? 'monthly')) }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Next charge</dt>
+                        <dd class="text-slate-900 mt-0.5 text-xs">
+                            {{ $tenant->next_charge_at?->toDayDateTimeString() ?? '—' }}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Last charged</dt>
+                        <dd class="text-slate-900 mt-0.5 text-xs">
+                            {{ $tenant->last_charge_at?->diffForHumans() ?? '—' }}
+                        </dd>
+                    </div>
+                </dl>
+
+                <div class="flex flex-wrap gap-2 mb-4">
+                    @if (in_array($tenant->subscription_status, ['active', 'grace'], true))
+                        <form method="POST" action="{{ route('admin.tenants.billing.charge', $tenant) }}" onsubmit="return confirm('Charge {{ $tenant->name }} now?');">
+                            @csrf
+                            <button class="inline-flex items-center gap-1.5 rounded-md bg-brand-600 hover:bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                Charge now
+                            </button>
+                        </form>
+                        <form method="POST" action="{{ route('admin.tenants.billing.cancel', $tenant) }}" onsubmit="return confirm('Cancel subscription for {{ $tenant->name }}? They keep access until period ends.');">
+                            @csrf
+                            <button class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs hover:bg-slate-50">
+                                Cancel subscription
+                            </button>
+                        </form>
+                    @endif
+                </div>
+
+                @if ($tenant->subscriptions->isNotEmpty())
+                    <details class="text-xs">
+                        <summary class="cursor-pointer text-slate-600 hover:text-slate-900 font-medium">
+                            Invoice history ({{ $tenant->subscriptions->count() }})
+                        </summary>
+                        <table class="mt-3 w-full text-left">
+                            <thead class="text-[10px] uppercase tracking-wider text-slate-500">
+                                <tr><th class="py-1">Date</th><th>Amount</th><th>Period</th><th>Status</th></tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @foreach ($tenant->subscriptions as $s)
+                                    <tr>
+                                        <td class="py-1.5 text-slate-700">{{ $s->created_at->toDateString() }}</td>
+                                        <td class="text-slate-900 font-medium">{{ $s->formatted_amount }}</td>
+                                        <td class="text-slate-500">{{ $s->period_start->toDateString() }} → {{ $s->period_end->toDateString() }}</td>
+                                        <td>
+                                            <span class="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-semibold ring-1
+                                                @class([
+                                                    'bg-emerald-50 text-emerald-700 ring-emerald-200' => $s->status === 'paid',
+                                                    'bg-rose-50 text-rose-700 ring-rose-200'          => $s->status === 'failed',
+                                                    'bg-slate-100 text-slate-700 ring-slate-200'      => $s->status === 'refunded',
+                                                ])">{{ $s->status }}</span>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </details>
+                @endif
+            @endif
+        </div>
+
         @if ($tenant->activationCodes->count() > ($currentCode ? 1 : 0))
             <details class="mt-5">
                 <summary class="cursor-pointer text-sm text-slate-600 hover:text-slate-900">

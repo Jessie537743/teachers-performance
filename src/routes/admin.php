@@ -31,4 +31,9 @@ Route::middleware('auth:super_admin')->group(function () {
         ->name('admin.tenants.codes.regenerate');
     Route::post('/tenants/{tenant}/codes/{code}/revoke', [TenantController::class, 'revokeCode'])
         ->name('admin.tenants.codes.revoke');
+
+    Route::post('/tenants/{tenant}/billing/charge', [TenantController::class, 'chargeNow'])
+        ->name('admin.tenants.billing.charge');
+    Route::post('/tenants/{tenant}/billing/cancel', [TenantController::class, 'cancelSubscription'])
+        ->name('admin.tenants.billing.cancel');
 });

@@ -8,6 +8,7 @@ use App\Mail\TenantActivationCodeMail;
 use App\Models\ActivationCode;
 use App\Models\Tenant;
 use App\Rules\AvailableSubdomain;
+use App\Services\BillingService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -21,36 +22,41 @@ class CheckoutController extends Controller
     {
         $plans = config('plans');
         $slug = $request->query('plan', 'pro');
+        $cycle = in_array($request->query('cycle'), ['monthly', 'yearly'], true)
+            ? $request->query('cycle')
+            : 'monthly';
 
         if (! isset($plans[$slug])) {
             return redirect('/');
         }
 
         // Enterprise is sales-led; bounce to mailto from the landing page instead.
-        if ($slug === 'enterprise' || ! is_numeric($plans[$slug]['price'])) {
+        if ($slug === 'enterprise' || ! isset($plans[$slug]['prices']['monthly'])) {
             return redirect('/');
         }
 
         return view('central.subscribe.show', [
             'plan'     => $plans[$slug],
             'planSlug' => $slug,
+            'cycle'    => $cycle,
         ]);
     }
 
-    public function process(Request $request): RedirectResponse
+    public function process(Request $request, BillingService $billing): RedirectResponse
     {
         $plans = config('plans');
         $payablePlans = array_keys(array_filter(
             $plans,
-            fn ($p) => $p['slug'] !== 'enterprise' && is_numeric($p['price'])
+            fn ($p) => $p['slug'] !== 'enterprise' && isset($p['prices']['monthly'])
         ));
 
         $data = $request->validate([
-            'plan'        => ['required', 'string', Rule::in($payablePlans)],
-            'name'        => ['required', 'string', 'max:120'],
-            'subdomain'   => ['required', 'string', new AvailableSubdomain()],
-            'admin_name'  => ['required', 'string', 'max:120'],
-            'admin_email' => ['required', 'email', 'max:255'],
+            'plan'           => ['required', 'string', Rule::in($payablePlans)],
+            'billing_cycle'  => ['required', 'string', Rule::in(['monthly', 'yearly'])],
+            'name'           => ['required', 'string', 'max:120'],
+            'subdomain'      => ['required', 'string', new AvailableSubdomain()],
+            'admin_name'     => ['required', 'string', 'max:120'],
+            'admin_email'    => ['required', 'email', 'max:255'],
             'card_name'      => ['required', 'string', 'max:120'],
             'card_number'    => ['required', 'string', 'regex:/^[0-9 ]{13,23}$/'],
             'card_expiry'    => ['required', 'string', 'regex:/^(0[1-9]|1[0-2])\/\d{2}$/'],
@@ -86,6 +92,9 @@ class CheckoutController extends Controller
         }
 
         $tenant->update(['status' => 'pending_activation']);
+
+        // Start the recurring subscription (records first paid period + next_charge_at).
+        $billing->startSubscription($tenant, $data['billing_cycle']);
 
         $code = ActivationCode::create([
             'tenant_id'            => $tenant->id,

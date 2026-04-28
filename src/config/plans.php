@@ -2,18 +2,16 @@
 
 /*
 |--------------------------------------------------------------------------
-| Plan capabilities — single source of truth
+| Plan capabilities + pricing — single source of truth
 |--------------------------------------------------------------------------
 |
-| `features`     — human-readable strings shown on landing/pricing pages.
-| `capabilities` — machine-readable map checked by app code via plan()->has()
-|                  (App\Services\PlanFeatures). Add new capabilities here,
-|                  then enforce with the `plan.feature:<name>` middleware,
-|                  the `@plan('<name>')` blade directive, or `plan()->has()`.
+| `prices.monthly` / `prices.yearly` — recurring billing amounts.
+| `price` / `period`                 — legacy convenience (mirrors monthly).
+| `features`                         — display strings shown on landing/pricing.
+| `capabilities`                     — machine-readable map checked by app code
+|                                      via plan()->has() (App\Services\PlanFeatures).
 |
-| When you add a capability:
-|   1. Add the key to ALL three plans below (use `null` for unlimited quotas)
-|   2. Document the meaning in the registry comment near the bottom of this file
+| Yearly is priced at 10× monthly (≈17% off, "2 months free").
 |
 */
 
@@ -21,18 +19,22 @@ return [
     'free' => [
         'slug'      => 'free',
         'name'      => 'Free',
-        'price'     => 0,
-        'period'    => 'forever',
         'tagline'   => 'Try the platform with limited evaluations.',
+        'highlight' => false,
+        'prices'    => [
+            'monthly' => 0,
+            'yearly'  => 0,
+        ],
+        // Legacy convenience (mirrors monthly):
+        'price'  => 0,
+        'period' => 'forever',
         'features'  => [
             'Up to 50 students',
             'Manual evaluations only',
             'Basic announcements',
             'Email support',
         ],
-        'highlight' => false,
         'capabilities' => [
-            // boolean gates
             'ai_predictions'      => false,
             'sentiment_analysis'  => false,
             'peer_evaluation'     => false,
@@ -44,18 +46,23 @@ return [
             'export_pdf'          => false,
             'export_csv'          => true,
             'priority_support'    => false,
-            // quotas (null = unlimited)
             'max_students'        => 50,
             'max_admin_users'     => 1,
             'max_departments'     => 3,
         ],
     ],
+
     'pro' => [
         'slug'      => 'pro',
         'name'      => 'Pro',
-        'price'     => 99,
-        'period'    => 'per month',
         'tagline'   => 'Full evaluation toolkit for growing schools.',
+        'highlight' => true,
+        'prices'    => [
+            'monthly' => 99,
+            'yearly'  => 990,    // 10 × monthly = 2 months free
+        ],
+        'price'  => 99,
+        'period' => 'per month',
         'features'  => [
             'Unlimited students',
             'AI-powered performance predictions',
@@ -63,7 +70,6 @@ return [
             'All evaluation types (peer, dean, self)',
             'Priority email support',
         ],
-        'highlight' => true,
         'capabilities' => [
             'ai_predictions'      => true,
             'sentiment_analysis'  => true,
@@ -81,12 +87,18 @@ return [
             'max_departments'     => null,
         ],
     ],
+
     'enterprise' => [
         'slug'      => 'enterprise',
         'name'      => 'Enterprise',
-        'price'     => 'Custom',
-        'period'   => '',
-        'tagline'  => 'For multi-campus institutions.',
+        'tagline'   => 'For multi-campus institutions.',
+        'highlight' => false,
+        'prices'    => [
+            'monthly' => null,   // negotiated
+            'yearly'  => null,
+        ],
+        'price'  => 'Custom',
+        'period' => '',
         'features' => [
             'Everything in Pro',
             'Custom branding',
@@ -94,7 +106,6 @@ return [
             'On-premise deployment option',
             'SLA-backed uptime',
         ],
-        'highlight' => false,
         'capabilities' => [
             'ai_predictions'      => true,
             'sentiment_analysis'  => true,
@@ -112,26 +123,4 @@ return [
             'max_departments'     => null,
         ],
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Capability registry (documentation only — not consumed by code)
-    |--------------------------------------------------------------------------
-    |
-    | ai_predictions      bool   — Faculty performance prediction model
-    | sentiment_analysis  bool   — Free-text feedback auto-classification
-    | peer_evaluation     bool   — Peer-evaluator workflow + reports
-    | self_evaluation     bool   — Self-evaluation form
-    | dean_evaluation     bool   — Dean/head evaluation form
-    | student_evaluation  bool   — Student-led evaluation form
-    | advanced_analytics  bool   — Charts, drill-downs, period comparisons
-    | custom_branding     bool   — Tenant logo, colors, email-template overrides
-    | export_pdf          bool   — Per-faculty + summary PDF exports
-    | export_csv          bool   — Raw CSV downloads
-    | priority_support    bool   — Routes support tickets to the priority queue
-    | max_students        ?int   — null means unlimited
-    | max_admin_users     ?int   — null means unlimited
-    | max_departments     ?int   — null means unlimited
-    |
-    */
 ];

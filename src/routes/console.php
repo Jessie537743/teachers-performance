@@ -19,3 +19,10 @@ Artisan::command('evaluation:process-ended-periods', function (): void {
     EvaluationService::getOpenEvaluationPeriod();
     $this->info('Processed overdue open periods (if any).');
 })->purpose('Close open periods past end_date and run student promotion');
+
+// Recurring billing — runs daily at 03:00. Charges any tenant whose
+// next_charge_at has elapsed (active subscriptions + grace-period retries).
+\Illuminate\Support\Facades\Schedule::command('subscriptions:charge-due')
+    ->dailyAt('03:00')
+    ->withoutOverlapping()
+    ->onOneServer();

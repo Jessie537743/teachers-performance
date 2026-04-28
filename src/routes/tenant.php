@@ -52,6 +52,10 @@ Route::middleware('auth')->group(function () {
     // Plan upgrade landing — middleware redirects here when a capability is missing
     Route::get('/plan/upgrade', [\App\Http\Controllers\PlanUpgradeController::class, 'show'])
         ->name('plan.upgrade');
+
+    // Billing — current plan, invoices, cancel subscription
+    Route::get('/billing', [\App\Http\Controllers\BillingController::class, 'show'])->name('billing.show');
+    Route::post('/billing/cancel', [\App\Http\Controllers\BillingController::class, 'cancel'])->name('billing.cancel');
 });
 
 // -------------------------------------------------------------------------
