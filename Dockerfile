@@ -68,14 +68,89 @@ pm.max_requests = 500" > /usr/local/etc/php-fpm.d/zz-tuning.conf
 # Application code
 COPY --from=app /var/www /var/www
 
-# nginx + supervisord config (template substituted at runtime)
-COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf.template
-COPY docker/supervisord.conf   /etc/supervisor/conf.d/supervisord.conf
+# All docker/* configs inlined (heredocs) instead of COPY-from-context.
+# Reason: Railway's remote BuildKit was intermittently failing the
+# `COPY docker/<file>` checksum step ("not found") even though the files were
+# committed and pushed. Inlining sidesteps the build-context flakiness
+# entirely. Keep these in sync with the on-disk files in docker/ for parity
+# with local docker compose, which still bind-mounts them.
 
-# Inline entrypoint — written directly into the image so a flaky remote build
-# context (e.g. Railway BuildKit occasionally not finding docker/entrypoint.sh)
-# can never break the deploy. Keep this in sync with docker/entrypoint.sh
-# for parity with local docker compose.
+# nginx server template (envsubst'd at runtime to inject ${PORT}).
+RUN cat > /etc/nginx/conf.d/default.conf.template <<'NGINX_EOF'
+server {
+    listen ${PORT};
+    server_name _;
+    index index.php index.html;
+    root /var/www/public;
+    client_max_body_size 20M;
+
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 4;
+    gzip_min_length 256;
+    gzip_types text/plain text/css application/json application/javascript text/xml application/xml text/javascript image/svg+xml;
+
+    location ~* \.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+        try_files $uri =404;
+    }
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_index index.php;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+        fastcgi_buffering on;
+        fastcgi_buffer_size 16k;
+        fastcgi_buffers 16 16k;
+        fastcgi_connect_timeout 300s;
+        fastcgi_send_timeout 300s;
+        fastcgi_read_timeout 300s;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+NGINX_EOF
+
+# supervisord — runs php-fpm + nginx in the foreground.
+RUN cat > /etc/supervisor/conf.d/supervisord.conf <<'SUPERVISORD_EOF'
+[supervisord]
+nodaemon=true
+logfile=/var/log/supervisord.log
+pidfile=/var/run/supervisord.pid
+user=root
+
+[program:php-fpm]
+command=php-fpm --nodaemonize
+autostart=true
+autorestart=true
+priority=5
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
+
+[program:nginx]
+command=nginx -g "daemon off;"
+autostart=true
+autorestart=true
+priority=10
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
+SUPERVISORD_EOF
+
+# Entrypoint — keep in sync with docker/entrypoint.sh.
 RUN cat > /usr/local/bin/entrypoint.sh <<'ENTRYPOINT_EOF'
 #!/bin/sh
 set -e
