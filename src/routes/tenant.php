@@ -109,6 +109,20 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     Route::get('faculty-profiles/{faculty_profile}/intervention-suggestions', [Admin\FacultyInterventionSuggestionController::class, 'show'])
         ->name('faculty.intervention-suggestions');
 
+    // AI-driven intervention plans — gated by plan capability
+    Route::middleware('plan.feature:ai_predictions')->group(function () {
+        Route::get('faculty-profiles/{faculty_profile}/ai-intervention-plan', [Admin\AiInterventionPlanController::class, 'show'])
+            ->name('faculty.ai-intervention-plan.show');
+        Route::post('faculty-profiles/{faculty_profile}/ai-intervention-plan/generate', [Admin\AiInterventionPlanController::class, 'generate'])
+            ->name('faculty.ai-intervention-plan.generate');
+        Route::post('intervention-plans/{plan}/status', [Admin\AiInterventionPlanController::class, 'updateStatus'])
+            ->name('faculty.ai-intervention-plan.status');
+
+        // Per-comment AI Improvement Suggestion (analyze + regenerate via AJAX)
+        Route::post('feedback-improvement/analyze', [Admin\FeedbackImprovementController::class, 'analyze'])
+            ->name('feedback-improvement.analyze');
+    });
+
     Route::get('certificates/performance/{faculty_profile}', [Admin\PerformanceCertificateController::class, 'show'])
         ->name('certificates.performance-excellent');
     Route::get('reports/employee-comments', [Admin\EmployeeCommentReportController::class, 'index'])
