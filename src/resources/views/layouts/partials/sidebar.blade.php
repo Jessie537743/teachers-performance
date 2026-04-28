@@ -4,6 +4,7 @@
 @can('view-analytics')
     @plan('ai_predictions')
         <a href="{{ route('analytics.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('analytics.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Analytics</a>
+        <a href="{{ route('intervention-recommendations.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('intervention-recommendations.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Interventions</a>
     @else
         <a href="{{ route('plan.upgrade', ['feature' => 'ai_predictions']) }}" class="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm text-white/55 hover:bg-white/10 hover:text-white/85 transition group">
             <span>Analytics</span>
@@ -59,6 +60,26 @@
 @can('manage-students')
 <a href="{{ route('students.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('students.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Students</a>
 @endcan
+
+{{-- Approvals --}}
+@if (auth()->check() && auth()->user()->hasRole(['admin', 'human_resource', 'dean', 'head']))
+@php
+    $pendingRegistrations = \App\Models\RegistrationRequest::query()
+        ->where('status', 'pending')
+        ->when(
+            auth()->user()->hasRole(['dean', 'head']) && ! auth()->user()->hasRole(['admin', 'human_resource']),
+            fn ($q) => $q->where('kind', 'student')->where('department_id', auth()->user()->department_id)
+        )
+        ->count();
+@endphp
+<div class="px-3.5 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-widest text-white/50">Approvals</div>
+<a href="{{ route('admin.registration-approvals.index') }}" class="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('admin.registration-approvals.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">
+    <span>Registrations</span>
+    @if ($pendingRegistrations > 0)
+        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400 text-amber-900">{{ $pendingRegistrations }}</span>
+    @endif
+</a>
+@endif
 
 {{-- Settings --}}
 <div class="px-3.5 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-widest text-white/50">Settings</div>

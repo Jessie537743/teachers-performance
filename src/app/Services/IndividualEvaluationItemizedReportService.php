@@ -45,12 +45,12 @@ class IndividualEvaluationItemizedReportService
         $avgByQuestionId = $this->averageRatingsByQuestionId($profile->id, $reportType, $semester, $schoolYear);
 
         $sections        = [];
-        $allQuestionAvgs = [];
+        $criterionEntries = [];   // [{value: cat_avg, weight: criterion.weight}, ...]
 
         foreach ($criteria as $criterion) {
-            $rows       = [];
-            $catNumeric = [];
-            $qNum       = 1;
+            $rows           = [];
+            $questionEntries = [];   // weighted entries for this criterion
+            $qNum           = 1;
 
             foreach ($criterion->questions as $question) {
                 if (! $this->isLikertAggregateQuestion($question)) {
@@ -65,17 +65,17 @@ class IndividualEvaluationItemizedReportService
                     ? EvaluationService::getPerformanceLevel((float) $numerical, $evaluateePersonnel)
                     : '—';
 
+                $qWeight = (float) ($question->weight ?? 0);
+
                 $rows[] = [
                     'n'             => $qNum,
                     'text'          => html_entity_decode(trim(strip_tags((string) $question->question_text)), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
                     'numerical'     => $numerical,
                     'descriptive'   => $descriptive,
+                    'weight'        => $qWeight,
                 ];
 
-                if ($numerical !== null) {
-                    $catNumeric[] = (float) $numerical;
-                    $allQuestionAvgs[] = (float) $numerical;
-                }
+                $questionEntries[] = ['value' => $numerical, 'weight' => $qWeight];
                 ++$qNum;
             }
 
@@ -83,22 +83,29 @@ class IndividualEvaluationItemizedReportService
                 continue;
             }
 
-            $categoryAvg = $catNumeric !== [] ? round(array_sum($catNumeric) / count($catNumeric), 2) : null;
+            // Weighted mean of question scores within this criterion.
+            $categoryAvg  = WeightedScoringService::weightedMean($questionEntries);
+            $categoryAvg  = $categoryAvg !== null ? round($categoryAvg, 2) : null;
             $categoryDesc = $categoryAvg !== null
                 ? EvaluationService::getPerformanceLevel($categoryAvg, $evaluateePersonnel)
                 : '—';
+
+            $criterionWeight = (float) ($criterion->weight ?? 0);
 
             $sections[] = [
                 'name'                 => mb_strtoupper((string) $criterion->name),
                 'questions'            => $rows,
                 'category_avg'         => $categoryAvg,
                 'category_descriptive' => $categoryDesc,
+                'weight'               => $criterionWeight,
             ];
+
+            $criterionEntries[] = ['value' => $categoryAvg, 'weight' => $criterionWeight];
         }
 
-        $overallAvg = $allQuestionAvgs !== []
-            ? round(array_sum($allQuestionAvgs) / count($allQuestionAvgs), 2)
-            : null;
+        // Weighted mean of criterion averages → overall GWA.
+        $overallAvg  = WeightedScoringService::weightedMean($criterionEntries);
+        $overallAvg  = $overallAvg !== null ? round($overallAvg, 2) : null;
         $overallDesc = $overallAvg !== null
             ? EvaluationService::getPerformanceLevel($overallAvg, $evaluateePersonnel)
             : '—';

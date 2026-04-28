@@ -361,6 +361,14 @@
     </div>
 </div>
 
+@if(! $printMode && $selectedFaculty && $reportType && $hasData)
+    @plan('ai_predictions')
+        <div class="max-w-6xl mx-auto print:hidden">
+            @include('admin.partials.ai-improvement-suggestions', ['comments' => $comments ?? ['positive' => collect(), 'negative' => collect()]])
+        </div>
+    @endplan
+@endif
+
 @if($printMode && $selectedFaculty && $reportType && $hasData)
     @push('scripts')
     <script>

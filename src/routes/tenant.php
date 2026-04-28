@@ -30,6 +30,13 @@ Route::middleware('guest')->group(function () {
     Route::get('/forgot-password-request', [ForgotPasswordRequestController::class, 'showForm'])->name('forgot-password.form');
     Route::post('/forgot-password-request/verify', [ForgotPasswordRequestController::class, 'verify'])->name('forgot-password.verify');
     Route::post('/forgot-password-request/submit', [ForgotPasswordRequestController::class, 'submit'])->name('forgot-password.submit');
+
+    // Self-service registration — Dean approves students, Admin approves personnel
+    Route::get('/register', [\App\Http\Controllers\Auth\RegistrationController::class, 'show'])->name('register.show');
+    Route::post('/register', [\App\Http\Controllers\Auth\RegistrationController::class, 'store'])
+        ->middleware('throttle:5,1')
+        ->name('register.store');
+    Route::get('/register/submitted', [\App\Http\Controllers\Auth\RegistrationController::class, 'submitted'])->name('register.submitted');
 });
 
 
@@ -109,6 +116,13 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     Route::get('faculty-profiles/{faculty_profile}/intervention-suggestions', [Admin\FacultyInterventionSuggestionController::class, 'show'])
         ->name('faculty.intervention-suggestions');
 
+    // Intervention Recommendation Module — roster of all faculty + mapped HR intervention
+    Route::get('intervention-recommendations', [Admin\InterventionRecommendationController::class, 'index'])
+        ->name('intervention-recommendations.index');
+    Route::get('intervention-recommendations/{faculty_id}', [Admin\InterventionRecommendationController::class, 'show'])
+        ->whereNumber('faculty_id')
+        ->name('intervention-recommendations.show');
+
     // AI-driven intervention plans — gated by plan capability
     Route::middleware('plan.feature:ai_predictions')->group(function () {
         Route::get('faculty-profiles/{faculty_profile}/ai-intervention-plan', [Admin\AiInterventionPlanController::class, 'show'])
@@ -122,6 +136,14 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
         Route::post('feedback-improvement/analyze', [Admin\FeedbackImprovementController::class, 'analyze'])
             ->name('feedback-improvement.analyze');
     });
+
+    // Registration approvals — Dean/Head approve students; Admin/HR approve personnel
+    Route::get('registration-approvals', [Admin\RegistrationApprovalController::class, 'index'])
+        ->name('admin.registration-approvals.index');
+    Route::post('registration-approvals/{registration}/approve', [Admin\RegistrationApprovalController::class, 'approve'])
+        ->name('admin.registration-approvals.approve');
+    Route::post('registration-approvals/{registration}/reject', [Admin\RegistrationApprovalController::class, 'reject'])
+        ->name('admin.registration-approvals.reject');
 
     Route::get('certificates/performance/{faculty_profile}', [Admin\PerformanceCertificateController::class, 'show'])
         ->name('certificates.performance-excellent');

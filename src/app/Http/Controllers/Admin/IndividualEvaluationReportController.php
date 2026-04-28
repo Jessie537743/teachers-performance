@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\DeanEvaluationFeedback;
+use App\Models\EvaluationFeedback;
 use App\Models\EvaluationPeriod;
+use App\Models\FacultyPeerEvaluationFeedback;
 use App\Models\FacultyProfile;
 use App\Services\EvaluationService;
 use App\Services\IndividualEvaluationItemizedReportService;
+use App\Services\TextSentimentAnalyzer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
@@ -117,6 +121,10 @@ class IndividualEvaluationReportController extends Controller
             EvaluationService::normalizeEvaluateePersonnelForScoring($personnelType)
         );
 
+        $comments = ($hasData && $selectedFaculty && $reportType)
+            ? $this->collectComments($selectedFaculty->id, $reportType, $semester, $schoolYear)
+            : ['positive' => collect(), 'negative' => collect()];
+
         return view('admin.individual-evaluation-report', [
             'periods'         => $periods,
             'openPeriod'      => $openPeriod,
@@ -132,6 +140,58 @@ class IndividualEvaluationReportController extends Controller
             'printMode'       => $printMode,
             'hasData'         => $hasData,
             'likertLegend'    => $likertLegend,
+            'comments'        => $comments,
         ]);
+    }
+
+    /**
+     * Pull free-text comments from the evaluation source matching the
+     * selected report_type. Tag each with sentiment polarity and return
+     * up to 8 of each polarity for the AI panel.
+     *
+     * @return array{positive: \Illuminate\Support\Collection, negative: \Illuminate\Support\Collection}
+     */
+    private function collectComments(int $facultyId, string $reportType, ?string $semester, ?string $schoolYear): array
+    {
+        $sentiment = app(TextSentimentAnalyzer::class);
+
+        $rows = match ($reportType) {
+            'student' => EvaluationFeedback::query()
+                ->where('faculty_id', $facultyId)
+                ->when($semester, fn ($q, $v) => $q->where('semester', $v))
+                ->when($schoolYear, fn ($q, $v) => $q->where('school_year', $v))
+                ->whereNotNull('comment')->where('comment', '!=', '')
+                ->orderByDesc('id')->limit(30)
+                ->pluck('comment')
+                ->map(fn ($c) => ['source' => 'student', 'comment' => $c]),
+            'dean' => DeanEvaluationFeedback::query()
+                ->where('faculty_id', $facultyId)
+                ->when($semester, fn ($q, $v) => $q->where('semester', $v))
+                ->when($schoolYear, fn ($q, $v) => $q->where('school_year', $v))
+                ->whereNotNull('comment')->where('comment', '!=', '')
+                ->orderByDesc('id')->limit(30)
+                ->pluck('comment')
+                ->map(fn ($c) => ['source' => 'dean', 'comment' => $c]),
+            'peer', 'self' => FacultyPeerEvaluationFeedback::query()
+                ->where('evaluatee_faculty_id', $facultyId)
+                ->where('evaluation_type', $reportType)
+                ->when($semester, fn ($q, $v) => $q->where('semester', $v))
+                ->when($schoolYear, fn ($q, $v) => $q->where('school_year', $v))
+                ->whereNotNull('comment')->where('comment', '!=', '')
+                ->orderByDesc('id')->limit(30)
+                ->pluck('comment')
+                ->map(fn ($c) => ['source' => $reportType, 'comment' => $c]),
+            default => collect(),
+        };
+
+        $tagged = $rows->map(function ($r) use ($sentiment) {
+            $r['polarity'] = $sentiment->analyze($r['comment'])['label'];
+            return $r;
+        });
+
+        return [
+            'negative' => $tagged->where('polarity', 'negative')->take(8)->values(),
+            'positive' => $tagged->where('polarity', 'positive')->take(8)->values(),
+        ];
     }
 }
