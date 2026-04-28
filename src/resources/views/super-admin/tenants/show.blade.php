@@ -19,8 +19,11 @@
             $color = match($tenant->status) {
                 'active' => 'bg-green-100 text-green-800',
                 'provisioning' => 'bg-yellow-100 text-yellow-800',
+                'pending_activation' => 'bg-blue-100 text-blue-800',
+                'awaiting_payment' => 'bg-amber-100 text-amber-800',
                 'suspended' => 'bg-slate-200 text-slate-700',
                 'failed' => 'bg-red-100 text-red-800',
+                default => 'bg-slate-100 text-slate-700',
             };
         @endphp
         <span class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium {{ $color }}">{{ $tenant->status }}</span>

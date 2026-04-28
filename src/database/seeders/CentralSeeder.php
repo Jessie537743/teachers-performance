@@ -21,20 +21,18 @@ class CentralSeeder extends Seeder
             ],
         );
 
-        // Existing JCD school registered as tenant id 1.
-        // Points at the existing teachers_performance DB — no data movement.
-        $jcd = Tenant::firstOrCreate(
-            ['subdomain' => 'jcd'],
-            [
-                'id'       => 1,
-                'name'     => 'JCD',
-                'database' => 'teachers_performance',
-                'status'   => 'active',
-            ],
-        );
+        // One-time backfill: register the legacy JCD school against the existing
+        // teachers_performance DB. Only runs on a fresh install (no tenants yet);
+        // otherwise it's a no-op so re-running the seeder is always safe.
+        if (Tenant::count() === 0) {
+            $jcd = Tenant::create([
+                'name'      => 'JCD',
+                'subdomain' => 'jcd',
+                'database'  => 'teachers_performance',
+                'status'    => 'active',
+            ]);
 
-        // Stancl's InitializeTenancyBySubdomain middleware looks up tenants
-        // through the `domains` table. Mirror the subdomain there.
-        $jcd->domains()->firstOrCreate(['domain' => 'jcd']);
+            $jcd->domains()->firstOrCreate(['domain' => 'jcd']);
+        }
     }
 }

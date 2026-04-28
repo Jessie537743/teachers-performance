@@ -16,6 +16,12 @@ return [
     'name' => env('APP_NAME', 'Laravel'),
 
     /*
+    | Path (relative to /public) to the default logo used when a tenant
+    | hasn't uploaded a custom logo via Settings → app_logo.
+    */
+    'default_logo' => env('APP_DEFAULT_LOGO', 'images/default-logo.svg'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------

@@ -105,7 +105,7 @@
         <div class="flex h-[72px] items-center gap-3 border-b border-white/10 px-5">
             <div class="grid h-10 w-10 flex-shrink-0 place-items-center overflow-hidden rounded-xl bg-white/10">
                 @php $customLogo = \App\Models\Setting::get('app_logo'); @endphp
-                <img src="{{ $customLogo ? asset('storage/' . $customLogo) : asset('images/smcc_logo.png') }}" alt="Logo" class="h-full w-full object-cover">
+                <img src="{{ $customLogo ? asset('storage/' . $customLogo) : asset(config('app.default_logo')) }}" alt="Logo" class="h-full w-full object-cover">
             </div>
             <span class="text-lg font-bold truncate">{{ \App\Models\Setting::get('app_name', 'Evaluation System') }}</span>
         </div>
