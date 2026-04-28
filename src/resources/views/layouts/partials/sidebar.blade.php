@@ -4,6 +4,7 @@
 @can('view-analytics')
     @plan('ai_predictions')
         <a href="{{ route('analytics.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('analytics.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Analytics</a>
+        <a href="{{ route('intervention-recommendations.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('intervention-recommendations.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Interventions</a>
     @else
         <a href="{{ route('plan.upgrade', ['feature' => 'ai_predictions']) }}" class="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm text-white/55 hover:bg-white/10 hover:text-white/85 transition group">
             <span>Analytics</span>

@@ -116,6 +116,13 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     Route::get('faculty-profiles/{faculty_profile}/intervention-suggestions', [Admin\FacultyInterventionSuggestionController::class, 'show'])
         ->name('faculty.intervention-suggestions');
 
+    // Intervention Recommendation Module — roster of all faculty + mapped HR intervention
+    Route::get('intervention-recommendations', [Admin\InterventionRecommendationController::class, 'index'])
+        ->name('intervention-recommendations.index');
+    Route::get('intervention-recommendations/{faculty_id}', [Admin\InterventionRecommendationController::class, 'show'])
+        ->whereNumber('faculty_id')
+        ->name('intervention-recommendations.show');
+
     // AI-driven intervention plans — gated by plan capability
     Route::middleware('plan.feature:ai_predictions')->group(function () {
         Route::get('faculty-profiles/{faculty_profile}/ai-intervention-plan', [Admin\AiInterventionPlanController::class, 'show'])
