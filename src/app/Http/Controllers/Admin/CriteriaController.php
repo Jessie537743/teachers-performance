@@ -47,17 +47,21 @@ class CriteriaController extends Controller
 
         $validated = $request->validate([
             'name'                => ['required', 'string', 'max:255'],
+            'weight'              => ['nullable', 'numeric', 'between:0,100'],
             'personnel_types'     => ['required', 'array', 'min:1'],
             'personnel_types.*'   => ['string', Rule::in(self::PERSONNEL_TYPES)],
             'evaluator_groups'    => ['required', 'array', 'min:1'],
             'evaluator_groups.*'  => ['string', Rule::in(['student', 'dean', 'self', 'peer'])],
             'questions'           => ['required', 'array', 'min:1'],
-            'questions.*'         => ['required', 'string', 'max:1000'],
+            'questions.*'         => ['required', 'array'],
+            'questions.*.text'    => ['required', 'string', 'max:1000'],
+            'questions.*.weight'  => ['nullable', 'numeric', 'between:0,100'],
         ]);
 
         DB::transaction(function () use ($validated) {
             $criterion = Criterion::create([
-                'name' => $validated['name'],
+                'name'   => $validated['name'],
+                'weight' => $validated['weight'] ?? 0,
             ]);
 
             foreach (array_values(array_unique($validated['personnel_types'])) as $personnelType) {
@@ -68,13 +72,15 @@ class CriteriaController extends Controller
                 $criterion->evaluatorGroups()->create(['evaluator_group' => $group]);
             }
 
-            foreach ($validated['questions'] as $questionText) {
-                if (trim($questionText) === '') {
+            foreach ($validated['questions'] as $row) {
+                $text = trim((string) ($row['text'] ?? ''));
+                if ($text === '') {
                     continue;
                 }
                 Question::create([
                     'criteria_id'   => $criterion->id,
-                    'question_text' => $questionText,
+                    'question_text' => $text,
+                    'weight'        => $row['weight'] ?? 0,
                 ]);
             }
         });
@@ -88,21 +94,24 @@ class CriteriaController extends Controller
         Gate::authorize('manage-criteria');
 
         $validated = $request->validate([
-            'name'                => ['required', 'string', 'max:255'],
-            'personnel_types'     => ['required', 'array', 'min:1'],
-            'personnel_types.*'   => ['string', Rule::in(self::PERSONNEL_TYPES)],
-            'evaluator_groups'    => ['required', 'array', 'min:1'],
-            'evaluator_groups.*'  => ['string', Rule::in(['student', 'dean', 'self', 'peer'])],
-            'questions'           => ['required', 'array', 'min:1'],
-            'questions.*.id'      => ['nullable', 'integer', 'exists:questions,id'],
-            'questions.*.text'    => ['required', 'string', 'max:1000'],
+            'name'                 => ['required', 'string', 'max:255'],
+            'weight'               => ['nullable', 'numeric', 'between:0,100'],
+            'personnel_types'      => ['required', 'array', 'min:1'],
+            'personnel_types.*'    => ['string', Rule::in(self::PERSONNEL_TYPES)],
+            'evaluator_groups'     => ['required', 'array', 'min:1'],
+            'evaluator_groups.*'   => ['string', Rule::in(['student', 'dean', 'self', 'peer'])],
+            'questions'            => ['required', 'array', 'min:1'],
+            'questions.*.id'       => ['nullable', 'integer', 'exists:questions,id'],
+            'questions.*.text'     => ['required', 'string', 'max:1000'],
+            'questions.*.weight'   => ['nullable', 'numeric', 'between:0,100'],
         ]);
 
         DB::transaction(function () use ($criterion, $validated) {
             $existingQuestions = $criterion->questions()->get()->keyBy('id');
 
             $criterion->update([
-                'name' => $validated['name'],
+                'name'   => $validated['name'],
+                'weight' => $validated['weight'] ?? $criterion->weight,
             ]);
 
             $criterion->personnelTypes()->delete();
@@ -135,6 +144,7 @@ class CriteriaController extends Controller
                     'criteria_id'   => $criterion->id,
                     'question_text' => $questionText,
                     'response_type' => $responseType,
+                    'weight'        => $questionRow['weight'] ?? 0,
                 ]);
             }
         });

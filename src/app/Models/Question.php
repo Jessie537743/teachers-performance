@@ -14,7 +14,15 @@ class Question extends Model
         'criteria_id',
         'question_text',
         'response_type',
+        'weight',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'weight' => 'float',
+        ];
+    }
 
     // -------------------------------------------------------------------------
     // Relationships

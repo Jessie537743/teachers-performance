@@ -14,7 +14,15 @@ class Criterion extends Model
 
     protected $fillable = [
         'name',
+        'weight',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'weight' => 'float',
+        ];
+    }
 
     // -------------------------------------------------------------------------
     // Relationships
