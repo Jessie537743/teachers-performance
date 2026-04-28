@@ -16,7 +16,7 @@ class TenantController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = Tenant::orderByDesc('id');
+        $query = Tenant::query()->orderByDesc('id');
 
         if ($plan = $request->query('plan')) {
             $query->where('plan', $plan);
@@ -26,14 +26,42 @@ class TenantController extends Controller
             $query->where('status', $status);
         }
 
-        $tenants = $query->get();
-        $pendingCount = Tenant::where('status', 'pending_activation')->count();
+        if ($search = trim((string) $request->query('q', ''))) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('subdomain', 'like', "%{$search}%");
+            });
+        }
+
+        $tenants = $query->paginate(15)->withQueryString();
+
+        // Single grouped query: status + plan counts in one round-trip.
+        $statusCounts = Tenant::selectRaw('status, COUNT(*) as c')
+            ->groupBy('status')
+            ->pluck('c', 'status')
+            ->all();
+
+        $planCounts = Tenant::selectRaw('plan, COUNT(*) as c')
+            ->groupBy('plan')
+            ->pluck('c', 'plan')
+            ->all();
+
+        $stats = [
+            'total'              => array_sum($statusCounts),
+            'active'             => $statusCounts['active'] ?? 0,
+            'pending_activation' => $statusCounts['pending_activation'] ?? 0,
+            'awaiting_payment'   => $statusCounts['awaiting_payment'] ?? 0,
+            'failed'             => $statusCounts['failed'] ?? 0,
+            'suspended'          => $statusCounts['suspended'] ?? 0,
+        ];
 
         return view('super-admin.tenants.index', [
             'tenants'      => $tenants,
-            'pendingCount' => $pendingCount,
+            'stats'        => $stats,
+            'planCounts'   => $planCounts,
             'planFilter'   => $plan ?? null,
             'statusFilter' => $status ?? null,
+            'search'       => $search,
         ]);
     }
 
@@ -95,9 +123,16 @@ class TenantController extends Controller
 
     public function show(Tenant $tenant): View
     {
-        $jobs = $tenant->load('provisioningJobs')->provisioningJobs()->orderByDesc('id')->get();
+        // Eager-load to avoid N+1 in the view.
+        $tenant->load([
+            'activationCodes' => fn ($q) => $q->orderByDesc('id'),
+            'provisioningJobs' => fn ($q) => $q->orderByDesc('id'),
+        ]);
 
-        return view('super-admin.tenants.show', ['tenant' => $tenant, 'jobs' => $jobs]);
+        return view('super-admin.tenants.show', [
+            'tenant' => $tenant,
+            'jobs'   => $tenant->provisioningJobs,
+        ]);
     }
 
     public function suspend(Tenant $tenant): RedirectResponse

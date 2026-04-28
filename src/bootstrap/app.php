@@ -33,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'dept.access'          => \App\Http\Middleware\EnsureDepartmentAccess::class,
             'tenant'               => \Stancl\Tenancy\Middleware\InitializeTenancyBySubdomain::class,
             'tenant.active'        => \App\Http\Middleware\EnsureTenantIsActive::class,
+            'plan.feature'         => \App\Http\Middleware\EnsurePlanFeature::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

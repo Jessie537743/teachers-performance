@@ -1,132 +1,212 @@
-@extends('super-admin.layout', ['title' => $tenant->name])
+@extends('super-admin.layout', [
+    'title' => $tenant->name,
+    'subtitle' => $tenant->subdomain . '.' . str_replace('admin.', '', env('APP_ADMIN_DOMAIN', 'localhost')),
+])
 
 @section('content')
-<div class="mb-4">
-    <a href="{{ route('admin.tenants.index') }}" class="text-sm text-slate-600 hover:text-slate-900">← All schools</a>
-</div>
+@php
+    $statusColor = match($tenant->status) {
+        'active'             => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+        'provisioning'       => 'bg-amber-50 text-amber-700 ring-amber-200',
+        'pending_activation' => 'bg-amber-50 text-amber-700 ring-amber-200',
+        'awaiting_payment'   => 'bg-indigo-50 text-indigo-700 ring-indigo-200',
+        'suspended'          => 'bg-slate-100 text-slate-700 ring-slate-200',
+        'failed'             => 'bg-rose-50 text-rose-700 ring-rose-200',
+        default              => 'bg-slate-100 text-slate-700 ring-slate-200',
+    };
+    $currentCode = $tenant->activationCodes->firstWhere('status', 'unredeemed');
+    if ($currentCode && $currentCode->expires_at->isPast()) {
+        $currentCode = null;
+    }
+    $latestCode = $tenant->activationCodes->first();
+    $tenantUrl = 'http://' . $tenant->subdomain . '.' . str_replace('admin.', '', env('APP_ADMIN_DOMAIN', 'localhost')) . ':8081';
+@endphp
 
-<div class="bg-white shadow rounded-lg p-6 mb-6">
-    <div class="flex items-start justify-between">
-        <div>
-            <h1 class="text-2xl font-semibold text-slate-900">{{ $tenant->name }}</h1>
-            <p class="text-sm text-slate-500 mt-1">
-                <a href="http://{{ $tenant->subdomain }}.localhost:8081" target="_blank" class="text-slate-700 hover:text-slate-900 underline">
-                    {{ $tenant->subdomain }}.localhost:8081
+<a href="{{ route('admin.tenants.index') }}" class="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+    All schools
+</a>
+
+{{-- Header card --}}
+<div class="bg-white rounded-xl ring-1 ring-slate-200 p-6 mb-6">
+    <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+        <div class="flex items-center gap-4 min-w-0">
+            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-brand-500 to-brand-800 text-white grid place-items-center text-lg font-bold uppercase shrink-0">
+                {{ substr($tenant->name, 0, 2) }}
+            </div>
+            <div class="min-w-0">
+                <h1 class="text-xl font-bold text-slate-900 truncate">{{ $tenant->name }}</h1>
+                <a href="{{ $tenantUrl }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 mt-1 text-sm text-brand-700 hover:text-brand-900">
+                    <span class="font-mono">{{ $tenant->subdomain }}.{{ str_replace('admin.', '', env('APP_ADMIN_DOMAIN', 'localhost')) }}:8081</span>
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                 </a>
-            </p>
+            </div>
         </div>
-        @php
-            $color = match($tenant->status) {
-                'active' => 'bg-green-100 text-green-800',
-                'provisioning' => 'bg-yellow-100 text-yellow-800',
-                'pending_activation' => 'bg-blue-100 text-blue-800',
-                'awaiting_payment' => 'bg-amber-100 text-amber-800',
-                'suspended' => 'bg-slate-200 text-slate-700',
-                'failed' => 'bg-red-100 text-red-800',
-                default => 'bg-slate-100 text-slate-700',
-            };
-        @endphp
-        <span class="inline-flex items-center rounded-full px-3 py-1 text-sm font-medium {{ $color }}">{{ $tenant->status }}</span>
+        <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ring-1 {{ $statusColor }} self-start">
+            <span class="w-1.5 h-1.5 rounded-full bg-current opacity-70"></span>
+            {{ str_replace('_', ' ', $tenant->status) }}
+        </span>
     </div>
 
-    <dl class="mt-6 grid grid-cols-2 gap-4 text-sm">
+    <dl class="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
         <div>
-            <dt class="text-slate-500">Database</dt>
-            <dd class="font-mono text-slate-900">{{ $tenant->getAttribute('database') }}</dd>
+            <dt class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">Plan</dt>
+            <dd class="text-slate-900 font-semibold mt-1">{{ config('plans.' . $tenant->plan . '.name', $tenant->plan ?: '—') }}</dd>
         </div>
         <div>
-            <dt class="text-slate-500">Created</dt>
-            <dd class="text-slate-900">{{ $tenant->created_at?->toDayDateTimeString() }}</dd>
+            <dt class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">Database</dt>
+            <dd class="text-slate-900 font-mono text-xs mt-1 truncate">{{ $tenant->getAttribute('database') }}</dd>
+        </div>
+        <div>
+            <dt class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">Tenant ID</dt>
+            <dd class="text-slate-900 font-mono text-xs mt-1">#{{ $tenant->id }}</dd>
+        </div>
+        <div>
+            <dt class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">Created</dt>
+            <dd class="text-slate-900 mt-1">{{ $tenant->created_at?->toDayDateTimeString() }}</dd>
         </div>
     </dl>
 </div>
 
-@php $currentCode = $tenant->currentUnredeemedCode(); @endphp
-@php $latestCode = $tenant->activationCodes()->latest()->first(); @endphp
-
-<div class="bg-white shadow rounded-lg p-6 mb-6">
-    <h2 class="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Activation</h2>
-    @if ($currentCode)
-        <dl class="space-y-3 text-sm">
-            <div>
-                <dt class="text-slate-500 mb-1">Code (active)</dt>
-                <dd class="font-mono text-lg tracking-wider select-all bg-yellow-50 border border-yellow-200 rounded px-3 py-2 inline-block">{{ $currentCode->code }}</dd>
-            </div>
-            <div>
-                <dt class="text-slate-500 mb-1">Activation URL</dt>
-                <dd class="font-mono text-xs select-all">{{ url('/activate?code=' . $currentCode->code) }}</dd>
-            </div>
-            <div class="text-slate-500">
-                Expires {{ $currentCode->expires_at->diffForHumans() }} —
-                intended for <code class="font-mono">{{ $currentCode->intended_admin_email }}</code>
-            </div>
-        </dl>
-        <div class="mt-4 flex gap-2">
-            <form method="POST" action="{{ route('admin.tenants.codes.revoke', [$tenant, $currentCode]) }}" onsubmit="return confirm('Revoke + regenerate? The current code stops working.');">
-                @csrf
-                <button class="rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50">Revoke</button>
-            </form>
-            <form method="POST" action="{{ route('admin.tenants.codes.regenerate', $tenant) }}">
-                @csrf
-                <button class="rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800">Revoke + Regenerate</button>
-            </form>
+<div class="grid lg:grid-cols-3 gap-6">
+    {{-- Activation --}}
+    <div class="lg:col-span-2 bg-white rounded-xl ring-1 ring-slate-200 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-sm font-semibold text-slate-900 flex items-center gap-2">
+                <svg class="w-4 h-4 text-brand-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                Activation
+            </h2>
+            <span class="text-[11px] text-slate-500">{{ $tenant->activationCodes->count() }} total codes</span>
         </div>
-    @elseif ($latestCode && $latestCode->status === 'redeemed')
-        <p class="text-sm text-slate-700">
-            Activated by <code class="font-mono">{{ $latestCode->intended_admin_email }}</code> on {{ $latestCode->redeemed_at->toDayDateTimeString() }}.
-        </p>
-    @elseif ($latestCode)
-        <p class="text-sm text-slate-700 mb-3">Last code was {{ $latestCode->status }} ({{ $latestCode->code }}).</p>
-        <form method="POST" action="{{ route('admin.tenants.codes.regenerate', $tenant) }}">
-            @csrf
-            <button class="rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800">Regenerate</button>
-        </form>
-    @else
-        <p class="text-sm text-slate-500">No activation codes have been generated for this school.</p>
-    @endif
-</div>
 
-@if ($jobs->isNotEmpty())
-<div class="bg-white shadow rounded-lg p-6 mb-6">
-    <h2 class="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Provisioning history</h2>
-    <ul class="divide-y divide-slate-200">
-        @foreach ($jobs as $job)
-            <li class="py-2 text-sm flex items-start justify-between gap-4">
-                <div>
-                    <span class="font-medium text-slate-900">{{ ucfirst($job->status) }}</span>
-                    <span class="text-slate-500"> — {{ $job->created_at->toDayDateTimeString() }}</span>
-                    @if ($job->error)
-                        <pre class="mt-1 bg-red-50 border border-red-200 rounded p-2 text-xs text-red-700 whitespace-pre-wrap">{{ $job->error }}</pre>
-                    @endif
+        @if ($currentCode)
+            <div class="rounded-lg bg-amber-50 border border-amber-200 p-4 mb-4">
+                <div class="text-[11px] font-semibold uppercase tracking-wider text-amber-800 mb-2">Active code</div>
+                <div class="font-mono text-2xl tracking-widest text-slate-900 select-all">{{ $currentCode->code }}</div>
+                <div class="mt-3 text-xs text-slate-600 grid sm:grid-cols-2 gap-y-1">
+                    <span>Expires <strong>{{ $currentCode->expires_at->diffForHumans() }}</strong></span>
+                    <span>Intended: <code class="font-mono">{{ $currentCode->intended_admin_email }}</code></span>
                 </div>
-            </li>
-        @endforeach
-    </ul>
-</div>
-@endif
-
-<div class="bg-white shadow rounded-lg p-6">
-    <h2 class="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Actions</h2>
-    <div class="flex flex-wrap items-center gap-3">
-        @if ($tenant->status === 'active')
-            <form method="POST" action="{{ route('admin.tenants.suspend', $tenant) }}" onsubmit="return confirm('Suspend {{ $tenant->name }}? Logins will be blocked.');">
-                @csrf
-                <button class="rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50">Suspend school</button>
-            </form>
+                <div class="mt-3 flex flex-wrap items-center gap-2">
+                    <button type="button" onclick="navigator.clipboard.writeText('{{ url('/activate?code=' . $currentCode->code) }}'); this.innerText='Copied!'"
+                            class="inline-flex items-center gap-1.5 rounded-md bg-white border border-amber-300 px-3 py-1.5 text-xs font-medium text-amber-800 hover:bg-amber-100">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        Copy activation URL
+                    </button>
+                    <form method="POST" action="{{ route('admin.tenants.codes.revoke', [$tenant, $currentCode]) }}" onsubmit="return confirm('Revoke this code? It can no longer be redeemed.');">
+                        @csrf
+                        <button class="inline-flex items-center rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs hover:bg-slate-50">Revoke</button>
+                    </form>
+                    <form method="POST" action="{{ route('admin.tenants.codes.regenerate', $tenant) }}">
+                        @csrf
+                        <button class="inline-flex items-center rounded-md bg-slate-900 px-3 py-1.5 text-xs text-white hover:bg-slate-800">Revoke + regenerate</button>
+                    </form>
+                </div>
+            </div>
+        @elseif ($latestCode && $latestCode->status === 'redeemed')
+            <div class="rounded-lg bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-900">
+                <span class="font-semibold">Activated.</span>
+                Redeemed by <code class="font-mono">{{ $latestCode->intended_admin_email }}</code>
+                on {{ $latestCode->redeemed_at?->toDayDateTimeString() }}.
+            </div>
+        @else
+            <div class="rounded-lg bg-slate-50 border border-slate-200 p-4">
+                <p class="text-sm text-slate-700 mb-3">
+                    @if ($latestCode)
+                        Last code was <strong>{{ $latestCode->status }}</strong> ({{ $latestCode->code }}).
+                    @else
+                        No activation codes have been generated for this school.
+                    @endif
+                </p>
+                <form method="POST" action="{{ route('admin.tenants.codes.regenerate', $tenant) }}">
+                    @csrf
+                    <button class="inline-flex items-center gap-1.5 rounded-md bg-brand-600 hover:bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        Generate new code
+                    </button>
+                </form>
+            </div>
         @endif
 
-        @if ($tenant->status === 'suspended')
-            <form method="POST" action="{{ route('admin.tenants.resume', $tenant) }}">
-                @csrf
-                <button class="rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800">Resume school</button>
-            </form>
+        @if ($tenant->activationCodes->count() > ($currentCode ? 1 : 0))
+            <details class="mt-5">
+                <summary class="cursor-pointer text-sm text-slate-600 hover:text-slate-900">
+                    Code history ({{ $tenant->activationCodes->count() }})
+                </summary>
+                <ul class="mt-3 divide-y divide-slate-100 text-xs">
+                    @foreach ($tenant->activationCodes as $c)
+                        <li class="py-2 flex items-center justify-between gap-3">
+                            <code class="font-mono text-slate-700">{{ $c->code }}</code>
+                            <span class="text-slate-500">{{ $c->created_at?->diffForHumans() }}</span>
+                            <span class="inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1
+                                @class([
+                                    'bg-emerald-50 text-emerald-700 ring-emerald-200' => $c->status === 'redeemed',
+                                    'bg-amber-50 text-amber-700 ring-amber-200'       => $c->status === 'unredeemed',
+                                    'bg-slate-100 text-slate-700 ring-slate-200'      => $c->status === 'revoked',
+                                    'bg-rose-50 text-rose-700 ring-rose-200'          => $c->status === 'expired',
+                                ])">{{ $c->status }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </details>
         @endif
+    </div>
 
-        @if ($tenant->status === 'failed')
-            <form method="POST" action="{{ route('admin.tenants.retry', $tenant) }}">
-                @csrf
-                <button class="rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-800">Retry provisioning</button>
-            </form>
+    {{-- Side actions --}}
+    <div class="space-y-6">
+        <div class="bg-white rounded-xl ring-1 ring-slate-200 p-6">
+            <h2 class="text-sm font-semibold text-slate-900 mb-4">Actions</h2>
+            <div class="space-y-2">
+                @if ($tenant->status === 'active')
+                    <form method="POST" action="{{ route('admin.tenants.suspend', $tenant) }}" onsubmit="return confirm('Suspend {{ $tenant->name }}? Logins will be blocked.');">
+                        @csrf
+                        <button class="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm hover:bg-slate-50">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            Suspend school
+                        </button>
+                    </form>
+                @endif
+
+                @if ($tenant->status === 'suspended')
+                    <form method="POST" action="{{ route('admin.tenants.resume', $tenant) }}">
+                        @csrf
+                        <button class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-sm font-medium text-white">
+                            Resume school
+                        </button>
+                    </form>
+                @endif
+
+                @if ($tenant->status === 'failed')
+                    <form method="POST" action="{{ route('admin.tenants.retry', $tenant) }}">
+                        @csrf
+                        <button class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 hover:bg-slate-800 px-4 py-2 text-sm font-medium text-white">Retry provisioning</button>
+                    </form>
+                @endif
+
+                <a href="{{ $tenantUrl }}" target="_blank" rel="noopener" class="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm hover:bg-slate-50">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    Open tenant site
+                </a>
+            </div>
+        </div>
+
+        @if ($jobs->isNotEmpty())
+            <div class="bg-white rounded-xl ring-1 ring-slate-200 p-6">
+                <h2 class="text-sm font-semibold text-slate-900 mb-3">Provisioning history</h2>
+                <ul class="space-y-3">
+                    @foreach ($jobs as $job)
+                        <li class="text-xs">
+                            <div class="flex items-baseline justify-between">
+                                <span class="font-semibold text-slate-900 capitalize">{{ $job->status }}</span>
+                                <span class="text-slate-500">{{ $job->created_at?->diffForHumans() }}</span>
+                            </div>
+                            @if ($job->error)
+                                <pre class="mt-1.5 bg-rose-50 border border-rose-200 rounded p-2 text-rose-700 whitespace-pre-wrap break-words">{{ $job->error }}</pre>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
         @endif
     </div>
 </div>

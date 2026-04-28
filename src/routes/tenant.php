@@ -48,6 +48,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Plan upgrade landing — middleware redirects here when a capability is missing
+    Route::get('/plan/upgrade', [\App\Http\Controllers\PlanUpgradeController::class, 'show'])
+        ->name('plan.upgrade');
 });
 
 // -------------------------------------------------------------------------
@@ -69,8 +73,11 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     // Dashboard — single entry point, controller resolves the right view per role
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Analytics — permission-gated, controller resolves system vs department view
-    Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+    // Analytics — permission-gated AND plan-gated.
+    // `ai_predictions` is the headline feature here; tenants without it see /plan/upgrade.
+    Route::get('/analytics', [AnalyticsController::class, 'index'])
+        ->middleware('plan.feature:ai_predictions')
+        ->name('analytics.index');
 
     // Evaluations — unified controller with type-based routing
     Route::get('/evaluate', [EvaluateController::class, 'index'])->name('evaluate.index');
