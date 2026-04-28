@@ -71,7 +71,51 @@ COPY --from=app /var/www /var/www
 # nginx + supervisord config (template substituted at runtime)
 COPY docker/nginx/default.conf /etc/nginx/conf.d/default.conf.template
 COPY docker/supervisord.conf   /etc/supervisor/conf.d/supervisord.conf
-COPY docker/entrypoint.sh      /usr/local/bin/entrypoint.sh
+
+# Inline entrypoint — written directly into the image so a flaky remote build
+# context (e.g. Railway BuildKit occasionally not finding docker/entrypoint.sh)
+# can never break the deploy. Keep this in sync with docker/entrypoint.sh
+# for parity with local docker compose.
+RUN cat > /usr/local/bin/entrypoint.sh <<'ENTRYPOINT_EOF'
+#!/bin/sh
+set -e
+
+export PORT="${PORT:-80}"
+echo "[entrypoint] Binding nginx to port: $PORT"
+
+envsubst '${PORT}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
+echo "[entrypoint] Rendered nginx config:"
+grep -E 'listen|server_name' /etc/nginx/conf.d/default.conf || true
+
+nginx -t
+
+cd /var/www
+
+mkdir -p storage/framework/cache/data \
+         storage/framework/sessions \
+         storage/framework/views \
+         storage/logs \
+         bootstrap/cache
+chown -R www-data:www-data storage bootstrap/cache
+chmod -R ug+rwX storage bootstrap/cache
+
+if [ "${RUN_MIGRATIONS:-true}" = "true" ] && [ -n "${DB_HOST:-}" ]; then
+    echo "[entrypoint] Running migrations..."
+    php artisan migrate --force 2>&1 || echo "[entrypoint] WARNING: Migration failed — check logs above."
+fi
+
+if [ "${APP_ENV:-production}" = "production" ]; then
+    php artisan config:clear  || true
+    php artisan route:clear   || true
+    php artisan view:clear    || true
+    rm -rf storage/framework/views/*.php 2>/dev/null || true
+    php artisan config:cache  || true
+    php artisan route:cache   || true
+fi
+
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
+ENTRYPOINT_EOF
+
 RUN rm -f /etc/nginx/sites-enabled/default \
     && rm -f /etc/nginx/conf.d/default.conf \
     && mkdir -p /var/log/supervisor \
