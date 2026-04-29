@@ -156,7 +156,9 @@ RUN cat > /usr/local/bin/entrypoint.sh <<'ENTRYPOINT_EOF'
 set -e
 
 export PORT="${PORT:-80}"
+export LOG_CHANNEL="${LOG_CHANNEL:-stderr}"
 echo "[entrypoint] Binding nginx to port: $PORT"
+echo "[entrypoint] LOG_CHANNEL=$LOG_CHANNEL"
 
 envsubst '${PORT}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
 echo "[entrypoint] Rendered nginx config:"
