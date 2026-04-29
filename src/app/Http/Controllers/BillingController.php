@@ -56,16 +56,20 @@ class BillingController extends Controller
             return redirect()->route('plan.upgrade')->with('error', 'Invalid plan selection.');
         }
 
-        if (BillingService::priceCents($planSlug, $cycle) === null) {
+        $monthlyCents = BillingService::priceCents($planSlug, 'monthly');
+        $yearlyCents  = BillingService::priceCents($planSlug, 'yearly');
+
+        if ($monthlyCents === null && $yearlyCents === null) {
             return redirect()->route('plan.upgrade')->with('error', "{$plan['name']} is custom-priced — please contact sales.");
         }
 
         return view('billing.checkout', [
-            'plan'        => $plan,
-            'planSlug'    => $planSlug,
-            'cycle'       => $cycle,
-            'priceCents'  => BillingService::priceCents($planSlug, $cycle),
-            'currentPlan' => plan()->plan(),
+            'plan'         => $plan,
+            'planSlug'     => $planSlug,
+            'cycle'        => in_array($cycle, ['monthly', 'yearly'], true) ? $cycle : 'monthly',
+            'monthlyCents' => $monthlyCents,
+            'yearlyCents'  => $yearlyCents,
+            'currentPlan'  => plan()->plan(),
         ]);
     }
 
