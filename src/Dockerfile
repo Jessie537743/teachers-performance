@@ -177,8 +177,12 @@ chown -R www-data:www-data storage bootstrap/cache
 chmod -R ug+rwX storage bootstrap/cache
 
 if [ "${RUN_MIGRATIONS:-true}" = "true" ] && [ -n "${DB_HOST:-}" ]; then
-    echo "[entrypoint] Running migrations..."
-    php artisan migrate --force 2>&1 || echo "[entrypoint] WARNING: Migration failed — check logs above."
+    echo "[entrypoint] Running central migrations..."
+    php artisan migrate \
+        --database=central \
+        --path=database/migrations/central \
+        --force 2>&1 \
+        || echo "[entrypoint] WARNING: Central migration failed — check logs above."
 fi
 
 if [ "${APP_ENV:-production}" = "production" ]; then
