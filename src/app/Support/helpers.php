@@ -46,3 +46,26 @@ if (! function_exists('plan')) {
         return $features;
     }
 }
+
+if (! function_exists('tenant_url')) {
+    /**
+     * Build a tenant-scoped URL using the scheme + port + central domain
+     * derived from APP_URL / APP_ADMIN_DOMAIN. Works in both local Docker
+     * dev (http://x.localhost:8081) and Railway production
+     * (https://x.teach-matrix.app).
+     *
+     *   tenant_url('jcd')               // → https://jcd.teach-matrix.app
+     *   tenant_url('jcd', '/login')     // → https://jcd.teach-matrix.app/login
+     */
+    function tenant_url(string $subdomain, string $path = ''): string
+    {
+        $appUrl       = parse_url((string) config('app.url', 'http://localhost'));
+        $scheme       = $appUrl['scheme'] ?? 'http';
+        $port         = isset($appUrl['port']) ? ':' . $appUrl['port'] : '';
+        $adminDomain  = (string) env('APP_ADMIN_DOMAIN', 'admin.localhost');
+        $centralHost  = preg_replace('/^admin\./', '', $adminDomain);
+        $path         = $path === '' ? '' : (str_starts_with($path, '/') ? $path : '/' . $path);
+
+        return "{$scheme}://{$subdomain}.{$centralHost}{$port}{$path}";
+    }
+}

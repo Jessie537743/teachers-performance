@@ -25,7 +25,7 @@
         <p class="text-sm text-slate-600">{{ $message }}</p>
 
         @if ($tenant->status === 'pending_activation')
-            <a href="{{ url('http://localhost:8081/activate') }}" class="mt-6 inline-flex items-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
+            <a href="{{ rtrim((string) config('app.url'), '/') . '/activate' }}" class="mt-6 inline-flex items-center rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800">
                 Go to activation
             </a>
         @endif

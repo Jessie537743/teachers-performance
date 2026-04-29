@@ -107,7 +107,7 @@ class ActivationController extends Controller
         return view('central.activate.success', [
             'tenant'      => $tenant->refresh(),
             'adminEmail'  => $code->intended_admin_email,
-            'loginUrl'    => 'http://' . $tenant->subdomain . '.localhost:8081/login',
+            'loginUrl'    => tenant_url($tenant->subdomain, '/login'),
         ]);
     }
 }

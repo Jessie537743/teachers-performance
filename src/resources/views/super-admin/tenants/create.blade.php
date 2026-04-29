@@ -32,8 +32,12 @@
                             pattern="[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?"
                             placeholder="stmarys"
                             class="flex-1 rounded-l-lg border-slate-300 text-sm font-mono lowercase focus:border-brand-500 focus:ring-2 focus:ring-brand-500/30">
+                        @php
+                            $appUrlParts = parse_url((string) config('app.url', 'http://localhost'));
+                            $portSuffix  = isset($appUrlParts['port']) ? ':' . $appUrlParts['port'] : '';
+                        @endphp
                         <span class="inline-flex items-center rounded-r-lg border border-l-0 border-slate-300 bg-slate-50 px-3 py-2 text-sm text-slate-500 font-mono">
-                            .{{ str_replace('admin.', '', env('APP_ADMIN_DOMAIN', 'admin.localhost')) }}:8081
+                            .{{ preg_replace('/^admin\./', '', env('APP_ADMIN_DOMAIN', 'admin.localhost')) }}{{ $portSuffix }}
                         </span>
                     </div>
                     <p class="mt-1.5 text-xs text-slate-500">2-32 chars, lowercase letters / digits / hyphens. Reserved: admin, www, api, app, mail, ftp, cdn.</p>
