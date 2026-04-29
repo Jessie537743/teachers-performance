@@ -12,9 +12,10 @@ use Illuminate\Support\Facades\Schema;
  * subjects) is intentionally NOT seeded — the school admin populates those
  * after first login.
  *
- * Some Phase-1 data migrations partially pre-seed criteria, questions, and
- * role_permissions; the seeders below assume an empty starting state and
- * use hardcoded primary keys, so we truncate first to get clean rows.
+ * Evaluation criteria + questions are also intentionally NOT seeded — every
+ * school configures its own rubric. The truncate step below wipes any
+ * criteria/question rows pre-populated by Phase-1 data migrations so new
+ * tenants land on an empty Criteria page.
  */
 class TenantTemplateSeeder extends Seeder
 {
@@ -26,10 +27,6 @@ class TenantTemplateSeeder extends Seeder
         $this->call([
             RolePermissionSeeder::class,
             AnnouncementPermissionsSeeder::class,
-            CriteriaSeeder::class,
-            QuestionSeeder::class,
-            DeanRecommendationCriterionSeeder::class,
-            AcademicAdministratorsCriteriaSeeder::class,
             InterventionSeeder::class,
             SentimentLexiconSeeder::class,
         ]);
