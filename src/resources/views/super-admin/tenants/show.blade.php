@@ -19,7 +19,8 @@
         $currentCode = null;
     }
     $latestCode = $tenant->activationCodes->first();
-    $tenantUrl = 'http://' . $tenant->subdomain . '.' . str_replace('admin.', '', env('APP_ADMIN_DOMAIN', 'localhost')) . ':8081';
+    $tenantUrl     = tenant_url($tenant->subdomain);
+    $tenantHost    = preg_replace('#^https?://#', '', $tenantUrl);
 @endphp
 
 <a href="{{ route('admin.tenants.index') }}" class="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 mb-4">
@@ -37,7 +38,7 @@
             <div class="min-w-0">
                 <h1 class="text-xl font-bold text-slate-900 truncate">{{ $tenant->name }}</h1>
                 <a href="{{ $tenantUrl }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 mt-1 text-sm text-brand-700 hover:text-brand-900">
-                    <span class="font-mono">{{ $tenant->subdomain }}.{{ str_replace('admin.', '', env('APP_ADMIN_DOMAIN', 'localhost')) }}:8081</span>
+                    <span class="font-mono">{{ $tenantHost }}</span>
                     <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                 </a>
             </div>

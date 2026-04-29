@@ -20,6 +20,7 @@
         @if (count($upgrades))
             <div class="grid sm:grid-cols-{{ min(count($upgrades), 2) }} gap-4 mt-6 mb-6 text-left">
                 @foreach ($upgrades as $plan)
+                    @php $isCustom = ! is_numeric($plan['prices']['monthly'] ?? null); @endphp
                     <div class="rounded-xl border border-slate-200 p-5">
                         <div class="flex items-baseline justify-between mb-2">
                             <h3 class="font-semibold text-slate-900">{{ $plan['name'] }}</h3>
@@ -28,10 +29,17 @@
                             </span>
                         </div>
                         <p class="text-sm text-slate-500 mb-4">{{ $plan['tagline'] }}</p>
-                        <a href="mailto:sales@platform.test?subject=Upgrade to {{ $plan['name'] }}"
-                           class="inline-flex items-center justify-center w-full rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5">
-                            Contact sales to upgrade
-                        </a>
+                        @if ($isCustom)
+                            <a href="mailto:sales@platform.test?subject=Upgrade to {{ $plan['name'] }}"
+                               class="inline-flex items-center justify-center w-full rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5">
+                                Contact sales to upgrade
+                            </a>
+                        @else
+                            <a href="{{ route('billing.checkout', ['plan' => $plan['slug'], 'cycle' => 'monthly']) }}"
+                               class="inline-flex items-center justify-center w-full rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2.5">
+                                Upgrade to {{ $plan['name'] }}
+                            </a>
+                        @endif
                     </div>
                 @endforeach
             </div>

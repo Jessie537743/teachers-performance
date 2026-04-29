@@ -63,6 +63,10 @@ Route::middleware('auth')->group(function () {
     // Billing — current plan, invoices, cancel subscription
     Route::get('/billing', [\App\Http\Controllers\BillingController::class, 'show'])->name('billing.show');
     Route::post('/billing/cancel', [\App\Http\Controllers\BillingController::class, 'cancel'])->name('billing.cancel');
+
+    // Self-serve plan upgrade — checkout page + confirm
+    Route::get('/billing/checkout', [\App\Http\Controllers\BillingController::class, 'checkout'])->name('billing.checkout');
+    Route::post('/billing/checkout', [\App\Http\Controllers\BillingController::class, 'confirmCheckout'])->name('billing.checkout.confirm');
 });
 
 // -------------------------------------------------------------------------
