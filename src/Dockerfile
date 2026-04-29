@@ -183,6 +183,10 @@ if [ "${RUN_MIGRATIONS:-true}" = "true" ] && [ -n "${DB_HOST:-}" ]; then
         --path=database/migrations/central \
         --force 2>&1 \
         || echo "[entrypoint] WARNING: Central migration failed — check logs above."
+
+    echo "[entrypoint] Seeding central data (idempotent)..."
+    php artisan db:seed --class=CentralSeeder --force 2>&1 \
+        || echo "[entrypoint] WARNING: Central seeder failed — check logs above."
 fi
 
 if [ "${APP_ENV:-production}" = "production" ]; then
