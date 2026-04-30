@@ -393,10 +393,15 @@ function showConfirm(message, form, options) {
     btn.textContent = opts.confirmText || 'Confirm';
     btn.className = 'px-4 py-2 rounded-xl text-sm font-semibold text-white transition '
         + (opts.safe ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700');
-    document.getElementById('confirmOverlay').classList.add('active');
+    var overlay = document.getElementById('confirmOverlay');
+    overlay.style.display = '';
+    overlay.classList.remove('hidden');
+    overlay.classList.add('active');
 }
 function closeConfirm() {
-    document.getElementById('confirmOverlay').classList.remove('active');
+    var overlay = document.getElementById('confirmOverlay');
+    overlay.classList.remove('active');
+    overlay.style.display = '';
     _confirmForm = null;
 }
 function doConfirm() {

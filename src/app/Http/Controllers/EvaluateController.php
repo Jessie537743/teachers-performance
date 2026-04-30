@@ -292,6 +292,7 @@ class EvaluateController extends Controller
             $facultyUsers = User::with('facultyProfile')
                 ->whereHasRole('faculty')
                 ->where('department_id', $dean->department_id)
+                ->where('id', '!=', $dean->id)
                 ->where('is_active', true)
                 ->get();
 
