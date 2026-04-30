@@ -112,6 +112,8 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
 
     Route::resource('faculty', Admin\FacultyController::class)
         ->except(['create', 'show', 'edit']);
+    Route::post('faculty/{faculty}/reactivate', [Admin\FacultyController::class, 'reactivate'])
+        ->name('faculty.reactivate');
     Route::post('faculty/bulk-upload', [Admin\FacultyController::class, 'bulkUpload'])
         ->name('faculty.bulk-upload');
     Route::get('faculty/bulk-template', [Admin\FacultyController::class, 'downloadBulkTemplate'])

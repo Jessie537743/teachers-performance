@@ -173,6 +173,12 @@
                                     @csrf @method('DELETE')
                                     <button type="submit" class="inline-flex items-center gap-2 bg-red-600 text-white px-3 py-1.5 rounded-xl text-sm font-semibold hover:bg-red-700 transition">Deactivate</button>
                                 </form>
+                            @else
+                                <form method="POST" action="{{ route('faculty.reactivate', $member->id) }}"
+                                      onsubmit="event.preventDefault(); showConfirm('Reactivate this faculty member?', this, {safe: true, confirmText: 'Reactivate'})">
+                                    @csrf
+                                    <button type="submit" class="inline-flex items-center gap-2 bg-emerald-600 text-white px-3 py-1.5 rounded-xl text-sm font-semibold hover:bg-emerald-700 transition">Reactivate</button>
+                                </form>
                             @endif
                         </div>
                     </td>
@@ -327,6 +333,11 @@
 
 @push('scripts')
 <script>
+// Wrapped in an IIFE so const/let declarations stay local. Without this, Turbo's
+// body swap on back-navigation re-injects this <script>, and JS rejects the
+// duplicate `const facultyPositionOptions` — which crashes every interactive
+// element on the page (modals, the HR reactivate form, the edit dropdowns…).
+(function () {
 @if($errors->any() && old('form_source') === 'add_faculty')
     document.getElementById('addFacultyModal').style.display = 'flex';
 @endif
@@ -435,5 +446,13 @@ if (editDeptEl) {
         syncDepartmentPositionOptions('edit_fdept', 'edit_fposition');
     });
 }
+
+// Re-export the functions referenced by inline onclick= handlers in the
+// rendered HTML (closeEditFaculty, closeBulkFacultyUploadModal). Inline
+// handlers resolve identifiers off `window`, not the IIFE's local scope.
+window.closeEditFaculty = closeEditFaculty;
+window.closeBulkFacultyUploadModal = closeBulkFacultyUploadModal;
+window.openEditFaculty = openEditFaculty;
+})();
 </script>
 @endpush

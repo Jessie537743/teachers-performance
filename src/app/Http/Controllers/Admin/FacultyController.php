@@ -290,6 +290,16 @@ class FacultyController extends Controller
             ->with('success', 'Faculty member deactivated.');
     }
 
+    public function reactivate(User $faculty): RedirectResponse
+    {
+        Gate::authorize('manage-faculty');
+
+        $faculty->update(['is_active' => true]);
+
+        return redirect()->route('faculty.index')
+            ->with('success', "{$faculty->name} reactivated.");
+    }
+
     public function bulkUpload(Request $request): RedirectResponse
     {
         Gate::authorize('manage-faculty');
