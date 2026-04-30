@@ -441,16 +441,24 @@ function normalizeSemesterToken(value) {
     return map[raw] || raw;
 }
 
-function renderSubjectChoices(containerId, inputName, semesterValue, selectedIds) {
+function renderSubjectChoices(containerId, inputName, semesterValue, selectedIds, departmentId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
     const token = normalizeSemesterToken(semesterValue);
-    const options = subjectOptionsBySemester[token] || [];
+    let options = subjectOptionsBySemester[token] || [];
+
+    // Filter by department when one is chosen — irregular students still belong
+    // to a department, so we only offer subjects from their own department.
+    const deptIdNum = parseInt(departmentId, 10);
+    if (!Number.isNaN(deptIdNum) && deptIdNum > 0) {
+        options = options.filter((option) => Number(option.department_id) === deptIdNum);
+    }
+
     const selectedSet = new Set((selectedIds || []).map((id) => parseInt(id, 10)).filter((id) => !Number.isNaN(id)));
 
     if (options.length === 0) {
-        container.innerHTML = '<p class="text-xs text-amber-900">No subjects available for this semester.</p>';
+        container.innerHTML = '<p class="text-xs text-amber-900">No subjects available for this semester &amp; department. Pick a department first or contact admin to add subjects.</p>';
         return;
     }
 
@@ -491,7 +499,13 @@ function openEditStudent(id, name, studentId, email, deptId, course, year, secti
     document.getElementById('est_sy').value = sy || '';
     editStudentStatusEl.value = studentStatus === 'irregular' ? 'irregular' : 'regular';
     toggleIrregularSubjectPicker(editStudentStatusEl.value, 'est_irregular_subjects_wrap');
-    renderSubjectChoices('est_subject_choices', 'selected_subject_ids[]', semEl.value, subjectIds || []);
+    renderSubjectChoices(
+        'est_subject_choices',
+        'selected_subject_ids[]',
+        semEl.value,
+        subjectIds || [],
+        document.getElementById('est_dept')?.value || ''
+    );
 
     editModal.classList.remove('hidden');
 }
@@ -517,35 +531,44 @@ document.querySelectorAll('.open-edit-student-btn').forEach((btn) => {
     });
 });
 
+const addDeptEl  = document.getElementById('s_dept');
+const editDeptEl = document.getElementById('est_dept');
+
 function refreshAddStudentIrregularSubjects() {
     const status = addStudentStatusEl?.value || 'regular';
     toggleIrregularSubjectPicker(status, 's_irregular_subjects_wrap');
     if (status === 'irregular') {
-        renderSubjectChoices('s_subject_choices', 'selected_subject_ids[]', addSemesterEl?.value || '', oldAddSelectedSubjectIds);
+        renderSubjectChoices(
+            's_subject_choices',
+            'selected_subject_ids[]',
+            addSemesterEl?.value || '',
+            oldAddSelectedSubjectIds,
+            addDeptEl?.value || ''
+        );
     }
 }
 
-if (addStudentStatusEl) {
-    addStudentStatusEl.addEventListener('change', refreshAddStudentIrregularSubjects);
+function refreshEditStudentIrregularSubjects(preserveSelection) {
+    const status = editStudentStatusEl?.value || 'regular';
+    toggleIrregularSubjectPicker(status, 'est_irregular_subjects_wrap');
+    if (status === 'irregular') {
+        renderSubjectChoices(
+            'est_subject_choices',
+            'selected_subject_ids[]',
+            editSemesterEl?.value || '',
+            preserveSelection || [],
+            editDeptEl?.value || ''
+        );
+    }
 }
-if (addSemesterEl) {
-    addSemesterEl.addEventListener('change', refreshAddStudentIrregularSubjects);
-}
-if (editStudentStatusEl) {
-    editStudentStatusEl.addEventListener('change', function () {
-        toggleIrregularSubjectPicker(editStudentStatusEl.value, 'est_irregular_subjects_wrap');
-        if (editStudentStatusEl.value === 'irregular') {
-            renderSubjectChoices('est_subject_choices', 'selected_subject_ids[]', editSemesterEl?.value || '', []);
-        }
-    });
-}
-if (editSemesterEl) {
-    editSemesterEl.addEventListener('change', function () {
-        if ((editStudentStatusEl?.value || 'regular') === 'irregular') {
-            renderSubjectChoices('est_subject_choices', 'selected_subject_ids[]', editSemesterEl.value, []);
-        }
-    });
-}
+
+if (addStudentStatusEl) addStudentStatusEl.addEventListener('change', refreshAddStudentIrregularSubjects);
+if (addSemesterEl)      addSemesterEl.addEventListener('change',      refreshAddStudentIrregularSubjects);
+if (addDeptEl)          addDeptEl.addEventListener('change',          refreshAddStudentIrregularSubjects);
+
+if (editStudentStatusEl) editStudentStatusEl.addEventListener('change', () => refreshEditStudentIrregularSubjects([]));
+if (editSemesterEl)      editSemesterEl.addEventListener('change',      () => refreshEditStudentIrregularSubjects([]));
+if (editDeptEl)          editDeptEl.addEventListener('change',          () => refreshEditStudentIrregularSubjects([]));
 
 refreshAddStudentIrregularSubjects();
 </script>

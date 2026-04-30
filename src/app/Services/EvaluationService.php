@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 
 class EvaluationService
 {
-    private const MAX_STUDENT_YEAR_LEVEL = 4;
+    private const MAX_STUDENT_YEAR_LEVEL = 5;
 
     public static function isDeanHeadEvaluateePersonnelType(string $personnelType): bool
     {
@@ -332,42 +332,74 @@ class EvaluationService
                         continue;
                     }
 
-                    $requiredSlots = StudentEvaluationSubjectService::countEvaluationSlotsForStudent($user, $profile, $period);
-                    if ($requiredSlots === 0) {
+                    $assignedSubjectIds = StudentEvaluationSubjectService::matchingSubjects($profile, $period)
+                        ->pluck('id')
+                        ->map(fn ($id) => (int) $id)
+                        ->unique()
+                        ->values();
+
+                    $assignedCount = $assignedSubjectIds->count();
+                    if ($assignedCount === 0) {
                         continue;
                     }
 
-                    $completedSlots = self::countCompletedEvaluationSlotsForPeriod($user->id, $period);
-                    // Strictly more than half of assignment slots (per-semester counts for this period)
-                    if (($completedSlots * 2) <= $requiredSlots) {
+                    $evaluatedCount = self::countEvaluatedSubjectsForPeriod(
+                        $user->id,
+                        $assignedSubjectIds->all(),
+                        $period
+                    );
+
+                    // Strictly more than half of assigned SUBJECTS (a subject counts as
+                    // evaluated when feedback was submitted for any of its faculty).
+                    if (($evaluatedCount * 2) <= $assignedCount) {
                         continue;
                     }
 
-                    $currentYear = (int) trim((string) $profile->year_level);
+                    $currentYear    = (int) trim((string) $profile->year_level);
                     $normalizedYear = $currentYear > 0 ? $currentYear : 1;
-                    $nextYear = min($normalizedYear + 1, self::MAX_STUDENT_YEAR_LEVEL);
+                    $nextYear       = min($normalizedYear + 1, self::MAX_STUDENT_YEAR_LEVEL);
 
                     $profile->update([
-                        'year_level' => (string) $nextYear,
+                        'year_level'                => self::yearLevelLabel($nextYear),
                         'last_promoted_school_year' => (string) $period->school_year,
-                        'last_promoted_semester' => (string) $period->semester,
+                        'last_promoted_semester'    => (string) $period->semester,
                     ]);
                 }
             });
     }
 
     /**
-     * Distinct subject–faculty pairs with a student evaluation row for this period.
+     * Number of distinct assigned subjects for which the student submitted at
+     * least one evaluation row in the given period.
+     *
+     * @param  list<int>  $assignedSubjectIds
      */
-    private static function countCompletedEvaluationSlotsForPeriod(int $studentUserId, EvaluationPeriod $period): int
+    private static function countEvaluatedSubjectsForPeriod(int $studentUserId, array $assignedSubjectIds, EvaluationPeriod $period): int
     {
+        if ($assignedSubjectIds === []) {
+            return 0;
+        }
+
         return (int) EvaluationFeedback::query()
             ->where('student_id', $studentUserId)
             ->where('evaluator_type', 'student')
             ->where('semester', $period->semester)
             ->where('school_year', $period->school_year)
-            ->selectRaw('COUNT(DISTINCT CONCAT(subject_id, ?, faculty_id)) as c', [':'])
-            ->value('c');
+            ->whereIn('subject_id', $assignedSubjectIds)
+            ->distinct()
+            ->count('subject_id');
+    }
+
+    private static function yearLevelLabel(int $year): string
+    {
+        return match ($year) {
+            1       => '1st Year',
+            2       => '2nd Year',
+            3       => '3rd Year',
+            4       => '4th Year',
+            5       => '5th Year',
+            default => $year . 'th Year',
+        };
     }
 
     private static function promotionSemesterGate(EvaluationPeriod $period): bool

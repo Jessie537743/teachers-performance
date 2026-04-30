@@ -56,15 +56,26 @@ class FacultyController extends Controller
 
         $positionValue = self::departmentPositionValue($position);
 
-        $deanHeadPosition = FacultyDepartmentPosition::DeanHead;
-        $staffPosition = FacultyDepartmentPosition::Staff;
+        $allowedNonTeaching = [
+            FacultyDepartmentPosition::DeanHead->value,   // rendered as "Head"
+            FacultyDepartmentPosition::Staff->value,
+        ];
 
-        if ($departmentType === 'non-teaching' && !in_array($positionValue, [
-            $deanHeadPosition->value,
-            $staffPosition->value,
-        ], true)) {
+        $allowedTeaching = [
+            FacultyDepartmentPosition::DeanHead->value,   // rendered as "Dean"
+            FacultyDepartmentPosition::ProgramChair->value,
+            FacultyDepartmentPosition::Faculty->value,
+        ];
+
+        if ($departmentType === 'non-teaching' && ! in_array($positionValue, $allowedNonTeaching, true)) {
             throw ValidationException::withMessages([
-                'department_position' => 'For non-teaching departments, only Department Head and Staff are allowed.',
+                'department_position' => 'For non-teaching departments, only Head and Staff are allowed.',
+            ]);
+        }
+
+        if ($departmentType === 'teaching' && ! in_array($positionValue, $allowedTeaching, true)) {
+            throw ValidationException::withMessages([
+                'department_position' => 'For teaching departments, only Dean, Program Chair, or Faculty are allowed.',
             ]);
         }
     }

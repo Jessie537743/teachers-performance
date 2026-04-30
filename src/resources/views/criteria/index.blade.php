@@ -68,18 +68,23 @@
                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 ml-1">{{ $evaluatorGroupLabels[$eg->evaluator_group] ?? $eg->evaluator_group }}</span>
                     @endforeach
                     <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 ml-1">{{ $criterion->questions->count() }} questions</span>
-                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-violet-100 text-violet-700 ml-1" title="Criterion weight (% contribution to overall GWA)">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-violet-100 text-violet-700 ml-1" title="Weight for the {{ $groupLabel }} evaluator group (% contribution to overall GWA)">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
-                        {{ rtrim(rtrim(number_format((float)($criterion->weight ?? 0), 2), '0'), '.') }}%
+                        {{ rtrim(rtrim(number_format($criterion->weightForGroup($groupKey), 2), '0'), '.') }}%
                     </span>
                 </div>
                 @can('manage-criteria')
                 <div class="flex gap-1.5">
                     @php
+                        $weightsByGroup = $criterion->evaluatorGroups
+                            ->mapWithKeys(fn ($eg) => [$eg->evaluator_group => (float) ($eg->weight ?? $criterion->weight ?? 0)])
+                            ->all();
+
                         $criterionPayload = [
                             'id' => $criterion->id,
                             'name' => $criterion->name,
                             'weight' => (float) ($criterion->weight ?? 0),
+                            'weights_by_group' => $weightsByGroup,
                             'personnel_types' => $criterion->personnelTypes->pluck('personnel_type')->values(),
                             'groups' => $criterion->evaluatorGroups->pluck('evaluator_group')->values(),
                             'questions' => $criterion->questions
@@ -95,7 +100,8 @@
                     <button type="button"
                         class="edit-criterion-btn inline-flex items-center gap-2 bg-gray-200 text-slate-900 px-3 py-1.5 rounded-xl text-sm font-semibold hover:bg-gray-300 transition"
                         data-criterion-id="{{ $criterion->id }}"
-                        onclick="openEditCriterionById({{ $criterion->id }})">
+                        data-active-group="{{ $groupKey }}"
+                        onclick="openEditCriterionById({{ $criterion->id }}, '{{ $groupKey }}')">
                         Edit
                     </button>
                     <script type="application/json" id="criterion-json-{{ $criterion->id }}">
@@ -225,19 +231,21 @@
 {{-- Edit Criterion Modal --}}
 <div id="editCriterionModal" class="hidden fixed inset-0 bg-slate-900/50 z-[2000] items-center justify-center">
     <div class="bg-white rounded-2xl p-7 w-full max-w-[520px] max-h-[90vh] overflow-y-auto shadow-2xl">
-        <h3 class="mb-5 text-lg font-bold text-slate-900">Edit Criterion</h3>
+        <h3 class="mb-5 text-lg font-bold text-slate-900">Edit Criterion <span id="ecr_active_group_label" class="text-sm font-medium text-slate-500"></span></h3>
         <form method="POST" id="editCriterionForm">
             @csrf @method('PUT')
+            <input type="hidden" name="editing_evaluator_group" id="ecr_editing_group">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="mb-4">
                     <label class="block text-sm font-semibold text-slate-700 mb-1.5">Criterion Name</label>
                     <input type="text" name="name" id="ecr_name" class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10" required>
                 </div>
                 <div class="mb-4">
-                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Weight (%)</label>
+                    <label class="block text-sm font-semibold text-slate-700 mb-1.5">Weight (%) <span id="ecr_weight_scope" class="text-xs font-normal text-violet-600"></span></label>
                     <input type="number" name="weight" id="ecr_weight" min="0" max="100" step="0.01"
                            class="w-full border border-gray-200 bg-white rounded-xl px-3.5 py-3 outline-none transition focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
                            placeholder="e.g. 25">
+                    <p class="text-xs text-gray-500 mt-1">Each evaluator tab keeps its own weight. Saving here only changes the weight for the active tab.</p>
                 </div>
             </div>
             <div class="mb-4">
@@ -312,9 +320,10 @@ if (editCriterionModal) {
 
 document.querySelectorAll('.edit-criterion-btn').forEach(function(btn) {
     btn.addEventListener('click', function() {
-        var id = this.getAttribute('data-criterion-id');
+        var id    = this.getAttribute('data-criterion-id');
+        var group = this.getAttribute('data-active-group') || '';
         if (id) {
-            openEditCriterionById(id);
+            openEditCriterionById(id, group);
         }
     });
 });
@@ -429,7 +438,9 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
-function openEditCriterion(button) {
+var GROUP_LABELS = {student: 'Student', dean: 'Dean / Head', self: 'Self', peer: 'Peer'};
+
+function openEditCriterion(button, activeGroup) {
     var rawPayload = (button && button.dataset && button.dataset.criterion)
         ? button.dataset.criterion
         : '{}';
@@ -442,16 +453,30 @@ function openEditCriterion(button) {
 
     var id = payload.id;
     var name = payload.name || '';
-    var weight = (payload.weight != null) ? payload.weight : '';
     var personnelTypes = payload.personnel_types || [];
     var groups = payload.groups || [];
+    var weightsByGroup = payload.weights_by_group || {};
     var questions = payload.questions || [];
 
     if (!id) {
         return;
     }
 
+    // The user clicked Edit from a specific tab — seed the weight field with
+    // that tab's stored value (per-group). Falls back to the legacy criterion
+    // weight if no per-group value yet exists for that pair.
+    var groupKey = (activeGroup && GROUP_LABELS[activeGroup]) ? activeGroup : (groups[0] || 'student');
+    var weight = '';
+    if (weightsByGroup[groupKey] != null) {
+        weight = weightsByGroup[groupKey];
+    } else if (payload.weight != null) {
+        weight = payload.weight;
+    }
+
     document.getElementById('editCriterionForm').action = @json(url('criteria')) + '/' + id;
+    document.getElementById('ecr_editing_group').value = groupKey;
+    document.getElementById('ecr_active_group_label').textContent = '— ' + (GROUP_LABELS[groupKey] || groupKey) + ' tab';
+    document.getElementById('ecr_weight_scope').textContent = '· for ' + (GROUP_LABELS[groupKey] || groupKey) + ' only';
     document.getElementById('ecr_name').value = name;
     document.getElementById('ecr_weight').value = weight;
     var ptSet = new Set(Array.isArray(personnelTypes) ? personnelTypes : (personnelTypes ? [personnelTypes] : []));
@@ -495,7 +520,7 @@ function openEditCriterion(button) {
     document.getElementById('editCriterionModal').style.display = 'flex';
 }
 
-function openEditCriterionById(id) {
+function openEditCriterionById(id, activeGroup) {
     var dataNode = document.getElementById('criterion-json-' + id);
     if (!dataNode) {
         return;
@@ -512,7 +537,7 @@ function openEditCriterionById(id) {
         dataset: {
             criterion: JSON.stringify(payload),
         },
-    });
+    }, activeGroup);
 }
 
 function showTab(event, key) {

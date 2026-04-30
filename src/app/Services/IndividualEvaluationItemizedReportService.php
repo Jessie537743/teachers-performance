@@ -90,7 +90,7 @@ class IndividualEvaluationItemizedReportService
                 ? EvaluationService::getPerformanceLevel($categoryAvg, $evaluateePersonnel)
                 : '—';
 
-            $criterionWeight = (float) ($criterion->weight ?? 0);
+            $criterionWeight = (float) $criterion->weightForGroup($evaluatorGroup);
 
             $sections[] = [
                 'name'                 => mb_strtoupper((string) $criterion->name),

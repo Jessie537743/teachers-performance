@@ -12,6 +12,11 @@ class CriterionEvaluatorGroup extends Model
     protected $fillable = [
         'criterion_id',
         'evaluator_group',
+        'weight',
+    ];
+
+    protected $casts = [
+        'weight' => 'float',
     ];
 
     public function criterion(): BelongsTo
