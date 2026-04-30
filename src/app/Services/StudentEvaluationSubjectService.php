@@ -130,6 +130,7 @@ class StudentEvaluationSubjectService
 
         $q = Subject::query()
             ->with('department')
+            ->where('is_active', true)
             ->whereNotNull('course')
             ->where('course', '!=', '')
             ->whereNotNull('semester')

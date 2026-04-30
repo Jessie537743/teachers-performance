@@ -12,10 +12,12 @@ use Illuminate\Support\Facades\Schema;
  * subjects) is intentionally NOT seeded — the school admin populates those
  * after first login.
  *
- * Evaluation criteria + questions are also intentionally NOT seeded — every
- * school configures its own rubric. The truncate step below wipes any
- * criteria/question rows pre-populated by Phase-1 data migrations so new
- * tenants land on an empty Criteria page.
+ * Evaluation criteria, questions, and interventions are also intentionally NOT
+ * seeded — every school configures its own rubric. Interventions reference
+ * question_id rows, so they cannot be seeded without first seeding questions.
+ * The truncate step below wipes any criteria/question/intervention rows
+ * pre-populated by Phase-1 data migrations so new tenants land on a clean
+ * Criteria page.
  */
 class TenantTemplateSeeder extends Seeder
 {
@@ -27,7 +29,6 @@ class TenantTemplateSeeder extends Seeder
         $this->call([
             RolePermissionSeeder::class,
             AnnouncementPermissionsSeeder::class,
-            InterventionSeeder::class,
             SentimentLexiconSeeder::class,
         ]);
     }

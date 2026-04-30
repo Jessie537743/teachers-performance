@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\FacultyDepartmentPosition;
 use App\Http\Controllers\Controller;
 use App\Mail\RegistrationDecidedMail;
 use App\Models\Department;
@@ -110,7 +111,9 @@ class RegistrationApprovalController extends Controller
                 FacultyProfile::create([
                     'user_id'             => $u->id,
                     'department_id'       => $registration->department_id,
-                    'department_position' => $registration->payload['department_position'] ?? 'faculty',
+                    'department_position' => FacultyDepartmentPosition::coerce(
+                        $registration->payload['department_position'] ?? null
+                    ),
                 ]);
             }
 
