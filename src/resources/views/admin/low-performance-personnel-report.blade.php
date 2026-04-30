@@ -230,7 +230,7 @@
 @if($shouldLoad)
 <div class="report-shell lp-report-doc pb-10">
     <div class="mb-5 bg-white border border-slate-200/80 rounded-xl shadow-sm p-2 sm:p-3 report-header-card">
-        <img src="{{ asset('images/report-header.png') }}" alt="Institution header" class="w-full h-auto rounded-md">
+        @include('admin.partials.institution-header')
     </div>
 
     <div class="bg-white border border-slate-200 rounded-xl shadow-md p-6 sm:p-8 mb-6">

@@ -104,8 +104,7 @@
     <aside class="sidebar-w fixed inset-y-0 left-0 z-[1000] flex flex-col bg-gradient-to-b from-slate-900 to-slate-800 text-white shadow-lg transition-transform duration-300" id="sidebar">
         <div class="flex h-[72px] items-center gap-3 border-b border-white/10 px-5">
             <div class="grid h-10 w-10 flex-shrink-0 place-items-center overflow-hidden rounded-xl bg-white/10">
-                @php $customLogo = \App\Models\Setting::get('app_logo'); @endphp
-                <img src="{{ $customLogo ? asset('storage/' . $customLogo) : asset(config('app.default_logo')) }}" alt="Logo" class="h-full w-full object-cover">
+                <img src="{{ $appLogo }}" alt="Logo" class="h-full w-full object-cover">
             </div>
             <span class="text-lg font-bold truncate">{{ \App\Models\Setting::get('app_name', 'Evaluation System') }}</span>
         </div>

@@ -189,8 +189,12 @@
 
     <div class="cert-wrap">
         <div class="cert-inner-border">
-            <div class="report-header">
-                <img src="{{ asset('images/report-header.png') }}" alt="Institution Report Header">
+            <div class="report-header" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                <img src="{{ $appLogo }}" alt="{{ \App\Models\Setting::get('app_name', config('app.name', 'Institution')) }}"
+                     style="height:80px;width:80px;object-fit:contain;">
+                <div style="font-size:13px;font-weight:700;color:#0f172a;letter-spacing:.05em;text-transform:uppercase;">
+                    {{ \App\Models\Setting::get('app_name', config('app.name', 'Institution')) }}
+                </div>
             </div>
             <h1>Certificate of Performance</h1>
             <p class="presented">This certificate is presented to</p>

@@ -79,6 +79,20 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer(['layouts.app', 'layouts.guest', 'auth.login'], AnnouncementComposer::class);
 
+        // Tenant-aware logo: every view receives $appLogo as an absolute URL,
+        // resolved from Setting('app_logo') with config('app.default_logo') fallback.
+        View::composer('*', function ($view) {
+            try {
+                $custom = Setting::get('app_logo');
+            } catch (\Throwable $e) {
+                $custom = null;
+            }
+            $url = $custom
+                ? asset('storage/'.$custom)
+                : asset(config('app.default_logo'));
+            $view->with('appLogo', $url);
+        });
+
         // @plan('ai_predictions') ... @endplan — hide UI when capability is off.
         // Inverse: @unlessplan('ai_predictions') ... @endunlessplan
         Blade::if('plan', fn (string $capability) => plan()->has($capability));

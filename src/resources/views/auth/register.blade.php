@@ -17,8 +17,7 @@
 
     <div class="mt-4 bg-white rounded-2xl shadow-sm ring-1 ring-slate-200 p-8">
         <div class="flex items-center gap-3 mb-6">
-            @php $customLogo = \App\Models\Setting::get('app_logo'); @endphp
-            <img src="{{ $customLogo ? asset('storage/' . $customLogo) : asset(config('app.default_logo')) }}" alt="" class="w-10 h-10 rounded-lg">
+            <img src="{{ $appLogo }}" alt="" class="w-10 h-10 rounded-lg">
             <div>
                 <h1 class="text-xl font-bold text-slate-900">Create your account</h1>
                 <p class="text-sm text-slate-500">Submit your details — your registration goes to {{ ($kind === 'student' || ! $kind) ? 'your dean' : 'an administrator' }} for approval.</p>

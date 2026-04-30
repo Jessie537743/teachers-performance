@@ -184,7 +184,7 @@
 @if($selectedFaculty)
     <div class="report-shell">
     <div class="mb-5 bg-white border border-gray-200 rounded-2xl shadow-sm p-3 report-header-card">
-        <img src="{{ asset('images/report-header.png') }}" alt="Institution Report Header" class="w-full h-auto rounded-lg">
+        @include('admin.partials.institution-header')
     </div>
 
     <div class="mb-5">
@@ -336,7 +336,7 @@
 @elseif($generateAll)
     <div class="report-shell">
     <div class="mb-5 bg-white border border-gray-200 rounded-2xl shadow-sm p-3 report-header-card">
-        <img src="{{ asset('images/report-header.png') }}" alt="Institution Report Header" class="w-full h-auto rounded-lg">
+        @include('admin.partials.institution-header')
     </div>
 
     @if($allFacultyReports->isEmpty())

@@ -75,11 +75,10 @@
         <div class="shape w-48 h-48 -bottom-16 -right-16" style="animation: floatSlow 8s ease-in-out infinite 1.5s;"></div>
 
         <div class="relative z-10 flex flex-col items-center justify-center text-center max-w-md">
-            @php $customLogo = \App\Models\Setting::get('app_logo'); @endphp
             <div class="mb-8" style="animation: scaleIn 0.7s ease-out both;">
                 <div class="relative inline-block">
                     <div class="absolute inset-0 rounded-full bg-white/10" style="animation: pulse-ring 2.5s ease-out infinite;"></div>
-                    <img src="{{ $customLogo ? asset('storage/' . $customLogo) : asset(config('app.default_logo')) }}" alt="Logo"
+                    <img src="{{ $appLogo }}" alt="Logo"
                          class="relative w-44 h-44 md:w-52 md:h-52 object-contain rounded-full bg-white/10 p-3 shadow-2xl ring-2 ring-white/20">
                 </div>
             </div>
@@ -119,8 +118,7 @@
 
                 {{-- Mobile logo --}}
                 <div class="flex justify-center mb-6 md:hidden" style="animation: scaleIn 0.5s ease-out both;">
-                    @php $customLogo = $customLogo ?? \App\Models\Setting::get('app_logo'); @endphp
-                    <img src="{{ $customLogo ? asset('storage/' . $customLogo) : asset(config('app.default_logo')) }}" alt="Logo" class="w-20 h-20 object-contain rounded-full bg-blue-50 p-2 ring-2 ring-blue-100">
+                    <img src="{{ $appLogo }}" alt="Logo" class="w-20 h-20 object-contain rounded-full bg-blue-50 p-2 ring-2 ring-blue-100">
                 </div>
 
                 @if(!empty($submitted))
