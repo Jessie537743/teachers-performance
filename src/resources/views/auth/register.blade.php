@@ -60,12 +60,12 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Full name</label>
                         <input type="text" name="name" value="{{ old('name') }}" required maxlength="191"
-                               class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30">
+                               class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
                         <input type="email" name="email" value="{{ old('email') }}" required maxlength="191"
-                               class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30">
+                               class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                     </div>
                 </div>
 
@@ -73,19 +73,19 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
                         <input type="password" name="password" required minlength="8"
-                               class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30">
+                               class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                         <p class="mt-1 text-xs text-slate-500">At least 8 characters.</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-slate-700 mb-1">Confirm password</label>
                         <input type="password" name="password_confirmation" required minlength="8"
-                               class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30">
+                               class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-sm font-medium text-slate-700 mb-1">Department</label>
-                    <select name="department_id" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30">
+                    <select name="department_id" required class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                         <option value="">— Select your department —</option>
                         @foreach ($departments as $dept)
                             <option value="{{ $dept->id }}" @selected(old('department_id') == $dept->id)>{{ $dept->name }}</option>
@@ -99,13 +99,34 @@
                         <div class="grid sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Course</label>
-                                <input type="text" name="course" value="{{ old('course') }}" required maxlength="120"
-                                       placeholder="BS Computer Science"
-                                       class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30">
+                                @if($courses->isNotEmpty())
+                                    <select name="course" required
+                                            class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+                                        <option value="">— Select course —</option>
+                                        @foreach($courses as $course)
+                                            @php
+                                                $code  = trim((string) $course->course_code);
+                                                $name  = trim((string) $course->course_name);
+                                                $label = $code !== '' ? "{$code} — {$name}" : $name;
+                                            @endphp
+                                            <option value="{{ $name }}"
+                                                    data-code="{{ $code }}"
+                                                    data-department-id="{{ $course->department_id }}"
+                                                    @selected(old('course') === $name)>
+                                                {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                @else
+                                    <input type="text" name="course" value="{{ old('course') }}" required maxlength="120"
+                                           placeholder="BS Computer Science"
+                                           class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+                                    <p class="mt-1 text-xs text-slate-500">No courses configured yet — type your course name manually.</p>
+                                @endif
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Year level</label>
-                                <select name="year_level" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30">
+                                <select name="year_level" required class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                                     <option value="">— Select —</option>
                                     @foreach (['1st Year','2nd Year','3rd Year','4th Year','5th Year'] as $yl)
                                         <option value="{{ $yl }}" @selected(old('year_level') === $yl)>{{ $yl }}</option>
@@ -115,11 +136,11 @@
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Section</label>
                                 <input type="text" name="section" value="{{ old('section') }}" required maxlength="50"
-                                       class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30">
+                                       class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Status</label>
-                                <select name="student_status" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30">
+                                <select name="student_status" required class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                                     @foreach (['regular','irregular'] as $st)
                                         <option value="{{ $st }}" @selected(old('student_status') === $st)>{{ ucfirst($st) }}</option>
                                     @endforeach
@@ -129,11 +150,11 @@
                                 <label class="block text-sm font-medium text-slate-700 mb-1">School year</label>
                                 <input type="text" name="school_year" value="{{ old('school_year') }}" required maxlength="50"
                                        placeholder="2025-2026"
-                                       class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30">
+                                       class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Semester</label>
-                                <select name="semester" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30">
+                                <select name="semester" required class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                                     <option value="">— Select —</option>
                                     @foreach (['1st Semester','2nd Semester','Summer'] as $sm)
                                         <option value="{{ $sm }}" @selected(old('semester') === $sm)>{{ $sm }}</option>
@@ -148,7 +169,7 @@
                         <div class="grid sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Role</label>
-                                <select name="role" required class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30">
+                                <select name="role" required class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                                     <option value="">— Select role —</option>
                                     @foreach ($roles as $r)
                                         <option value="{{ $r }}" @selected(old('role') === $r)>{{ ucwords(str_replace('_', ' ', $r)) }}</option>
@@ -157,9 +178,15 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Department position</label>
-                                <input type="text" name="department_position" value="{{ old('department_position') }}" required maxlength="40"
-                                       placeholder="e.g. Faculty, Senior Faculty, Department Head"
-                                       class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30">
+                                <select name="department_position" required
+                                        class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
+                                    <option value="">Select position…</option>
+                                    @foreach(\App\Enums\FacultyDepartmentPosition::cases() as $position)
+                                        <option value="{{ $position->value }}" @selected(old('department_position') === $position->value)>
+                                            {{ $position->label() }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
                         <p class="text-xs text-slate-500">Your account will be reviewed by the platform administrator and human resources.</p>

@@ -448,6 +448,7 @@ class StudentController extends Controller
         $variants = $this->sectionQueryVariants($section);
 
         return Subject::query()
+            ->where('is_active', true)
             ->where('department_id', $validated['department_id'])
             ->where('course', $validated['course'])
             ->where('year_level', (string) $validated['year_level'])
@@ -702,6 +703,7 @@ class StudentController extends Controller
     private function subjectOptionsBySemester(): array
     {
         $grouped = Subject::query()
+            ->where('is_active', true)
             ->whereNotNull('semester')
             ->where('semester', '!=', '')
             ->select(['id', 'code', 'title', 'semester'])
@@ -759,13 +761,14 @@ class StudentController extends Controller
         $semesterToken = $this->normalizeSemesterToken($semester);
 
         $subjects = Subject::query()
+            ->where('is_active', true)
             ->whereIn('id', $ids)
             ->select(['id', 'semester'])
             ->get();
 
         if ($subjects->count() !== count($ids)) {
             throw ValidationException::withMessages([
-                'selected_subject_ids' => 'One or more selected subjects are invalid.',
+                'selected_subject_ids' => 'One or more selected subjects are invalid or have been deactivated.',
             ]);
         }
 

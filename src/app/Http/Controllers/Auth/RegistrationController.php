@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\FacultyDepartmentPosition;
 use App\Http\Controllers\Controller;
 use App\Mail\RegistrationSubmittedMail;
+use App\Models\Course;
 use App\Models\Department;
 use App\Models\RegistrationRequest;
 use App\Models\User;
@@ -25,6 +27,11 @@ class RegistrationController extends Controller
         return view('auth.register', [
             'kind'        => $kind,
             'departments' => Department::query()->orderBy('name')->get(),
+            'courses'     => Course::query()
+                ->where('is_active', true)
+                ->orderBy('course_code')
+                ->orderBy('course_name')
+                ->get(['id', 'course_code', 'course_name', 'department_id']),
             'roles'       => $this->personnelRoles(),
         ]);
     }
@@ -58,7 +65,7 @@ class RegistrationController extends Controller
         } else {
             $rules += [
                 'role'                => ['required', Rule::in($this->personnelRoles())],
-                'department_position' => ['required', 'string', 'max:40'],
+                'department_position' => ['required', Rule::in(FacultyDepartmentPosition::values())],
             ];
         }
 

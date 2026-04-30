@@ -9,6 +9,9 @@ use App\Models\Tenant;
 use App\Rules\AvailableSubdomain;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -186,8 +189,81 @@ class TenantController extends Controller
             return redirect()->route('admin.tenants.show', $tenant);
         }
 
+        try {
+            // Wipe whatever partial DB state the failed run left behind so the
+            // re-run starts clean.
+            $this->dropTenantDatabase($tenant);
+
+            $tenant->update(['status' => 'provisioning']);
+
+            (new ProvisionTenantJob($tenant->fresh()))->handle();
+
+            $tenant->update(['status' => 'pending_activation']);
+        } catch (\Throwable $e) {
+            Log::error('Tenant retry failed', [
+                'tenant_id' => $tenant->id,
+                'error'     => $e->getMessage(),
+            ]);
+
+            return redirect()->route('admin.tenants.show', $tenant)
+                ->with('error', 'Retry failed: ' . $e->getMessage());
+        }
+
         return redirect()->route('admin.tenants.show', $tenant)
-            ->with('status', 'Retry not implemented for the capstone — investigate provisioning history above and re-create the school manually.');
+            ->with('status', "Provisioning succeeded. {$tenant->name} is ready to activate.");
+    }
+
+    public function destroy(Tenant $tenant): RedirectResponse
+    {
+        // Only allow deleting tenants that never completed provisioning. Active
+        // tenants must be suspended first to prevent fat-fingered data loss.
+        if ($tenant->status !== 'failed') {
+            return redirect()->route('admin.tenants.show', $tenant)
+                ->with('error', 'Only failed tenants can be deleted from this UI. Suspend the tenant first if you need to remove an active school.');
+        }
+
+        $name = $tenant->name;
+
+        try {
+            $this->dropTenantDatabase($tenant);
+
+            // Cascade: provisioning history, codes, subscriptions, domains, then the row itself.
+            $tenant->provisioningJobs()->delete();
+            $tenant->activationCodes()->delete();
+            $tenant->subscriptions()->delete();
+            $tenant->domains()->delete();
+            $tenant->delete();
+        } catch (\Throwable $e) {
+            Log::error('Tenant destroy failed', [
+                'tenant_id' => $tenant->id,
+                'error'     => $e->getMessage(),
+            ]);
+
+            return redirect()->route('admin.tenants.index')
+                ->with('error', 'Delete failed: ' . $e->getMessage());
+        }
+
+        return redirect()->route('admin.tenants.index')
+            ->with('status', "{$name} and its database have been removed.");
+    }
+
+    /**
+     * Drops the per-tenant MySQL database. Idempotent — safe to call when the
+     * DB never got created. Uses the central root credentials so it can issue
+     * DDL statements regardless of the tenant's grant scope.
+     */
+    private function dropTenantDatabase(Tenant $tenant): void
+    {
+        $databaseName = $tenant->getAttribute('database');
+        if (! $databaseName) {
+            return;
+        }
+
+        $centralConfig = config('database.connections.central');
+        Config::set('database.connections._tenant_dropper', array_merge($centralConfig, ['database' => null]));
+        DB::purge('_tenant_dropper');
+
+        DB::connection('_tenant_dropper')->statement("DROP DATABASE IF EXISTS `{$databaseName}`");
     }
 
     public function regenerateCode(Tenant $tenant): RedirectResponse

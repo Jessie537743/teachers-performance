@@ -55,7 +55,7 @@ class ChargeDueSubscriptions extends Command
 
             if ($sub->status === 'paid') {
                 $charged++;
-                $this->line("  ✓ [{$tenant->id}] {$tenant->name} — charged \${$sub->formatted_amount}, next: {$tenant->next_charge_at?->toDayDateTimeString()}");
+                $this->line("  ✓ [{$tenant->id}] {$tenant->name} — charged {$sub->formatted_amount}, next: {$tenant->next_charge_at?->toDayDateTimeString()}");
             } else {
                 $failed++;
                 $this->warn("  ✗ [{$tenant->id}] {$tenant->name} — {$sub->failure_reason}, retry at {$tenant->next_charge_at?->toDayDateTimeString()}");

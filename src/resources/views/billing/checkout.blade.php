@@ -32,16 +32,16 @@
                         <label class="cycle-option relative flex flex-col rounded-xl border-2 px-5 py-4 cursor-pointer transition {{ $cycle === 'monthly' ? 'border-blue-600 bg-blue-50/40' : 'border-slate-200 hover:border-slate-300' }}">
                             <input type="radio" name="cycle" value="monthly" class="sr-only peer" data-cents="{{ $monthlyCents }}" @checked($cycle === 'monthly')>
                             <span class="text-sm font-semibold text-slate-900">Monthly</span>
-                            <span class="text-2xl font-bold text-slate-900 mt-1">${{ $monthlyDollars }}<span class="text-sm font-medium text-slate-500">/mo</span></span>
+                            <span class="text-2xl font-bold text-slate-900 mt-1">₱{{ $monthlyDollars }}<span class="text-sm font-medium text-slate-500">/mo</span></span>
                             <span class="text-xs text-slate-500 mt-1">Cancel anytime.</span>
                         </label>
                         <label class="cycle-option relative flex flex-col rounded-xl border-2 px-5 py-4 cursor-pointer transition {{ $cycle === 'yearly' ? 'border-blue-600 bg-blue-50/40' : 'border-slate-200 hover:border-slate-300' }}">
                             <input type="radio" name="cycle" value="yearly" class="sr-only peer" data-cents="{{ $yearlyCents }}" @checked($cycle === 'yearly')>
                             @if ($yearlySavings && $yearlySavings > 0)
-                                <span class="absolute -top-2.5 right-4 inline-flex items-center rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">Save ${{ $yearlySavings }}</span>
+                                <span class="absolute -top-2.5 right-4 inline-flex items-center rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">Save ₱{{ $yearlySavings }}</span>
                             @endif
                             <span class="text-sm font-semibold text-slate-900">Yearly</span>
-                            <span class="text-2xl font-bold text-slate-900 mt-1">${{ $yearlyDollars }}<span class="text-sm font-medium text-slate-500">/yr</span></span>
+                            <span class="text-2xl font-bold text-slate-900 mt-1">₱{{ $yearlyDollars }}<span class="text-sm font-medium text-slate-500">/yr</span></span>
                             <span class="text-xs text-slate-500 mt-1">2 months free.</span>
                         </label>
                     </div>
@@ -64,7 +64,7 @@
                 <div class="px-5 py-3 flex items-center justify-between">
                     <span class="text-sm text-slate-600">Amount due today</span>
                     <span class="text-base font-bold text-slate-900" id="summary-amount">
-                        ${{ $cycle === 'yearly' ? $yearlyDollars : $monthlyDollars }}
+                        ₱{{ $cycle === 'yearly' ? $yearlyDollars : $monthlyDollars }}
                     </span>
                 </div>
             </div>
@@ -110,7 +110,7 @@
         if (! radios.length || ! cycleLabel || ! amountLabel) return;
 
         function fmt(cents) {
-            return '$' + (cents / 100).toFixed(2);
+            return '₱' + (cents / 100).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         radios.forEach((radio) => {

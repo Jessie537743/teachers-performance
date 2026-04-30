@@ -1055,7 +1055,7 @@ class EvaluateController extends Controller
 
         $facultyUser    = User::findOrFail($facultyId);
         $facultyProfile = FacultyProfile::with('department')->where('user_id', $facultyId)->firstOrFail();
-        $subject        = Subject::findOrFail($subjectId);
+        $subject        = Subject::where('is_active', true)->findOrFail($subjectId);
 
         $policy = app(EvaluationPolicy::class);
         abort_unless(
@@ -1116,7 +1116,7 @@ class EvaluateController extends Controller
         $subjectId = $validated['subject_id'];
 
         $facultyProfile = FacultyProfile::with('department')->findOrFail($facultyId);
-        $subject        = Subject::findOrFail($subjectId);
+        $subject        = Subject::where('is_active', true)->findOrFail($subjectId);
         $policy         = app(EvaluationPolicy::class);
         abort_unless(
             $policy->submitStudentEvaluation($student, $facultyProfile, $subject),

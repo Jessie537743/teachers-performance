@@ -281,12 +281,26 @@
             </div>
 
             {{-- Billing cycle toggle --}}
+            @php
+                // Use the highest-savings priced plan to surface the headline % discount.
+                $maxYearlySavingsPct = 0;
+                foreach (config('plans') as $p) {
+                    $m = (float) ($p['prices']['monthly'] ?? 0);
+                    $y = (float) ($p['prices']['yearly']  ?? 0);
+                    if ($m > 0 && $y > 0 && $y < $m * 12) {
+                        $pct = round((($m * 12 - $y) / ($m * 12)) * 100);
+                        $maxYearlySavingsPct = max($maxYearlySavingsPct, $pct);
+                    }
+                }
+            @endphp
             <div class="flex justify-center mb-10">
                 <div class="inline-flex items-center gap-1 p-1 rounded-full bg-slate-100 ring-1 ring-slate-200">
                     <button type="button" data-cycle="monthly" class="cycle-btn px-5 py-2 rounded-full text-sm font-semibold bg-white text-slate-900 shadow-sm transition">Monthly</button>
                     <button type="button" data-cycle="yearly"  class="cycle-btn px-5 py-2 rounded-full text-sm font-semibold text-slate-600 hover:text-slate-900 transition inline-flex items-center gap-2">
                         Yearly
-                        <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">Save 17%</span>
+                        @if($maxYearlySavingsPct > 0)
+                            <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">Save {{ $maxYearlySavingsPct }}%</span>
+                        @endif
                     </button>
                 </div>
             </div>
@@ -312,14 +326,24 @@
                         <h3 class="text-xl font-bold text-slate-900">{{ $plan['name'] }}</h3>
                         <p class="text-sm text-slate-500 mt-1 mb-5">{{ $plan['tagline'] }}</p>
 
+                        @php
+                            $planYearlySavings = (is_numeric($monthlyPrice) && is_numeric($yearlyPrice) && $monthlyPrice > 0 && $yearlyPrice > 0 && $yearlyPrice < $monthlyPrice * 12)
+                                ? (int) round($monthlyPrice * 12 - $yearlyPrice)
+                                : 0;
+                        @endphp
                         <div class="mb-6">
                             @if ($isCustom)
                                 <span class="text-5xl font-extrabold tracking-tight text-slate-900">Custom</span>
                             @else
                                 <span class="text-5xl font-extrabold tracking-tight text-slate-900">
-                                    $<span class="price-amount" data-monthly="{{ $monthlyPrice }}" data-yearly="{{ $yearlyPrice }}">{{ $monthlyPrice }}</span>
+                                    ₱<span class="price-amount" data-monthly="{{ $monthlyPrice }}" data-yearly="{{ $yearlyPrice }}">{{ number_format((float) $monthlyPrice) }}</span>
                                 </span>
                                 <span class="text-slate-500 text-sm ml-1 price-period">@if((int)$monthlyPrice===0)forever @else per month @endif</span>
+                                @if($planYearlySavings > 0)
+                                    <p class="price-savings mt-1 text-xs font-semibold text-emerald-700 hidden" data-savings="{{ $planYearlySavings }}">
+                                        Save ₱{{ number_format($planYearlySavings) }} per year
+                                    </p>
+                                @endif
                             @endif
                         </div>
 
@@ -376,12 +400,17 @@
                     });
                     document.querySelectorAll('.price-amount').forEach(el => {
                         const v = el.dataset[cycle];
-                        if (v != null) el.textContent = v;
+                        if (v != null && v !== '') {
+                            el.textContent = Number(v).toLocaleString('en-PH');
+                        }
                     });
                     document.querySelectorAll('.price-period').forEach(el => {
                         const isFree = el.parentElement.querySelector('.price-amount')?.textContent === '0';
                         if (isFree) { el.textContent = 'forever'; return; }
                         el.textContent = cycle === 'yearly' ? 'per year' : 'per month';
+                    });
+                    document.querySelectorAll('.price-savings').forEach(el => {
+                        el.classList.toggle('hidden', cycle !== 'yearly');
                     });
                     document.querySelectorAll('.plan-cta').forEach(a => {
                         const href = a.dataset[cycle + 'Href'];

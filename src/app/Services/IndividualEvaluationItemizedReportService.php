@@ -124,7 +124,7 @@ class IndividualEvaluationItemizedReportService
             'sections'           => $sections,
             'overall_avg'        => $overallAvg,
             'overall_descriptive' => $overallDesc,
-            'has_likert_data'    => $allQuestionAvgs !== [],
+            'has_likert_data'    => $avgByQuestionId !== [],
         ];
     }
 

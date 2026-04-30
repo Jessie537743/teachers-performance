@@ -58,10 +58,10 @@ return [
         'tagline'   => 'Full evaluation toolkit for growing schools.',
         'highlight' => true,
         'prices'    => [
-            'monthly' => 99,
-            'yearly'  => 990,    // 10 × monthly = 2 months free
+            'monthly' => 1599,
+            'yearly'  => 15990,  // ≈22% off vs paying monthly for 12 months
         ],
-        'price'  => 99,
+        'price'  => 1599,
         'period' => 'per month',
         'features'  => [
             'Unlimited students',

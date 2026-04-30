@@ -20,7 +20,7 @@
             <p class="text-xs text-slate-500 mb-4 leading-relaxed">{{ $plan['tagline'] }}</p>
             <div class="flex items-center justify-between text-xs">
                 <span class="text-slate-700 font-medium">
-                    @if (is_numeric($plan['price'])) ${{ $plan['price'] }} {{ $plan['period'] }} @else {{ $plan['price'] }} @endif
+                    @if (is_numeric($plan['price'])) ₱{{ number_format((float) $plan['price']) }} {{ $plan['period'] }} @else {{ $plan['price'] }} @endif
                 </span>
                 <span class="text-brand-700 group-hover:text-brand-900 font-medium inline-flex items-center gap-0.5">
                     {{ $count === 1 ? '1 school' : "{$count} schools" }}
