@@ -107,7 +107,7 @@ class CheckoutController extends Controller
         ]);
 
         $tenantUrl = $this->tenantUrl($tenant);
-        Mail::to($data['admin_email'])->send(new TenantActivationCodeMail($tenant, $code, $tenantUrl));
+        Mail::to($data['admin_email'])->queue(new TenantActivationCodeMail($tenant, $code, $tenantUrl));
 
         return redirect()->route('central.subscribe.success', [
             'tenant' => $tenant->id,

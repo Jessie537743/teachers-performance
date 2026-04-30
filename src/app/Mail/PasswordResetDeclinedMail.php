@@ -2,31 +2,34 @@
 
 namespace App\Mail;
 
-use App\Models\RegistrationRequest;
+use App\Models\PasswordResetRequest;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class RegistrationSubmittedMail extends Mailable
+class PasswordResetDeclinedMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public RegistrationRequest $req) {}
+    public function __construct(public PasswordResetRequest $resetRequest) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'We received your registration — pending approval',
+            subject: 'Update on your password reset request',
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.registration-submitted',
-            with: ['req' => $this->req],
+            view: 'emails.password-reset-declined',
+            with: [
+                'request' => $this->resetRequest,
+                'user'    => $this->resetRequest->user,
+            ],
         );
     }
 }

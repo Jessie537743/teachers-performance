@@ -125,7 +125,7 @@ class RegistrationApprovalController extends Controller
         });
 
         try {
-            Mail::to($registration->email)->send(
+            Mail::to($registration->email)->queue(
                 new RegistrationDecidedMail($registration->fresh(), $this->loginUrl())
             );
         } catch (\Throwable $e) {
@@ -152,7 +152,7 @@ class RegistrationApprovalController extends Controller
         ]);
 
         try {
-            Mail::to($registration->email)->send(
+            Mail::to($registration->email)->queue(
                 new RegistrationDecidedMail($registration->fresh(), $this->loginUrl())
             );
         } catch (\Throwable $e) {

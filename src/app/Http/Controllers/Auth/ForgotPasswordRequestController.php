@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\PasswordResetRequestSubmittedMail;
 use App\Models\PasswordResetRequest;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\View\View;
 
 class ForgotPasswordRequestController extends Controller
@@ -75,13 +77,21 @@ class ForgotPasswordRequestController extends Controller
             return redirect()->route('forgot-password.form')->with('error', 'You already have a pending request.');
         }
 
-        PasswordResetRequest::create([
+        $resetRequest = PasswordResetRequest::create([
             'user_id' => $user->id,
             'new_password_hash' => Hash::make($data['password']),
             'status' => 'pending',
             'ip_address' => $request->ip(),
             'created_at' => now(),
         ]);
+
+        try {
+            Mail::to($user->email)->queue(
+                new PasswordResetRequestSubmittedMail($resetRequest->fresh('user'))
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return view('auth.forgot-password-request', ['submitted' => true]);
     }
