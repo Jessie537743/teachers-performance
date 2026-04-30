@@ -210,10 +210,15 @@
                 Evaluation period: {{ $schoolYear }} — {{ $semester === 'Summer' ? 'Summer' : $semester }}
             </div>
             <p class="footer-date">Awarded this {{ $awardedDate }}</p>
+            @php $hrSignatory = \App\Models\Signature::activeSignatory(); @endphp
             <div class="signature-block">
+                @if($hrSignatory && $hrSignatory->signature_path)
+                    <img src="{{ asset('storage/' . $hrSignatory->signature_path) }}" alt="Signature"
+                         style="max-height:64px;max-width:240px;object-fit:contain;display:block;margin:0 auto 4px;">
+                @endif
                 <div class="signature-line"></div>
-                <div class="signature-name">Ricky A. Destacamento, MA, RGC</div>
-                <div class="signature-title">Head, HRMDO</div>
+                <div class="signature-name">{{ $hrSignatory?->user?->name ?: 'Pending HR signatory' }}</div>
+                <div class="signature-title">{{ $hrSignatory?->title ?: 'Head, HRMDO' }}</div>
             </div>
         </div>
     </div>

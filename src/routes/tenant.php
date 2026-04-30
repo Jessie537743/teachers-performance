@@ -205,6 +205,12 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     Route::get('/settings', [Admin\SettingsController::class, 'index'])->name('settings.index');
     Route::post('/settings/general', [Admin\SettingsController::class, 'updateGeneral'])->name('settings.update-general');
     Route::delete('/settings/logo', [Admin\SettingsController::class, 'removeLogo'])->name('settings.remove-logo');
+    Route::post('/settings/signatures/{user}', [Admin\SettingsController::class, 'uploadSignature'])->name('settings.signatures.upload');
+    Route::post('/settings/signatures/{user}/draw', [Admin\SettingsController::class, 'drawSignature'])->name('settings.signatures.draw');
+    Route::patch('/settings/signatures/{signature}/title', [Admin\SettingsController::class, 'updateSignatureTitle'])->name('settings.signatures.title');
+    Route::post('/settings/signatures/{signature}/mark', [Admin\SettingsController::class, 'markSignatory'])->name('settings.signatures.mark');
+    Route::post('/settings/signatures/{signature}/clear', [Admin\SettingsController::class, 'clearSignatory'])->name('settings.signatures.clear');
+    Route::delete('/settings/signatures/{signature}', [Admin\SettingsController::class, 'removeSignature'])->name('settings.signatures.remove');
 
     // Announcements — admin CRUD (policy-gated by AnnouncementPolicy)
     Route::resource('admin/announcements', Admin\AnnouncementManagementController::class)

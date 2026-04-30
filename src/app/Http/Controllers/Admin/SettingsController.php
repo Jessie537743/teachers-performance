@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Setting;
+use App\Models\Signature;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,7 +46,144 @@ class SettingsController extends Controller
             $users = $query->paginate(25)->appends($request->query());
         }
 
-        return view('settings.index', compact('tab', 'appName', 'appLogo', 'users', 'roleFilter', 'search'));
+        $hrUsers = collect();
+        $signatures = collect();
+        $activeSignatory = null;
+        if ($tab === 'signatures') {
+            $hrUsers = User::whereJsonContains('roles', 'human_resource')
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get();
+
+            $signatures = Signature::with('user')
+                ->whereIn('user_id', $hrUsers->pluck('id'))
+                ->get()
+                ->keyBy('user_id');
+
+            $activeSignatory = Signature::activeSignatory();
+        }
+
+        return view('settings.index', compact(
+            'tab', 'appName', 'appLogo', 'users', 'roleFilter', 'search',
+            'hrUsers', 'signatures', 'activeSignatory'
+        ));
+    }
+
+    public function uploadSignature(Request $request, User $user): RedirectResponse
+    {
+        Gate::authorize('manage-settings');
+
+        abort_unless($user->isHumanResource(), 403, 'Signatures are only for HR users.');
+
+        $validated = $request->validate([
+            'title'     => ['nullable', 'string', 'max:191'],
+            'signature' => ['required', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+        ]);
+
+        $signature = Signature::firstOrNew(['user_id' => $user->id]);
+
+        if ($signature->signature_path && Storage::disk('public')->exists($signature->signature_path)) {
+            Storage::disk('public')->delete($signature->signature_path);
+        }
+
+        $signature->signature_path = $request->file('signature')->store('signatures', 'public');
+        $signature->title = $validated['title'] ?: ($signature->title ?: 'Head, Human Resource');
+        $signature->save();
+
+        return redirect()->route('settings.index', ['tab' => 'signatures'])
+            ->with('success', "Signature saved for {$user->name}.");
+    }
+
+    public function drawSignature(Request $request, User $user): RedirectResponse
+    {
+        Gate::authorize('manage-settings');
+
+        abort_unless($user->isHumanResource(), 403, 'Signatures are only for HR users.');
+
+        $validated = $request->validate([
+            'title'          => ['nullable', 'string', 'max:191'],
+            'signature_data' => ['required', 'string', 'starts_with:data:image/png;base64,'],
+        ]);
+
+        $base64 = substr($validated['signature_data'], strlen('data:image/png;base64,'));
+        $binary = base64_decode($base64, true);
+
+        if ($binary === false || strlen($binary) < 200) {
+            return redirect()->back()
+                ->withErrors(['signature_data' => 'Signature is empty or could not be decoded.']);
+        }
+
+        if (strlen($binary) > 2 * 1024 * 1024) {
+            return redirect()->back()
+                ->withErrors(['signature_data' => 'Drawn signature exceeds 2MB.']);
+        }
+
+        $signature = Signature::firstOrNew(['user_id' => $user->id]);
+
+        if ($signature->signature_path && Storage::disk('public')->exists($signature->signature_path)) {
+            Storage::disk('public')->delete($signature->signature_path);
+        }
+
+        $path = 'signatures/'.uniqid('sig_', true).'.png';
+        Storage::disk('public')->put($path, $binary);
+
+        $signature->signature_path = $path;
+        $signature->title = $validated['title'] ?: ($signature->title ?: 'Head, Human Resource');
+        $signature->save();
+
+        return redirect()->route('settings.index', ['tab' => 'signatures'])
+            ->with('success', "Signature drawn and saved for {$user->name}.");
+    }
+
+    public function updateSignatureTitle(Request $request, Signature $signature): RedirectResponse
+    {
+        Gate::authorize('manage-settings');
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:191'],
+        ]);
+
+        $signature->update(['title' => $validated['title']]);
+
+        return redirect()->route('settings.index', ['tab' => 'signatures'])
+            ->with('success', 'Signatory title updated.');
+    }
+
+    public function markSignatory(Signature $signature): RedirectResponse
+    {
+        Gate::authorize('manage-settings');
+
+        abort_unless($signature->signature_path, 422, 'Upload a signature image first.');
+
+        $signature->markAsSignatory();
+
+        return redirect()->route('settings.index', ['tab' => 'signatures'])
+            ->with('success', "{$signature->user->name} is now the active signatory.");
+    }
+
+    public function clearSignatory(Signature $signature): RedirectResponse
+    {
+        Gate::authorize('manage-settings');
+
+        $signature->update(['is_signatory' => false]);
+        Signature::clearCache();
+
+        return redirect()->route('settings.index', ['tab' => 'signatures'])
+            ->with('success', 'Active signatory cleared.');
+    }
+
+    public function removeSignature(Signature $signature): RedirectResponse
+    {
+        Gate::authorize('manage-settings');
+
+        if ($signature->signature_path && Storage::disk('public')->exists($signature->signature_path)) {
+            Storage::disk('public')->delete($signature->signature_path);
+        }
+
+        $signature->delete();
+
+        return redirect()->route('settings.index', ['tab' => 'signatures'])
+            ->with('success', 'Signature removed.');
     }
 
     public function updateGeneral(Request $request): RedirectResponse

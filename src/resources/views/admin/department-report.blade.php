@@ -289,13 +289,7 @@
             </div>
         @endif
 
-        <div class="ie-cert-block">
-            <p class="text-xs font-semibold text-slate-600 mb-3">Certified by:</p>
-            <p class="text-sm font-bold text-slate-900 uppercase tracking-wide leading-snug">RICKY A. DESTACAMENTO, MA, RGC</p>
-            <p class="text-sm font-semibold text-slate-800 mt-1">Head, Human Resource</p>
-            <hr class="ie-cert-line" aria-hidden="true">
-            <p class="text-[10px] text-slate-500 uppercase tracking-wider">Signature</p>
-        </div>
+        @include('admin.partials.hr-certification', ['wrapClass' => 'ie-cert-block', 'lineClass' => 'ie-cert-line', 'showHeading' => false])
 
         <div class="ie-doc-footer">
             System-generated report for HR use. Department aggregates from active faculty evaluation records; individual evaluator identities are not listed in this summary.
