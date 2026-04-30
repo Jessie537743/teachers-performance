@@ -87,14 +87,14 @@
                             <label for="name" class="block text-sm font-medium text-slate-700 mb-1">School name</label>
                             <input id="name" name="name" type="text" required value="{{ old('name') }}"
                                 placeholder="St. Mary's Academy"
-                                class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30">
+                                class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                         </div>
                         <div>
                             <label for="subdomain" class="block text-sm font-medium text-slate-700 mb-1">Subdomain</label>
                             <div class="flex">
                                 <input id="subdomain" name="subdomain" type="text" required value="{{ old('subdomain') }}"
                                     pattern="[a-z0-9](?:[a-z0-9-]{0,30}[a-z0-9])?" placeholder="stmarys"
-                                    class="flex-1 rounded-l-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30 font-mono lowercase">
+                                    class="flex-1 rounded-l-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 font-mono lowercase">
                                 <span class="inline-flex items-center px-3 rounded-r-lg border border-l-0 border-slate-300 bg-slate-50 text-slate-500 text-sm font-mono">
                                     .{{ parse_url(config('app.url'), PHP_URL_HOST) ?: 'localhost' }}
                                 </span>
@@ -108,12 +108,14 @@
                         <div>
                             <label for="admin_name" class="block text-sm font-medium text-slate-700 mb-1">Full name</label>
                             <input id="admin_name" name="admin_name" type="text" required value="{{ old('admin_name') }}"
-                                class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30">
+                                placeholder="Juan Dela Cruz"
+                                class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                         </div>
                         <div>
                             <label for="admin_email" class="block text-sm font-medium text-slate-700 mb-1">Email</label>
                             <input id="admin_email" name="admin_email" type="email" required value="{{ old('admin_email') }}"
-                                class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30">
+                                placeholder="admin@yourschool.edu.ph"
+                                class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                             <p class="mt-1 text-xs text-slate-500">We'll send your activation code here.</p>
                         </div>
                     </fieldset>
@@ -127,13 +129,15 @@
                         <div>
                             <label for="card_name" class="block text-sm font-medium text-slate-700 mb-1">Name on card</label>
                             <input id="card_name" name="card_name" type="text" required value="{{ old('card_name') }}"
-                                class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30">
+                                placeholder="Name as shown on card"
+                                class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30">
                         </div>
                         <div>
                             <label for="card_number" class="block text-sm font-medium text-slate-700 mb-1">Card number</label>
                             <input id="card_number" name="card_number" type="text" required
                                 value="{{ old('card_number', '4242 4242 4242 4242') }}" inputmode="numeric" autocomplete="cc-number"
-                                class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30 font-mono">
+                                placeholder="1234 5678 9012 3456"
+                                class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 font-mono">
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
@@ -141,14 +145,15 @@
                                 <input id="card_expiry" name="card_expiry" type="text" required
                                     value="{{ old('card_expiry', '12/30') }}"
                                     placeholder="MM/YY" pattern="(0[1-9]|1[0-2])\/\d{2}"
-                                    class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30 font-mono">
+                                    class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 font-mono">
                             </div>
                             <div>
                                 <label for="card_cvc" class="block text-sm font-medium text-slate-700 mb-1">CVC</label>
                                 <input id="card_cvc" name="card_cvc" type="text" required
                                     value="{{ old('card_cvc', '123') }}"
                                     inputmode="numeric" pattern="\d{3,4}" maxlength="4"
-                                    class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500/30 font-mono">
+                                    placeholder="123"
+                                    class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/30 font-mono">
                             </div>
                         </div>
                     </fieldset>

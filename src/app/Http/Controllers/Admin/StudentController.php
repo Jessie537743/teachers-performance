@@ -202,7 +202,8 @@ class StudentController extends Controller
             $subjectIds = $validated['student_status'] === 'irregular'
                 ? $this->selectedSubjectIdsForIrregularStudent(
                     $validated['selected_subject_ids'] ?? [],
-                    (string) $validated['semester']
+                    (string) $validated['semester'],
+                    (int) $validated['department_id']
                 )
                 : $this->subjectIdsForEnrollment($validated);
 
@@ -284,7 +285,8 @@ class StudentController extends Controller
                 $subjectIds = $validated['student_status'] === 'irregular'
                     ? $this->selectedSubjectIdsForIrregularStudent(
                         $validated['selected_subject_ids'] ?? [],
-                        (string) $validated['semester']
+                        (string) $validated['semester'],
+                        (int) $validated['department_id']
                     )
                     : $this->subjectIdsForEnrollment($validated);
                 $user->studentProfile->subjectAssignments()->delete();
@@ -706,7 +708,7 @@ class StudentController extends Controller
             ->where('is_active', true)
             ->whereNotNull('semester')
             ->where('semester', '!=', '')
-            ->select(['id', 'code', 'title', 'semester'])
+            ->select(['id', 'code', 'title', 'semester', 'department_id'])
             ->orderBy('semester')
             ->orderBy('code')
             ->orderBy('title')
@@ -720,8 +722,9 @@ class StudentController extends Controller
                     }
 
                     return [
-                        'id' => (int) $subject->id,
-                        'label' => $label,
+                        'id'            => (int) $subject->id,
+                        'label'         => $label,
+                        'department_id' => $subject->department_id !== null ? (int) $subject->department_id : null,
                     ];
                 })->values()->all();
             });
@@ -743,7 +746,7 @@ class StudentController extends Controller
      * @param  array<int, mixed>  $selectedSubjectIds
      * @return list<int>
      */
-    private function selectedSubjectIdsForIrregularStudent(array $selectedSubjectIds, string $semester): array
+    private function selectedSubjectIdsForIrregularStudent(array $selectedSubjectIds, string $semester, ?int $departmentId = null): array
     {
         $ids = collect($selectedSubjectIds)
             ->map(fn ($id) => (int) $id)
@@ -763,7 +766,7 @@ class StudentController extends Controller
         $subjects = Subject::query()
             ->where('is_active', true)
             ->whereIn('id', $ids)
-            ->select(['id', 'semester'])
+            ->select(['id', 'semester', 'department_id'])
             ->get();
 
         if ($subjects->count() !== count($ids)) {
@@ -780,6 +783,18 @@ class StudentController extends Controller
             throw ValidationException::withMessages([
                 'selected_subject_ids' => 'Selected subjects must match the chosen semester.',
             ]);
+        }
+
+        if ($departmentId !== null && $departmentId > 0) {
+            $invalidByDepartment = $subjects->first(function (Subject $subject) use ($departmentId) {
+                return (int) $subject->department_id !== $departmentId;
+            });
+
+            if ($invalidByDepartment) {
+                throw ValidationException::withMessages([
+                    'selected_subject_ids' => 'Selected subjects must belong to the chosen department.',
+                ]);
+            }
         }
 
         return $ids;

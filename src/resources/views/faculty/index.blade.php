@@ -11,7 +11,7 @@
 <div class="flex justify-between items-center gap-4 mb-5 flex-wrap animate-slide-up">
     <div>
         <h1 class="text-2xl font-bold text-slate-900">Faculty</h1>
-        <p class="text-sm text-gray-500 mt-1">Manage faculty members, department, and role/position (Teaching: Dean/Head, Program Chair, Faculty, Staff; Non-teaching: Department Head or Staff).</p>
+        <p class="text-sm text-gray-500 mt-1">Manage faculty members, department, and role/position (Teaching: Dean, Program Chair, Faculty; Non-teaching: Head or Staff).</p>
     </div>
 </div>
 
@@ -209,10 +209,10 @@
         <div class="rounded-xl bg-slate-50 border border-slate-200 p-3 mb-4">
             <p class="text-xs text-slate-600 mb-2">Role values accepted:</p>
             <ul class="text-xs text-slate-600 space-y-1 list-disc pl-4">
-                <li><code>Dean/Head</code> (teaching department leadership)</li>
-                <li><code>Administrator/Head</code> (non-teaching department leadership)</li>
+                <li><code>Dean</code> (teaching department leadership)</li>
+                <li><code>Head</code> (non-teaching department leadership)</li>
                 <li><code>Program Chair</code> or <code>Faculty</code> (teaching departments only)</li>
-                <li><code>Staff</code> (teaching or non-teaching departments)</li>
+                <li><code>Staff</code> (non-teaching departments only)</li>
             </ul>
             <a href="{{ route('faculty.bulk-template') }}" class="inline-flex mt-3 text-xs font-semibold text-blue-700 hover:text-blue-800 underline">
                 Download CSV template
@@ -276,7 +276,7 @@
                     @endforeach
                 </select>
             </div>
-            <p class="text-xs text-gray-500 mb-4">Evaluation forms follow the <strong>department type</strong> (Teaching vs Non-teaching). Choosing <strong>Dean / Head</strong> assigns system role <strong>Dean</strong> for teaching departments, while non-teaching departments are treated as <strong>Administrator / Head</strong> with system role <strong>Department Head</strong> (same permission group as Dean in Roles &amp; Permissions).</p>
+            <p class="text-xs text-gray-500 mb-4">Available roles depend on the <strong>department type</strong>. Teaching departments allow <strong>Dean</strong>, <strong>Program Chair</strong>, and <strong>Faculty</strong>. Non-teaching departments allow <strong>Head</strong> or <strong>Staff</strong>. The system role assigned to <strong>Dean</strong> (teaching) and <strong>Head</strong> (non-teaching) shares the same permission group in Roles &amp; Permissions.</p>
             <div class="flex gap-2.5 mt-1.5">
                 <button type="submit" class="inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-blue-700 transition-all hover:-translate-y-0.5 shadow-sm">Add Faculty</button>
                 <button type="button" class="inline-flex items-center gap-2 bg-gray-200 text-slate-900 px-4 py-2.5 rounded-xl font-semibold hover:bg-gray-300 transition" onclick="document.getElementById('addFacultyModal').style.display='none'">Cancel</button>
@@ -347,13 +347,12 @@ document.getElementById('bulkFacultyUploadModal')?.addEventListener('click', fun
 
 const facultyPositionOptions = {
     teaching: [
-        { value: 'dean_head', label: 'Dean / Head' },
+        { value: 'dean_head', label: 'Dean' },
         { value: 'program_chair', label: 'Program Chair' },
         { value: 'faculty', label: 'Faculty' },
-        { value: 'staff', label: 'Staff' },
     ],
     'non-teaching': [
-        { value: 'dean_head', label: 'Department Head' },
+        { value: 'dean_head', label: 'Head' },
         { value: 'staff', label: 'Staff' },
     ],
 };
