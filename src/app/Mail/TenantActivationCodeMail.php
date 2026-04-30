@@ -23,7 +23,6 @@ class TenantActivationCodeMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            to: [$this->code->intended_admin_email],
             subject: 'Your activation code for ' . $this->tenant->name,
         );
     }

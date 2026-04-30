@@ -189,8 +189,12 @@
 
     <div class="cert-wrap">
         <div class="cert-inner-border">
-            <div class="report-header">
-                <img src="{{ asset('images/report-header.png') }}" alt="Institution Report Header">
+            <div class="report-header" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+                <img src="{{ $appLogo }}" alt="{{ \App\Models\Setting::get('app_name', config('app.name', 'Institution')) }}"
+                     style="height:80px;width:80px;object-fit:contain;">
+                <div style="font-size:13px;font-weight:700;color:#0f172a;letter-spacing:.05em;text-transform:uppercase;">
+                    {{ \App\Models\Setting::get('app_name', config('app.name', 'Institution')) }}
+                </div>
             </div>
             <h1>Certificate of Performance</h1>
             <p class="presented">This certificate is presented to</p>
@@ -210,10 +214,15 @@
                 Evaluation period: {{ $schoolYear }} — {{ $semester === 'Summer' ? 'Summer' : $semester }}
             </div>
             <p class="footer-date">Awarded this {{ $awardedDate }}</p>
+            @php $hrSignatory = \App\Models\Signature::activeSignatory(); @endphp
             <div class="signature-block">
+                @if($hrSignatory && $hrSignatory->signature_path)
+                    <img src="{{ asset('storage/' . $hrSignatory->signature_path) }}" alt="Signature"
+                         style="max-height:64px;max-width:240px;object-fit:contain;display:block;margin:0 auto 4px;">
+                @endif
                 <div class="signature-line"></div>
-                <div class="signature-name">Ricky A. Destacamento, MA, RGC</div>
-                <div class="signature-title">Head, HRMDO</div>
+                <div class="signature-name">{{ $hrSignatory?->user?->name ?: 'Pending HR signatory' }}</div>
+                <div class="signature-title">{{ $hrSignatory?->title ?: 'Head, HRMDO' }}</div>
             </div>
         </div>
     </div>

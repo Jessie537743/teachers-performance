@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\PasswordResetApprovedMail;
+use App\Mail\PasswordResetDeclinedMail;
 use App\Models\AuditLog;
 use App\Models\PasswordResetRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Illuminate\View\View;
 
 class PasswordResetApprovalController extends Controller
@@ -57,6 +61,15 @@ class PasswordResetApprovalController extends Controller
 
         AuditLog::log('updated', "Password reset approved for {$user->name} ({$user->email})", $user);
 
+        try {
+            $loginUrl = route('login');
+            Mail::to($user->email)->queue(
+                new PasswordResetApprovedMail($passwordResetRequest->fresh('user'), $loginUrl)
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         return back()->with('success', "Password reset approved for {$user->name}.");
     }
 
@@ -77,6 +90,14 @@ class PasswordResetApprovalController extends Controller
 
         $user = $passwordResetRequest->user;
         AuditLog::log('updated', "Password reset declined for {$user->name} ({$user->email})", $user);
+
+        try {
+            Mail::to($user->email)->queue(
+                new PasswordResetDeclinedMail($passwordResetRequest->fresh('user'))
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         return back()->with('success', "Password reset request declined.");
     }

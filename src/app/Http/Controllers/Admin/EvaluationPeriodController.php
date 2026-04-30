@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\NotifyEvaluationPeriodOpenedJob;
 use App\Jobs\RunStudentPromotionForPeriodJob;
 use App\Models\EvaluationPeriod;
 use App\Services\EvaluationService;
@@ -58,9 +59,13 @@ class EvaluationPeriodController extends Controller
             }
         }
 
-        EvaluationPeriod::create($validated);
+        $period = EvaluationPeriod::create($validated);
 
         EvaluationService::clearCache();
+
+        if ($period->is_open) {
+            NotifyEvaluationPeriodOpenedJob::dispatch($period->id)->afterResponse();
+        }
 
         return redirect()->route('evaluation-periods.index')
             ->with('success', 'Evaluation period created successfully.');
@@ -99,6 +104,11 @@ class EvaluationPeriodController extends Controller
         // Closing this period: run promotion after save (period row still has correct semester/school_year)
         if ($wasOpen && ! $validated['is_open']) {
             RunStudentPromotionForPeriodJob::dispatch($evaluationPeriod->id)->afterResponse();
+        }
+
+        // Newly opened — notify all active evaluators
+        if (! $wasOpen && $validated['is_open']) {
+            NotifyEvaluationPeriodOpenedJob::dispatch($evaluationPeriod->id)->afterResponse();
         }
 
         EvaluationService::clearCache();

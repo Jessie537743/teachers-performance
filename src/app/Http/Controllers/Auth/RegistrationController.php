@@ -79,7 +79,7 @@ class RegistrationController extends Controller
         ]);
 
         try {
-            Mail::to($req->email)->send(new RegistrationSubmittedMail($req));
+            Mail::to($req->email)->queue(new RegistrationSubmittedMail($req));
         } catch (\Throwable $e) {
             // Don't fail the submission if mail driver hiccups; submission is still recorded.
             report($e);

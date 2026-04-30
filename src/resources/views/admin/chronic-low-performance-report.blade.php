@@ -125,7 +125,7 @@
 @if($shouldLoad)
 <div class="report-shell cr-report-doc pb-10">
     <div class="mb-5 bg-white border border-slate-200/80 rounded-xl shadow-sm p-2 sm:p-3 report-header-card">
-        <img src="{{ asset('images/report-header.png') }}" alt="Institution header" class="w-full h-auto rounded-md">
+        @include('admin.partials.institution-header')
     </div>
 
     <div class="bg-white border border-slate-200 rounded-xl shadow-md p-6 sm:p-8 mb-6">
@@ -192,13 +192,7 @@
             </div>
         @endif
 
-        <div class="lp-cert-block">
-            <p class="text-xs font-semibold text-slate-600 mb-3">Certified by:</p>
-            <p class="text-sm font-bold text-slate-900 uppercase tracking-wide leading-snug">RICKY A. DESTACAMENTO, MA, RGC</p>
-            <p class="text-sm font-semibold text-slate-800 mt-1.5">Head, Human Resource</p>
-            <hr class="lp-cert-line" aria-hidden="true">
-            <p class="text-[10px] text-slate-500 uppercase tracking-wider">Signature</p>
-        </div>
+        @include('admin.partials.hr-certification', ['wrapClass' => 'lp-cert-block', 'lineClass' => 'lp-cert-line', 'showHeading' => false])
     </div>
 </div>
 

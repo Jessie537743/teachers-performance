@@ -106,9 +106,8 @@
 {{-- Fullscreen post-login loading overlay --}}
 <div class="loading-overlay" id="loginOverlay">
     <div class="flex flex-col items-center gap-6">
-        @php $customLogo = \App\Models\Setting::get('app_logo'); @endphp
         <div class="loading-logo">
-            <img src="{{ $customLogo ? asset('storage/' . $customLogo) : asset(config('app.default_logo')) }}" alt="Logo" class="w-24 h-24 object-contain rounded-full bg-white/10 p-2 ring-2 ring-white/20 shadow-2xl">
+            <img src="{{ $appLogo }}" alt="Logo" class="w-24 h-24 object-contain rounded-full bg-white/10 p-2 ring-2 ring-white/20 shadow-2xl">
         </div>
         <div class="loading-spinner"></div>
         <div class="flex items-center gap-1.5 text-white/90 text-sm font-medium tracking-wide">
@@ -138,7 +137,7 @@
             <div class="mb-8" style="animation: scaleIn 0.7s ease-out both;">
                 <div class="relative inline-block">
                     <div class="absolute inset-0 rounded-full bg-white/10" style="animation: pulse-ring 2.5s ease-out infinite;"></div>
-                    <img src="{{ $customLogo ? asset('storage/' . $customLogo) : asset(config('app.default_logo')) }}" alt="Logo"
+                    <img src="{{ $appLogo }}" alt="Logo"
                          class="relative w-44 h-44 md:w-52 md:h-52 object-contain rounded-full bg-white/10 p-3 shadow-2xl ring-2 ring-white/20">
                 </div>
             </div>
@@ -181,7 +180,7 @@
 
                 {{-- Mobile logo (hidden on desktop) --}}
                 <div class="flex justify-center mb-6 md:hidden" style="animation: scaleIn 0.5s ease-out both;">
-                    <img src="{{ $customLogo ? asset('storage/' . $customLogo) : asset(config('app.default_logo')) }}" alt="Logo" class="w-20 h-20 object-contain rounded-full bg-blue-50 p-2 ring-2 ring-blue-100">
+                    <img src="{{ $appLogo }}" alt="Logo" class="w-20 h-20 object-contain rounded-full bg-blue-50 p-2 ring-2 ring-blue-100">
                 </div>
 
                 <div class="mb-8 text-center" style="animation: fadeInUp 0.5s ease-out 0.3s both;">
