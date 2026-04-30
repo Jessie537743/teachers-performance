@@ -47,5 +47,8 @@ foreach (config('tenancy.central_domains', []) as $centralDomain) {
             ->name('central.subscribe.process');
         Route::get('/subscribe/success', [\App\Http\Controllers\Central\CheckoutController::class, 'success'])
             ->name('central.subscribe.success');
+
+        Route::get('/about', fn () => response()->view('central.about'))->name('central.about');
+        Route::get('/contact', fn () => response()->view('central.contact'))->name('central.contact');
     });
 }

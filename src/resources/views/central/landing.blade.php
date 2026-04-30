@@ -519,8 +519,8 @@
             <div>
                 <h4 class="text-white font-semibold mb-3 text-sm">Company</h4>
                 <ul class="space-y-2 text-sm">
-                    <li><a href="mailto:sales@platform.test" class="hover:text-white">Contact sales</a></li>
-                    <li><a href="mailto:support@platform.test" class="hover:text-white">Support</a></li>
+                    <li><a href="{{ route('central.about') }}" class="hover:text-white">About us</a></li>
+                    <li><a href="{{ route('central.contact') }}" class="hover:text-white">Contact us</a></li>
                     <li><a href="#faq" class="hover:text-white">FAQ</a></li>
                 </ul>
             </div>
