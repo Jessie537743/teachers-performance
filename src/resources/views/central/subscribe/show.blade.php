@@ -49,7 +49,7 @@
                                 <div class="rounded-xl border-2 border-slate-200 p-4 peer-checked:border-blue-600 peer-checked:bg-blue-50/50 hover:border-slate-300 transition">
                                     <div class="flex items-center justify-between">
                                         <span class="font-semibold text-slate-900">Monthly</span>
-                                        <span class="text-lg font-bold">${{ $monthly }}<span class="text-xs font-normal text-slate-500">/mo</span></span>
+                                        <span class="text-lg font-bold">₱{{ number_format($monthly) }}<span class="text-xs font-normal text-slate-500">/mo</span></span>
                                     </div>
                                     <p class="text-xs text-slate-500 mt-1">Billed every month. Cancel anytime.</p>
                                 </div>
@@ -65,13 +65,13 @@
                                         <span class="font-semibold text-slate-900 inline-flex items-center gap-2">
                                             Yearly
                                             @if ($yearlySavings > 0)
-                                                <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">Save ${{ $yearlySavings }}</span>
+                                                <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">Save ₱{{ number_format($yearlySavings) }}</span>
                                             @endif
                                         </span>
-                                        <span class="text-lg font-bold">${{ $yearly }}<span class="text-xs font-normal text-slate-500">/yr</span></span>
+                                        <span class="text-lg font-bold">₱{{ number_format($yearly) }}<span class="text-xs font-normal text-slate-500">/yr</span></span>
                                     </div>
                                     <p class="text-xs text-slate-500 mt-1">
-                                        Billed yearly. Equivalent to <strong>${{ number_format($monthlyEquivalentOfYearly, 2) }}/mo</strong>.
+                                        Billed yearly. Equivalent to <strong>₱{{ number_format($monthlyEquivalentOfYearly, 2) }}/mo</strong>.
                                     </p>
                                 </div>
                                 <span class="absolute top-3 right-3 hidden peer-checked:flex w-5 h-5 rounded-full bg-blue-600 text-white items-center justify-center">
@@ -173,7 +173,7 @@
 
                 <div class="flex items-baseline justify-between mb-1">
                     <span class="text-base font-medium text-slate-900">{{ $plan['name'] }} plan</span>
-                    <span id="summaryAmount" class="text-base font-semibold text-slate-900">${{ $cycle === 'yearly' ? $yearly : $monthly }}</span>
+                    <span id="summaryAmount" class="text-base font-semibold text-slate-900">₱{{ number_format($cycle === 'yearly' ? $yearly : $monthly) }}</span>
                 </div>
                 <p id="summaryPeriod" class="text-xs text-slate-500 mb-4">{{ $cycle === 'yearly' ? 'per year' : 'per month' }}</p>
 
@@ -189,7 +189,7 @@
                 <div class="pt-4 border-t border-slate-200">
                     <div class="flex items-baseline justify-between">
                         <span class="text-sm text-slate-600">Total today</span>
-                        <span id="summaryTotal" class="text-2xl font-bold text-slate-900">${{ $cycle === 'yearly' ? $yearly : $monthly }}</span>
+                        <span id="summaryTotal" class="text-2xl font-bold text-slate-900">₱{{ number_format($cycle === 'yearly' ? $yearly : $monthly) }}</span>
                     </div>
                     <p id="summaryRenewal" class="text-xs text-slate-500 mt-2">
                         Renews {{ $cycle === 'yearly' ? 'yearly' : 'monthly' }} at the same price. You can cancel anytime.
@@ -202,16 +202,17 @@
     <script>
         const monthly = {{ $monthly }};
         const yearly  = {{ $yearly }};
+        function fmt(n) { return Number(n).toLocaleString('en-PH'); }
         function updateTotal() {
             const cycle = document.querySelector('input[name=billing_cycle]:checked')?.value;
             const amount = cycle === 'yearly' ? yearly : monthly;
             const period = cycle === 'yearly' ? 'per year' : 'per month';
-            document.getElementById('summaryAmount').textContent = '$' + amount;
+            document.getElementById('summaryAmount').textContent = '₱' + fmt(amount);
             document.getElementById('summaryPeriod').textContent = period;
-            document.getElementById('summaryTotal').textContent = '$' + amount;
+            document.getElementById('summaryTotal').textContent = '₱' + fmt(amount);
             document.getElementById('summaryRenewal').textContent = 'Renews ' + (cycle === 'yearly' ? 'yearly' : 'monthly') + ' at the same price. You can cancel anytime.';
             const cta = document.getElementById('ctaLabel');
-            if (cta && amount > 0) cta.textContent = 'Pay $' + amount + ' (' + period + ') & provision school';
+            if (cta && amount > 0) cta.textContent = 'Pay ₱' + fmt(amount) + ' (' + period + ') & provision school';
         }
         updateTotal();
     </script>

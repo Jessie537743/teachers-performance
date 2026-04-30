@@ -160,7 +160,7 @@
                     <div>
                         <dt class="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Amount</dt>
                         <dd class="text-slate-900 font-semibold mt-0.5">
-                            ${{ config('plans.' . $tenant->plan . '.prices.' . ($tenant->billing_cycle ?? 'monthly')) }}
+                            ₱{{ number_format((float) config('plans.' . $tenant->plan . '.prices.' . ($tenant->billing_cycle ?? 'monthly'), 0)) }}
                         </dd>
                     </div>
                     <div>

@@ -82,7 +82,7 @@
                             </div>
                             <div class="mt-1 text-sm text-slate-700">
                                 @if (is_numeric($plan['price']))
-                                    <span class="font-bold">${{ $plan['price'] }}</span>
+                                    <span class="font-bold">₱{{ number_format((float) $plan['price']) }}</span>
                                     <span class="text-xs text-slate-500">{{ $plan['period'] }}</span>
                                 @else
                                     <span class="font-bold">{{ $plan['price'] }}</span>

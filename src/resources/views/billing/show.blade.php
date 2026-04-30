@@ -52,7 +52,7 @@
                 <div>
                     <dt class="text-[11px] uppercase tracking-wider text-slate-500 font-semibold">Amount</dt>
                     <dd class="text-slate-900 font-semibold mt-1">
-                        ${{ $currentPrice }}<span class="text-xs text-slate-500 font-normal">/{{ $tenant->billing_cycle === 'yearly' ? 'yr' : 'mo' }}</span>
+                        ₱{{ number_format((float) $currentPrice) }}<span class="text-xs text-slate-500 font-normal">/{{ $tenant->billing_cycle === 'yearly' ? 'yr' : 'mo' }}</span>
                     </dd>
                 </div>
                 <div>
