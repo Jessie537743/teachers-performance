@@ -10,6 +10,7 @@
         "laravel/framework": "^13.0",
         "laravel/tinker": "^3.0",
         "mews/purifier": "^3.4",
+        "resend/resend-php": "^0.19",
         "stancl/tenancy": "^3.9"
     },
     "require-dev": {
