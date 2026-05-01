@@ -30,6 +30,18 @@
     {{-- General Tab --}}
     @if($tab === 'general')
     <div class="p-6">
+        {{-- Sibling form for the "Remove logo" action. Lives outside the
+             update-general form because HTML disallows nested <form> elements.
+             The Remove button below references this form via the `form="…"`
+             attribute so the visual layout stays the same. --}}
+        @if($appLogo)
+        <form method="POST" action="{{ route('settings.remove-logo') }}" id="removeLogoForm"
+              onsubmit="event.preventDefault(); showConfirm('Remove the custom logo? The default logo will be used instead.', this, {confirmText: 'Remove'})">
+            @csrf
+            @method('DELETE')
+        </form>
+        @endif
+
         <form method="POST" action="{{ route('settings.update-general') }}" enctype="multipart/form-data">
             @csrf
 
@@ -68,12 +80,13 @@
                         </div>
                     </div>
                     @if($appLogo)
-                    <form method="POST" action="{{ route('settings.remove-logo') }}" class="ml-auto"
-                          onsubmit="event.preventDefault(); showConfirm('Remove the custom logo? The default logo will be used instead.', this, {confirmText: 'Remove'})">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="inline-flex items-center gap-2 bg-red-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-red-700 transition">Remove</button>
-                    </form>
+                        {{-- formaction would re-target this form to settings.remove-logo,
+                             but we also need DELETE method spoofing — using the sibling
+                             form via `form="removeLogoForm"` is the only clean way. --}}
+                        <button type="submit" form="removeLogoForm"
+                                class="ml-auto inline-flex items-center gap-2 bg-red-600 text-white px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-red-700 transition">
+                            Remove
+                        </button>
                     @endif
                 </div>
 
