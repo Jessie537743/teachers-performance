@@ -111,9 +111,9 @@
                 Generate report
             </button>
             @if($shouldLoad)
-                <a href="{{ route('reports.chronic-low-performance', array_merge(request()->query(), ['print' => 1])) }}" class="inline-flex items-center px-5 py-2.5 bg-slate-800 text-white text-sm font-semibold rounded-lg hover:bg-slate-900 transition-colors shadow-sm">
+                <button type="button" onclick="window.print()" class="inline-flex items-center px-5 py-2.5 bg-slate-800 text-white text-sm font-semibold rounded-lg hover:bg-slate-900 transition-colors shadow-sm">
                     Print / PDF
-                </a>
+                </button>
             @endif
         </div>
     </form>
@@ -196,12 +196,5 @@
     </div>
 </div>
 
-@if($printMode)
-    @push('scripts')
-    <script>
-        window.addEventListener('load', function () { window.print(); });
-    </script>
-    @endpush
-@endif
 @endif
 @endsection

@@ -24,6 +24,7 @@ use App\View\Composers\AnnouncementComposer;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -81,15 +82,20 @@ class AppServiceProvider extends ServiceProvider
 
         // Tenant-aware logo: every view receives $appLogo as an absolute URL,
         // resolved from Setting('app_logo') with config('app.default_logo') fallback.
+        // Use Storage::disk('public')->url() so tenant filesystem rewrites apply.
         View::composer('*', function ($view) {
             try {
                 $custom = Setting::get('app_logo');
             } catch (\Throwable $e) {
                 $custom = null;
             }
-            $url = $custom
-                ? asset('storage/'.$custom)
-                : asset(config('app.default_logo'));
+            try {
+                $url = $custom
+                    ? Storage::disk('public')->url($custom)
+                    : asset(config('app.default_logo'));
+            } catch (\Throwable $e) {
+                $url = asset(config('app.default_logo'));
+            }
             $view->with('appLogo', $url);
         });
 

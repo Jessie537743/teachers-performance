@@ -239,9 +239,9 @@
                 Generate report
             </button>
             @if($selectedFaculty && $reportType && $hasData)
-                <a href="{{ route('reports.individual-evaluation', array_merge(request()->query(), ['print' => 1])) }}" class="inline-flex items-center px-5 py-2.5 bg-slate-800 text-white text-sm font-semibold rounded-lg hover:bg-slate-900 transition-colors shadow-sm">
+                <button type="button" onclick="window.print()" class="inline-flex items-center px-5 py-2.5 bg-slate-800 text-white text-sm font-semibold rounded-lg hover:bg-slate-900 transition-colors shadow-sm">
                     Print / PDF
-                </a>
+                </button>
             @endif
         </div>
     </form>
@@ -363,12 +363,5 @@
     @endplan
 @endif
 
-@if($printMode && $selectedFaculty && $reportType && $hasData)
-    @push('scripts')
-    <script>
-        window.addEventListener('load', function () { window.print(); });
-    </script>
-    @endpush
-@endif
 @endif
 @endsection

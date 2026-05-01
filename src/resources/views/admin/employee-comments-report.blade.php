@@ -166,16 +166,13 @@
                 Generate all by personnel name
             </button>
             @if($selectedFaculty)
-                <a href="{{ route('reports.employee-comments', array_merge(request()->query(), ['print' => 1])) }}" class="inline-flex items-center px-4 py-2.5 bg-slate-700 text-white text-sm font-semibold rounded-lg hover:bg-slate-800 transition-colors">
-                    Print
-                </a>
-                <a href="{{ route('reports.employee-comments', request()->query()) }}" onclick="window.print(); return false;" class="inline-flex items-center px-4 py-2.5 bg-emerald-700 text-white text-sm font-semibold rounded-lg hover:bg-emerald-800 transition-colors">
-                    Export PDF
-                </a>
+                <button type="button" onclick="window.print()" class="inline-flex items-center px-4 py-2.5 bg-slate-700 text-white text-sm font-semibold rounded-lg hover:bg-slate-800 transition-colors">
+                    Print / PDF
+                </button>
             @elseif($generateAll && $allFacultyReports->isNotEmpty())
-                <a href="{{ route('reports.employee-comments', array_merge(request()->query(), ['print' => 1, 'generate_all' => 1])) }}" class="inline-flex items-center px-4 py-2.5 bg-slate-700 text-white text-sm font-semibold rounded-lg hover:bg-slate-800 transition-colors">
+                <button type="button" onclick="window.print()" class="inline-flex items-center px-4 py-2.5 bg-slate-700 text-white text-sm font-semibold rounded-lg hover:bg-slate-800 transition-colors">
                     Print All
-                </a>
+                </button>
             @endif
         </div>
     </form>
@@ -433,11 +430,6 @@
 @endsection
 
 @push('scripts')
-@if($printMode && ($selectedFaculty || $generateAll))
-<script>
-    window.addEventListener('load', () => window.print());
-</script>
-@endif
 
 @if($selectedFaculty)
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
