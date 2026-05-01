@@ -168,9 +168,9 @@
             <div>
                 <h4 class="text-white font-semibold mb-3 text-sm">Legal</h4>
                 <ul class="space-y-2 text-sm">
-                    <li><a href="#" class="hover:text-white">Privacy policy</a></li>
-                    <li><a href="#" class="hover:text-white">Terms of service</a></li>
-                    <li><a href="#" class="hover:text-white">Data processing</a></li>
+                    <li><a href="{{ route('central.privacy') }}" class="hover:text-white">Privacy Policy</a></li>
+                    <li><a href="{{ route('central.terms') }}" class="hover:text-white">Terms of Service</a></li>
+                    <li><a href="{{ route('central.data-processing') }}" class="hover:text-white">Data Processing</a></li>
                 </ul>
             </div>
         </div>

@@ -50,5 +50,8 @@ foreach (config('tenancy.central_domains', []) as $centralDomain) {
 
         Route::get('/about', fn () => response()->view('central.about'))->name('central.about');
         Route::get('/contact', fn () => response()->view('central.contact'))->name('central.contact');
+        Route::get('/terms-and-conditions', fn () => response()->view('central.legal.terms'))->name('central.terms');
+        Route::get('/privacy', fn () => response()->view('central.legal.privacy'))->name('central.privacy');
+        Route::get('/data-processing', fn () => response()->view('central.legal.data-processing'))->name('central.data-processing');
     });
 }
