@@ -96,5 +96,6 @@
             Need help? <a href="mailto:support@platform.test" class="text-blue-600 hover:text-blue-700 font-medium">Contact support</a>
         </p>
     </div>
+    @include('central.partials.footer-mini')
 </body>
 </html>

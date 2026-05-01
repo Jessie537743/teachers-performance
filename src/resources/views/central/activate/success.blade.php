@@ -16,5 +16,6 @@
             Open {{ $tenant->subdomain }}.localhost
         </a>
     </div>
+    @include('central.partials.footer-mini')
 </body>
 </html>

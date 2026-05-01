@@ -14,5 +14,6 @@
             Try a different code
         </a>
     </div>
+    @include('central.partials.footer-mini')
 </body>
 </html>

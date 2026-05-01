@@ -221,5 +221,6 @@
         }
         updateTotal();
     </script>
+    @include('central.partials.footer-mini')
 </body>
 </html>

@@ -44,5 +44,6 @@
             </p>
         @endif
     </div>
+    @include('central.partials.footer-mini')
 </body>
 </html>
