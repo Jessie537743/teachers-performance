@@ -294,20 +294,39 @@
                         </summary>
                         <form method="POST" action="{{ route('admin.tenants.destroy', $tenant) }}"
                               onsubmit="return confirm('Permanently delete {{ $tenant->name }} and DROP its database? This cannot be undone.');"
-                              class="px-4 pb-4 pt-2 space-y-3">
+                              class="px-4 pb-4 pt-2 space-y-3"
+                              x-data="{ confirm: '', target: @js($tenant->subdomain), get matches() { return this.confirm.trim().toLowerCase() === this.target.toLowerCase(); } }">
                             @csrf
                             @method('DELETE')
                             <p class="text-xs text-rose-700 leading-relaxed">
                                 This will <strong>drop the database</strong> <code class="bg-white px-1 rounded">{{ $tenant->getAttribute('database') }}</code>
                                 and remove all activation codes, subscriptions, domains, and provisioning history.
                             </p>
-                            <label class="block text-xs font-semibold text-slate-700">
-                                Type the subdomain <code class="text-rose-700">{{ $tenant->subdomain }}</code> to confirm
-                                <input type="text" name="confirm_subdomain" required autocomplete="off"
-                                       class="mt-1 w-full rounded-lg border-slate-300 focus:border-rose-500 focus:ring-rose-500 text-sm font-mono"
-                                       placeholder="{{ $tenant->subdomain }}">
-                            </label>
-                            <button class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 hover:bg-rose-700 px-4 py-2 text-sm font-medium text-white">
+                            <div>
+                                <label for="confirm-subdomain-{{ $tenant->id }}" class="block text-xs font-semibold text-slate-700 mb-1">
+                                    Type <code class="text-rose-700 bg-white px-1 rounded ring-1 ring-rose-200 select-all">{{ $tenant->subdomain }}</code> to confirm
+                                </label>
+                                <div class="relative">
+                                    <input id="confirm-subdomain-{{ $tenant->id }}"
+                                           type="text" name="confirm_subdomain" required autocomplete="off" spellcheck="false" autocapitalize="none"
+                                           x-model="confirm"
+                                           :class="confirm.length === 0
+                                               ? 'border-slate-300 bg-white focus:border-brand-500 focus:ring-brand-500/30'
+                                               : matches
+                                                   ? 'border-emerald-500 bg-emerald-50/60 focus:border-emerald-500 focus:ring-emerald-500/30'
+                                                   : 'border-rose-400 bg-rose-50/60 focus:border-rose-500 focus:ring-rose-500/30'"
+                                           class="block w-full rounded-lg border px-3 py-2 pr-9 text-sm font-mono tracking-tight text-slate-900 placeholder-slate-400 shadow-sm transition-colors focus:outline-none focus:ring-2"
+                                           placeholder="subdomain to confirm">
+                                    <span class="absolute inset-y-0 right-0 flex items-center pr-2.5 pointer-events-none">
+                                        <svg x-show="confirm.length > 0 && matches" class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="display:none"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                        <svg x-show="confirm.length > 0 && !matches" class="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="display:none"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                                    </span>
+                                </div>
+                                <p x-show="confirm.length > 0 && !matches" class="mt-1 text-xs text-rose-600" style="display:none">Doesn't match — case-insensitive.</p>
+                            </div>
+                            <button :disabled="!matches"
+                                    class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 hover:bg-rose-700 disabled:bg-slate-300 disabled:cursor-not-allowed px-4 py-2 text-sm font-semibold text-white transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
                                 Permanently delete
                             </button>
                         </form>
