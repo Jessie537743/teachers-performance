@@ -25,6 +25,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -44,6 +45,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::defaultView('vendor.pagination.simple');
+
+        // Behind Railway's HTTPS proxy, request scheme arrives as http; force
+        // every generated URL (route(), url(), action()) to use https in prod
+        // so emailed links and asset URLs never come out as bare http://.
+        if (app()->environment('production')) {
+            URL::forceScheme('https');
+        }
 
         // Register audit observer on key models
         $auditableModels = [

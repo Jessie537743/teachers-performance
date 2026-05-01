@@ -35,7 +35,7 @@ class TenantActivationCodeMail extends Mailable
                 'tenant'      => $this->tenant,
                 'code'        => $this->code,
                 'tenantUrl'   => $this->tenantUrl,
-                'activateUrl' => rtrim(config('app.url'), '/') . '/activate?code=' . $this->code->code,
+                'activateUrl' => route('central.activate.show', ['code' => $this->code->code]),
             ],
         );
     }
