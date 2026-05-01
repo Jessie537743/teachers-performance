@@ -281,15 +281,41 @@
                         @csrf
                         <button class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-slate-900 hover:bg-slate-800 px-4 py-2 text-sm font-medium text-white">Retry provisioning</button>
                     </form>
-                    <form method="POST" action="{{ route('admin.tenants.destroy', $tenant) }}"
-                          onsubmit="return confirm('Permanently delete {{ $tenant->name }} and its database? This cannot be undone.');">
-                        @csrf
-                        @method('DELETE')
-                        <button class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 hover:bg-rose-700 px-4 py-2 text-sm font-medium text-white">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
-                            Delete school
-                        </button>
-                    </form>
+                @endif
+
+                @if (in_array($tenant->status, ['failed', 'suspended', 'pending_activation', 'awaiting_payment'], true))
+                    <details class="group rounded-lg border border-rose-200 bg-rose-50/40">
+                        <summary class="cursor-pointer list-none px-4 py-2.5 text-sm font-semibold text-rose-700 flex items-center justify-between hover:bg-rose-100/60 rounded-lg">
+                            <span class="inline-flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+                                Delete school
+                            </span>
+                            <svg class="w-4 h-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                        </summary>
+                        <form method="POST" action="{{ route('admin.tenants.destroy', $tenant) }}"
+                              onsubmit="return confirm('Permanently delete {{ $tenant->name }} and DROP its database? This cannot be undone.');"
+                              class="px-4 pb-4 pt-2 space-y-3">
+                            @csrf
+                            @method('DELETE')
+                            <p class="text-xs text-rose-700 leading-relaxed">
+                                This will <strong>drop the database</strong> <code class="bg-white px-1 rounded">{{ $tenant->getAttribute('database') }}</code>
+                                and remove all activation codes, subscriptions, domains, and provisioning history.
+                            </p>
+                            <label class="block text-xs font-semibold text-slate-700">
+                                Type the subdomain <code class="text-rose-700">{{ $tenant->subdomain }}</code> to confirm
+                                <input type="text" name="confirm_subdomain" required autocomplete="off"
+                                       class="mt-1 w-full rounded-lg border-slate-300 focus:border-rose-500 focus:ring-rose-500 text-sm font-mono"
+                                       placeholder="{{ $tenant->subdomain }}">
+                            </label>
+                            <button class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-rose-600 hover:bg-rose-700 px-4 py-2 text-sm font-medium text-white">
+                                Permanently delete
+                            </button>
+                        </form>
+                    </details>
+                @elseif ($tenant->status === 'active')
+                    <p class="text-xs text-slate-500 italic px-1">
+                        Suspend this school first to enable deletion.
+                    </p>
                 @endif
 
                 <a href="{{ $tenantUrl }}" target="_blank" rel="noopener" class="w-full inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm hover:bg-slate-50">

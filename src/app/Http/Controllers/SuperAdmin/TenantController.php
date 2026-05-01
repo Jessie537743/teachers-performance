@@ -213,13 +213,21 @@ class TenantController extends Controller
             ->with('status', "Provisioning succeeded. {$tenant->name} is ready to activate.");
     }
 
-    public function destroy(Tenant $tenant): RedirectResponse
+    public function destroy(Request $request, Tenant $tenant): RedirectResponse
     {
-        // Only allow deleting tenants that never completed provisioning. Active
-        // tenants must be suspended first to prevent fat-fingered data loss.
-        if ($tenant->status !== 'failed') {
+        // Active tenants must be suspended first — protects a live school from
+        // a fat-fingered delete. Every other status is removable from this UI.
+        if ($tenant->status === 'active') {
             return redirect()->route('admin.tenants.show', $tenant)
-                ->with('error', 'Only failed tenants can be deleted from this UI. Suspend the tenant first if you need to remove an active school.');
+                ->with('error', 'Suspend this school before deleting. Active tenants cannot be removed directly.');
+        }
+
+        // Typed-name confirmation: the form must echo the tenant's subdomain.
+        // Belt-and-suspenders on top of the JS confirm() prompt.
+        $confirmation = trim((string) $request->input('confirm_subdomain', ''));
+        if ($confirmation === '' || strcasecmp($confirmation, $tenant->subdomain) !== 0) {
+            return redirect()->route('admin.tenants.show', $tenant)
+                ->with('error', 'Confirmation did not match the tenant subdomain. Delete aborted.');
         }
 
         $name = $tenant->name;
@@ -233,6 +241,12 @@ class TenantController extends Controller
             $tenant->subscriptions()->delete();
             $tenant->domains()->delete();
             $tenant->delete();
+
+            Log::info('Tenant deleted', [
+                'tenant_id' => $tenant->id,
+                'subdomain' => $tenant->subdomain,
+                'actor_id'  => optional($request->user())->id,
+            ]);
         } catch (\Throwable $e) {
             Log::error('Tenant destroy failed', [
                 'tenant_id' => $tenant->id,
