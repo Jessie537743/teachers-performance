@@ -26,8 +26,22 @@ chmod -R ug+rwX storage bootstrap/cache
 
 # Run migrations (idempotent). Set RUN_MIGRATIONS=false to skip.
 if [ "${RUN_MIGRATIONS:-true}" = "true" ] && [ -n "${DB_HOST:-}" ]; then
-    echo "[entrypoint] Running migrations..."
-    php artisan migrate --force 2>&1 || echo "[entrypoint] WARNING: Migration failed — check logs above."
+    echo "[entrypoint] Running central migrations..."
+    php artisan migrate \
+        --database=central \
+        --path=database/migrations/central \
+        --force 2>&1 \
+        || echo "[entrypoint] WARNING: Central migration failed — check logs above."
+
+    echo "[entrypoint] Seeding central data (idempotent)..."
+    php artisan db:seed --class=CentralSeeder --force 2>&1 \
+        || echo "[entrypoint] WARNING: Central seeder failed — check logs above."
+
+    if [ "${RUN_TENANT_MIGRATIONS:-true}" = "true" ]; then
+        echo "[entrypoint] Running tenant migrations across all tenants..."
+        php artisan tenants:migrate --force 2>&1 \
+            || echo "[entrypoint] WARNING: Tenant migrations failed — check logs above."
+    fi
 fi
 
 # Clear stale caches, then re-cache for production performance.

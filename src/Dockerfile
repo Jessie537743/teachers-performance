@@ -200,6 +200,12 @@ if [ "${RUN_MIGRATIONS:-true}" = "true" ] && [ -n "${DB_HOST:-}" ]; then
     echo "[entrypoint] Seeding central data (idempotent)..."
     php artisan db:seed --class=CentralSeeder --force 2>&1 \
         || echo "[entrypoint] WARNING: Central seeder failed — check logs above."
+
+    if [ "${RUN_TENANT_MIGRATIONS:-true}" = "true" ]; then
+        echo "[entrypoint] Running tenant migrations across all tenants..."
+        php artisan tenants:migrate --force 2>&1 \
+            || echo "[entrypoint] WARNING: Tenant migrations failed — check logs above."
+    fi
 fi
 
 if [ "${APP_ENV:-production}" = "production" ]; then
