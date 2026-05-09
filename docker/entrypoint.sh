@@ -25,22 +25,30 @@ chown -R www-data:www-data storage bootstrap/cache
 chmod -R ug+rwX storage bootstrap/cache
 
 # Run migrations (idempotent). Set RUN_MIGRATIONS=false to skip.
+# Migration failures HALT the deploy — running app code against a stale
+# schema surfaces as cryptic 500s in production (e.g. "Unknown column"),
+# which is worse than a failed deploy that Railway will surface in red.
+# The seeder remains tolerant; it is intentionally idempotent and may run
+# against pre-populated data.
 if [ "${RUN_MIGRATIONS:-true}" = "true" ] && [ -n "${DB_HOST:-}" ]; then
+    echo "[entrypoint] Central migration status (before):"
+    php artisan migrate:status \
+        --database=central \
+        --path=database/migrations/central || true
+
     echo "[entrypoint] Running central migrations..."
     php artisan migrate \
         --database=central \
         --path=database/migrations/central \
-        --force 2>&1 \
-        || echo "[entrypoint] WARNING: Central migration failed — check logs above."
+        --force
 
     echo "[entrypoint] Seeding central data (idempotent)..."
-    php artisan db:seed --class=CentralSeeder --force 2>&1 \
+    php artisan db:seed --class=CentralSeeder --force \
         || echo "[entrypoint] WARNING: Central seeder failed — check logs above."
 
     if [ "${RUN_TENANT_MIGRATIONS:-true}" = "true" ]; then
         echo "[entrypoint] Running tenant migrations across all tenants..."
-        php artisan tenants:migrate --force 2>&1 \
-            || echo "[entrypoint] WARNING: Tenant migrations failed — check logs above."
+        php artisan tenants:migrate --force
     fi
 fi
 
