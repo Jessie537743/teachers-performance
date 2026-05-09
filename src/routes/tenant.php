@@ -143,6 +143,15 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
             ->name('feedback-improvement.analyze');
     });
 
+    // Individual Development Plan (IDP) — every faculty member, AI-assisted growth plan.
+    // Not plan-gated: this is a standard HR development workflow, not a paid AI feature.
+    Route::get('faculty-profiles/{faculty_profile}/idp', [Admin\IndividualDevelopmentPlanController::class, 'show'])
+        ->name('faculty.idp.show');
+    Route::post('faculty-profiles/{faculty_profile}/idp/generate', [Admin\IndividualDevelopmentPlanController::class, 'generate'])
+        ->name('faculty.idp.generate');
+    Route::post('individual-development-plans/{plan}/status', [Admin\IndividualDevelopmentPlanController::class, 'updateStatus'])
+        ->name('faculty.idp.status');
+
     // Registration approvals — Dean/Head approve students; Admin/HR approve personnel
     Route::get('registration-approvals', [Admin\RegistrationApprovalController::class, 'index'])
         ->name('admin.registration-approvals.index');

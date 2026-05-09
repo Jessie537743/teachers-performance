@@ -251,6 +251,9 @@
             </p>
         @else
             <p class="text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-3">Faculty detail</p>
+            @php
+                $canShowIdp = $semester !== null && $schoolYear !== null;
+            @endphp
             <div class="dept-table-wrap dept-table">
                 <table>
                     <thead>
@@ -263,6 +266,9 @@
                             <th class="dept-th-center w-[9%]">Peer</th>
                             <th class="dept-th-center w-[11%]">GWA</th>
                             <th class="w-[14%]">Level</th>
+                            @if($canShowIdp)
+                                <th class="dept-th-center w-[10%] no-print">IDP</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody>
@@ -282,11 +288,23 @@
                                         <span class="text-xs text-slate-500">Pending</span>
                                     @endif
                                 </td>
+                                @if($canShowIdp)
+                                    <td class="text-center no-print">
+                                        <a href="{{ route('faculty.idp.show', ['faculty_profile' => $row['profile']->id, 'school_year' => $schoolYear, 'semester' => $semester]) }}"
+                                           class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-violet-50 text-violet-700 text-xs font-semibold ring-1 ring-violet-200 hover:bg-violet-100 transition">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                                            IDP
+                                        </a>
+                                    </td>
+                                @endif
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
+            @unless($canShowIdp)
+                <p class="mt-3 text-[11px] text-slate-500 italic no-print">Select a school year and semester above to enable IDP generation per faculty.</p>
+            @endunless
         @endif
 
         @include('admin.partials.hr-certification', ['wrapClass' => 'ie-cert-block', 'lineClass' => 'ie-cert-line', 'showHeading' => false])

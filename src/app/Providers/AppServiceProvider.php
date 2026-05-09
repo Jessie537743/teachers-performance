@@ -37,6 +37,16 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(\App\Services\PlanFeatures::class);
+
+        // Resolve App\Contracts\IdpGenerator from config('idp.engine'). Swapping
+        // to a real LLM driver later is config-only — no controller changes.
+        $this->app->bind(\App\Contracts\IdpGenerator::class, function ($app) {
+            $engine  = (string) config('idp.engine', 'local');
+            $drivers = (array) config('idp.drivers', []);
+            $class   = $drivers[$engine] ?? \App\Services\Idp\LocalTemplateIdpGenerator::class;
+
+            return $app->make($class);
+        });
     }
 
     /**
