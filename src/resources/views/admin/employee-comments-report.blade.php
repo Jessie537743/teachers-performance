@@ -287,7 +287,6 @@
                     <tr class="text-left text-gray-600 border-b border-gray-200">
                         <th class="px-4 py-3 font-semibold">Personnel</th>
                         <th class="px-4 py-3 font-semibold">Category</th>
-                        <th class="px-4 py-3 font-semibold">Evaluator</th>
                         <th class="px-4 py-3 font-semibold">Semester / SY</th>
                         <th class="px-4 py-3 font-semibold">Sentiment</th>
                         <th class="px-4 py-3 font-semibold">Comment</th>
@@ -306,7 +305,6 @@
                         <tr class="align-top">
                             <td class="px-4 py-3 text-gray-800">{{ $selectedFaculty->user?->name }}</td>
                             <td class="px-4 py-3 text-gray-700">{{ $comment['source'] }}</td>
-                            <td class="px-4 py-3 text-gray-700">{{ $comment['evaluator'] }}</td>
                             <td class="px-4 py-3 text-gray-600">{{ $comment['semester'] ?? '—' }} / {{ $comment['school_year'] ?? '—' }}</td>
                             <td class="px-4 py-3">
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold {{ $sentimentClass }}">
