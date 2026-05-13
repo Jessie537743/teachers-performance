@@ -7,6 +7,15 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Fresh-install guard: this migration "back-fills" data into existing
+        // tenant DBs. On a brand-new tenant the criteria table is empty, in
+        // which case CriteriaSeeder/QuestionSeeder will populate the canonical
+        // rubric. Inserting a synthetic fallback criterion here would collide
+        // with those seeders' hardcoded primary keys.
+        if (DB::table('criteria')->count() === 0) {
+            return;
+        }
+
         $questionText = 'Select one recommendation below.';
         $personnelTypes = ['dean_head_teaching', 'dean_head_non_teaching'];
 
