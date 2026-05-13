@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('interventions')) {
         Schema::create('interventions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('question_id')->constrained('questions')->cascadeOnDelete();
@@ -16,6 +17,7 @@ return new class extends Migration
             $table->text('recommended_intervention')->nullable();
             $table->text('basis')->nullable();
         });
+        }
     }
 
     public function down(): void

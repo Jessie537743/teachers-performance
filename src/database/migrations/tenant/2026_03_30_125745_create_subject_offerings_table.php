@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('subject_offerings')) {
         Schema::create('subject_offerings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('subject_catalog_id')->constrained('subject_catalog')->cascadeOnDelete();
@@ -24,6 +25,7 @@ return new class extends Migration
                 'subject_offerings_unique'
             );
         });
+        }
     }
 
     public function down(): void

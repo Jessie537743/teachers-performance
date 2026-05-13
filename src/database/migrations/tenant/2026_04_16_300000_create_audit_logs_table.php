@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('audit_logs')) {
         Schema::create('audit_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
@@ -25,6 +26,7 @@ return new class extends Migration
 
             $table->index(['model_type', 'model_id']);
         });
+        }
     }
 
     public function down(): void

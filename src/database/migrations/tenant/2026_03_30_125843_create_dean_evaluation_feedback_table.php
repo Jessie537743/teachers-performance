@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('dean_evaluation_feedback')) {
         Schema::create('dean_evaluation_feedback', function (Blueprint $table) {
             $table->id();
             $table->foreignId('dean_user_id')->constrained('users')->cascadeOnDelete();
@@ -23,6 +24,7 @@ return new class extends Migration
 
             $table->unique(['dean_user_id', 'faculty_id', 'semester', 'school_year'], 'dean_eval_feedback_unique');
         });
+        }
     }
 
     public function down(): void

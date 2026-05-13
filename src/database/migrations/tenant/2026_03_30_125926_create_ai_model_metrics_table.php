@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('ai_model_metrics')) {
         Schema::create('ai_model_metrics', function (Blueprint $table) {
             $table->id();
             $table->string('model_name', 100);
@@ -22,6 +23,7 @@ return new class extends Migration
             $table->string('model_version', 50)->nullable();
             $table->dateTime('training_date');
         });
+        }
     }
 
     public function down(): void

@@ -8,6 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasColumn('subjects', 'is_active')) {
+            return;
+        }
         Schema::table('subjects', function (Blueprint $table) {
             $table->boolean('is_active')->default(true)->after('school_year');
         });

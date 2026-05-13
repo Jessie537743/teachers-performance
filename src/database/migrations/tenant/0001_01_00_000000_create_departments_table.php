@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('departments')) {
         Schema::create('departments', function (Blueprint $table) {
             $table->id();
             $table->string('code', 50)->unique();
@@ -16,6 +17,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
+        }
     }
 
     public function down(): void

@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('sentiment_lexicon')) {
         Schema::create('sentiment_lexicon', function (Blueprint $table) {
             $table->id();
             $table->string('word', 191);
@@ -19,6 +20,7 @@ return new class extends Migration
             $table->unique('word');
             $table->index(['polarity', 'is_active']);
         });
+        }
     }
 
     public function down(): void

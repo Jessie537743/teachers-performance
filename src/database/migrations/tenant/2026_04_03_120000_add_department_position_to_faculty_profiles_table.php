@@ -8,6 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasColumn('faculty_profiles', 'department_position')) {
+            return;
+        }
         Schema::table('faculty_profiles', function (Blueprint $table) {
             $table->string('department_position', 40)
                 ->default('faculty')

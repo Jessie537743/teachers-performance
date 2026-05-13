@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('evaluation_periods')) {
         Schema::create('evaluation_periods', function (Blueprint $table) {
             $table->id();
             $table->string('school_year', 20);
@@ -19,6 +20,7 @@ return new class extends Migration
 
             $table->unique(['school_year', 'semester']);
         });
+        }
     }
 
     public function down(): void

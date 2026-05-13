@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('faculty_peer_evaluation_answers')) {
         Schema::create('faculty_peer_evaluation_answers', function (Blueprint $table) {
             $table->id();
             $table->foreignId('evaluator_faculty_id')->constrained('faculty_profiles')->cascadeOnDelete();
@@ -25,6 +26,7 @@ return new class extends Migration
                 'faculty_peer_eval_answers_unique'
             );
         });
+        }
     }
 
     public function down(): void

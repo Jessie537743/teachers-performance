@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('peer_evaluation_results')) {
         Schema::create('peer_evaluation_results', function (Blueprint $table) {
             $table->id();
             $table->integer('faculty_id');
@@ -19,6 +20,7 @@ return new class extends Migration
             $table->string('performance_level', 100);
             $table->timestamp('created_at')->nullable();
         });
+        }
     }
 
     public function down(): void

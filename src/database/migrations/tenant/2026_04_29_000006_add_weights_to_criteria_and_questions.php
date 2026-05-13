@@ -22,13 +22,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('criteria', function (Blueprint $table) {
-            $table->decimal('weight', 5, 2)->default(0)->after('name');
-        });
+        if (!Schema::hasColumn('criteria', 'weight')) {
+            Schema::table('criteria', function (Blueprint $table) {
+                $table->decimal('weight', 5, 2)->default(0)->after('name');
+            });
+        }
 
-        Schema::table('questions', function (Blueprint $table) {
-            $table->decimal('weight', 5, 2)->default(0)->after('question_text');
-        });
+        if (!Schema::hasColumn('questions', 'weight')) {
+            Schema::table('questions', function (Blueprint $table) {
+                $table->decimal('weight', 5, 2)->default(0)->after('question_text');
+            });
+        }
 
         // Backfill: equal-share defaults so existing reports stay numerically identical.
         $criteriaCount = DB::table('criteria')->count();

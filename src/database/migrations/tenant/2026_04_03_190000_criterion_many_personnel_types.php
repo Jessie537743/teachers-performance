@@ -9,23 +9,29 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('criterion_personnel_types', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('criterion_id')->constrained('criteria')->cascadeOnDelete();
-            $table->string('personnel_type', 32);
-            $table->unique(['criterion_id', 'personnel_type']);
-        });
-
-        foreach (DB::table('criteria')->select('id', 'personnel_type')->get() as $row) {
-            DB::table('criterion_personnel_types')->insert([
-                'criterion_id'    => $row->id,
-                'personnel_type' => $row->personnel_type,
-            ]);
+        if (!Schema::hasTable('criterion_personnel_types')) {
+            Schema::create('criterion_personnel_types', function (Blueprint $table) {
+                $table->id();
+                $table->foreignId('criterion_id')->constrained('criteria')->cascadeOnDelete();
+                $table->string('personnel_type', 32);
+                $table->unique(['criterion_id', 'personnel_type']);
+            });
         }
 
-        Schema::table('criteria', function (Blueprint $table) {
-            $table->dropColumn('personnel_type');
-        });
+        // Self-heal: only backfill + drop while the source column exists.
+        // Re-running after a successful first run is then a no-op.
+        if (Schema::hasColumn('criteria', 'personnel_type')) {
+            foreach (DB::table('criteria')->select('id', 'personnel_type')->get() as $row) {
+                DB::table('criterion_personnel_types')->insertOrIgnore([
+                    'criterion_id'   => $row->id,
+                    'personnel_type' => $row->personnel_type,
+                ]);
+            }
+
+            Schema::table('criteria', function (Blueprint $table) {
+                $table->dropColumn('personnel_type');
+            });
+        }
     }
 
     public function down(): void

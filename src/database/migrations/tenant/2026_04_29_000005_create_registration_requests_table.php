@@ -17,6 +17,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('registration_requests')) {
         Schema::create('registration_requests', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('kind', 16);                 // student | personnel
@@ -36,6 +37,7 @@ return new class extends Migration
             $table->unique(['email', 'status'], 'reg_req_email_status_uq');
             $table->index(['kind', 'status']);
         });
+        }
     }
 
     public function down(): void

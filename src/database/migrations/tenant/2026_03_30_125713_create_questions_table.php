@@ -8,11 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('questions')) {
         Schema::create('questions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('criteria_id')->constrained('criteria')->cascadeOnDelete();
             $table->text('question_text');
         });
+        }
     }
 
     public function down(): void

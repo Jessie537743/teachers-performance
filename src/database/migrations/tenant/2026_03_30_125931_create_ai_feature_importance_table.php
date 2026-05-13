@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('ai_feature_importance')) {
         Schema::create('ai_feature_importance', function (Blueprint $table) {
             $table->id();
             $table->string('model_name', 100)->nullable();
@@ -17,6 +18,7 @@ return new class extends Migration
             $table->string('school_year', 20)->nullable();
             $table->dateTime('recorded_date');
         });
+        }
     }
 
     public function down(): void

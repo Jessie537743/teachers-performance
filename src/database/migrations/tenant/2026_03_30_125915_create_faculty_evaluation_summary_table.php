@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('faculty_evaluation_summary')) {
         Schema::create('faculty_evaluation_summary', function (Blueprint $table) {
             $table->id();
             $table->integer('faculty_id');
@@ -20,6 +21,7 @@ return new class extends Migration
             $table->decimal('improvement_rate', 5, 2)->default(0);
             $table->dateTime('evaluation_date');
         });
+        }
     }
 
     public function down(): void

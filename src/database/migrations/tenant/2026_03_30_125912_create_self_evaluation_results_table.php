@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('self_evaluation_results')) {
         Schema::create('self_evaluation_results', function (Blueprint $table) {
             $table->id();
             $table->integer('faculty_id');
@@ -18,6 +19,7 @@ return new class extends Migration
             $table->string('performance_level', 100);
             $table->timestamp('created_at')->nullable();
         });
+        }
     }
 
     public function down(): void

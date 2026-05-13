@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('student_subject_assignments')) {
         Schema::create('student_subject_assignments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('student_profile_id')->constrained('student_profiles')->cascadeOnDelete();
@@ -16,6 +17,7 @@ return new class extends Migration
 
             $table->unique(['student_profile_id', 'subject_id']);
         });
+        }
     }
 
     public function down(): void

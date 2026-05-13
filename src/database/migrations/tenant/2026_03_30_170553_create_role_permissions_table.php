@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasTable('role_permissions')) {
         Schema::create('role_permissions', function (Blueprint $table) {
             $table->id();
             $table->string('role', 50);
@@ -19,6 +20,7 @@ return new class extends Migration
             $table->unique(['role', 'permission']);
             $table->index('role');
         });
+        }
     }
 
     /**

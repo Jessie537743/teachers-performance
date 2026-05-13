@@ -17,6 +17,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('api_integrations')) {
         Schema::create('api_integrations', function (Blueprint $table) {
             $table->id();
             $table->string('name', 120)->default('External System');
@@ -42,6 +43,7 @@ return new class extends Migration
 
             $table->timestamps();
         });
+        }
 
         // external_id columns on the four target tables.
         // Nullable + indexed so local records (created via the UI) coexist

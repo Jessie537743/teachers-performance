@@ -8,11 +8,13 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('subject_assignments')) {
         Schema::create('subject_assignments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('subject_id')->nullable()->constrained('subjects')->nullOnDelete();
             $table->foreignId('faculty_id')->nullable()->constrained('faculty_profiles')->nullOnDelete();
         });
+        }
     }
 
     public function down(): void

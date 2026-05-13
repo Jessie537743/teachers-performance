@@ -8,12 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('criteria')) {
         Schema::create('criteria', function (Blueprint $table) {
             $table->id();
             $table->string('name', 255);
             $table->enum('personnel_type', ['teaching', 'non-teaching'])->default('teaching');
             $table->enum('evaluator_group', ['student', 'dean', 'self', 'peer'])->default('student');
         });
+        }
     }
 
     public function down(): void

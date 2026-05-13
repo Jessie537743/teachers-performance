@@ -16,6 +16,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('signatures')) {
         Schema::create('signatures', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('user_id');
@@ -28,6 +29,7 @@ return new class extends Migration
             $table->unique('user_id');
             $table->index('is_signatory');
         });
+        }
     }
 
     public function down(): void

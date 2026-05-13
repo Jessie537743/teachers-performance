@@ -8,6 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasColumn('self_evaluation_results', 'comment')) {
+            return;
+        }
         Schema::table('self_evaluation_results', function (Blueprint $table) {
             $table->text('comment')->nullable()->after('performance_level');
         });

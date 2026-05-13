@@ -14,6 +14,7 @@ return new class extends Migration
     {
         Schema::dropIfExists('permission_delegations');
 
+        if (!Schema::hasTable('permission_delegations')) {
         Schema::create('permission_delegations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('delegator_id')->constrained('users')->cascadeOnDelete();
@@ -27,6 +28,7 @@ return new class extends Migration
             $table->index(['delegatee_id', 'revoked_at']);
             $table->index(['delegator_id', 'revoked_at']);
         });
+        }
     }
 
     public function down(): void

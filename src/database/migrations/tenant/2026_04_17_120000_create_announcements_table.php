@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('announcements')) {
         Schema::create('announcements', function (Blueprint $table) {
             $table->id();
             $table->string('title', 200);
@@ -28,6 +29,7 @@ return new class extends Migration
             $table->index(['show_on_login', 'status'], 'ann_login_idx');
             $table->index(['is_pinned', 'publish_at'], 'ann_order_idx');
         });
+        }
     }
 
     public function down(): void

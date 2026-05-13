@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('subjects')) {
         Schema::create('subjects', function (Blueprint $table) {
             $table->id();
             $table->string('code', 100)->nullable();
@@ -22,6 +23,7 @@ return new class extends Migration
 
             $table->unique(['code', 'department_id', 'course', 'year_level', 'semester', 'school_year'], 'subjects_unique');
         });
+        }
     }
 
     public function down(): void

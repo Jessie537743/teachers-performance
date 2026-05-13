@@ -18,6 +18,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('feedback_ai_suggestions')) {
         Schema::create('feedback_ai_suggestions', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('comment_hash', 64);
@@ -34,6 +35,7 @@ return new class extends Migration
             $table->unique(['comment_hash', 'variant_seed'], 'feedback_ai_suggestions_hash_seed_uq');
             $table->index('polarity');
         });
+        }
     }
 
     public function down(): void

@@ -8,6 +8,9 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasColumn('faculty_profiles', 'account_comment')) {
+            return;
+        }
         Schema::table('faculty_profiles', function (Blueprint $table) {
             $table->text('account_comment')->nullable()->after('department_position');
         });

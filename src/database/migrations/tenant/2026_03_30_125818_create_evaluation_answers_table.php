@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('evaluation_answers')) {
         Schema::create('evaluation_answers', function (Blueprint $table) {
             $table->id();
             $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
@@ -17,6 +18,7 @@ return new class extends Migration
             $table->tinyInteger('rating');
             $table->timestamp('created_at')->nullable();
         });
+        }
     }
 
     public function down(): void

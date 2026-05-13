@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('faculty_predictions')) {
         Schema::create('faculty_predictions', function (Blueprint $table) {
             $table->id();
             $table->integer('faculty_id');
@@ -21,6 +22,7 @@ return new class extends Migration
             $table->string('model_used', 50)->default('Random Forest');
             $table->dateTime('prediction_date');
         });
+        }
     }
 
     public function down(): void

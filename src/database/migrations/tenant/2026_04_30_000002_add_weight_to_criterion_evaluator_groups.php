@@ -17,9 +17,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('criterion_evaluator_groups', function (Blueprint $table) {
-            $table->decimal('weight', 5, 2)->nullable()->after('evaluator_group');
-        });
+        if (!Schema::hasColumn('criterion_evaluator_groups', 'weight')) {
+            Schema::table('criterion_evaluator_groups', function (Blueprint $table) {
+                $table->decimal('weight', 5, 2)->nullable()->after('evaluator_group');
+            });
+        }
 
         DB::table('criterion_evaluator_groups')
             ->whereNull('weight')

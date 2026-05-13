@@ -8,12 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('faculty_profiles')) {
         Schema::create('faculty_profiles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->unique()->constrained('users')->cascadeOnDelete();
             $table->foreignId('department_id')->nullable()->constrained('departments')->nullOnDelete();
             $table->timestamp('created_at')->nullable();
         });
+        }
     }
 
     public function down(): void
