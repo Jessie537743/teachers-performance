@@ -13,6 +13,7 @@ class Department extends Model
     use HasFactory;
 
     protected $fillable = [
+        'external_id',
         'code',
         'name',
         'department_type',

@@ -46,6 +46,7 @@ class Permission
     const MANAGE_SETTINGS = 'manage-settings';
     const MANAGE_ROLES = 'manage-roles';
     const VIEW_USERS = 'view-users';
+    const MANAGE_INTEGRATIONS = 'manage-integrations';
 
     // Announcements
     const MANAGE_ANNOUNCEMENTS_SYSTEM     = 'manage-announcements-system';
@@ -101,9 +102,10 @@ class Permission
                 self::MANAGE_STUDENTS    => 'Manage Students',
             ],
             'Settings' => [
-                self::MANAGE_SETTINGS => 'Manage Settings',
-                self::MANAGE_ROLES    => 'Manage Roles & Permissions',
-                self::VIEW_USERS      => 'View All Users',
+                self::MANAGE_SETTINGS     => 'Manage Settings',
+                self::MANAGE_ROLES        => 'Manage Roles & Permissions',
+                self::VIEW_USERS          => 'View All Users',
+                self::MANAGE_INTEGRATIONS => 'Manage API Integrations',
             ],
             'Announcements' => [
                 self::MANAGE_ANNOUNCEMENTS_SYSTEM     => 'Manage System-Wide Announcements',
@@ -166,6 +168,7 @@ class Permission
                 self::PRINT_OR_GENERATE_COMMENT,
                 self::MONITOR_NOT_EVALUATED,
                 self::MANAGE_ANNOUNCEMENTS_SYSTEM,
+                self::MANAGE_INTEGRATIONS,
             ],
             'dean', 'head' => [
                 self::VIEW_DEAN_DASHBOARD,

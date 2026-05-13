@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Course extends Model
 {
     protected $fillable = [
+        'external_id',
         'course_code',
         'course_name',
         'department_id',

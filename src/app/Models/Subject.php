@@ -11,6 +11,7 @@ class Subject extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'external_id',
         'code',
         'title',
         'department_id',

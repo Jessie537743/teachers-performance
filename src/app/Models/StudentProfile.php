@@ -11,6 +11,7 @@ class StudentProfile extends Model
     public $timestamps = false;
 
     protected $fillable = [
+        'external_id',
         'user_id',
         'student_id',
         'department_id',

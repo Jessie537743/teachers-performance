@@ -247,6 +247,13 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     // AI Model Training (admin + dean)
     Route::get('/model-training', [Admin\ModelTrainingController::class, 'index'])->name('model-training.index');
     Route::post('/model-training/train', [Admin\ModelTrainingController::class, 'train'])->name('model-training.train');
+
+    // API Integration — external systems feed Students / Departments / Subjects / Courses
+    Route::get   ('/api-integration',                 [Admin\ApiIntegrationController::class, 'index'])  ->name('api-integration.index');
+    Route::put   ('/api-integration',                 [Admin\ApiIntegrationController::class, 'update']) ->name('api-integration.update');
+    Route::post  ('/api-integration/test',            [Admin\ApiIntegrationController::class, 'test'])   ->name('api-integration.test');
+    Route::post  ('/api-integration/sync/{resource}', [Admin\ApiIntegrationController::class, 'sync'])   ->name('api-integration.sync');
+    Route::delete('/api-integration',                 [Admin\ApiIntegrationController::class, 'destroy'])->name('api-integration.destroy');
 });
 
 require __DIR__.'/auth.php';
