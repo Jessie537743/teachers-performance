@@ -50,13 +50,24 @@ class TenantController extends Controller
             ->all();
 
         $stats = [
-            'total'              => array_sum($statusCounts),
-            'active'             => $statusCounts['active'] ?? 0,
-            'pending_activation' => $statusCounts['pending_activation'] ?? 0,
-            'awaiting_payment'   => $statusCounts['awaiting_payment'] ?? 0,
-            'failed'             => $statusCounts['failed'] ?? 0,
-            'suspended'          => $statusCounts['suspended'] ?? 0,
+            'total'               => array_sum($statusCounts),
+            'active'              => $statusCounts['active'] ?? 0,
+            'awaiting_activation' => $statusCounts['awaiting_activation'] ?? 0,
+            'pending_activation'  => $statusCounts['pending_activation'] ?? 0,
+            'awaiting_payment'    => $statusCounts['awaiting_payment'] ?? 0,
+            'failed'              => $statusCounts['failed'] ?? 0,
+            'suspended'           => $statusCounts['suspended'] ?? 0,
         ];
+
+        // Preview count for the "Purge zombies" action. Recomputed on every
+        // page load so the button stays accurate as the table changes.
+        // Includes awaiting_activation because those are the new
+        // "signed-up-but-never-activated" rows from the deferred flow.
+        $zombieCount = Tenant::query()
+            ->whereIn('status', ['provisioning', 'failed', 'pending_activation', 'awaiting_activation'])
+            ->where('created_at', '<', now()->subDays(7))
+            ->whereDoesntHave('activationCodes', fn ($q) => $q->where('status', 'redeemed'))
+            ->count();
 
         return view('super-admin.tenants.index', [
             'tenants'      => $tenants,
@@ -65,6 +76,7 @@ class TenantController extends Controller
             'planFilter'   => $plan ?? null,
             'statusFilter' => $status ?? null,
             'search'       => $search,
+            'zombieCount'  => $zombieCount,
         ]);
     }
 
@@ -259,6 +271,80 @@ class TenantController extends Controller
 
         return redirect()->route('admin.tenants.index')
             ->with('status', "{$name} and its database have been removed.");
+    }
+
+    /**
+     * Bulk-cleanup zombie tenants: those with status in
+     * {provisioning, failed, pending_activation}, older than the configured
+     * grace period, and without a redeemed activation code. Each one gets the
+     * same treatment as destroy() — cascade child rows, drop the per-tenant DB,
+     * delete the row.
+     *
+     * Two-step UX: `?dry_run=1` returns a preview count; the POST without
+     * `dry_run` actually performs the cleanup. The view's confirmation modal
+     * uses the preview number to ask "Type PURGE to confirm".
+     */
+    public function purgeZombies(Request $request): RedirectResponse
+    {
+        // Typed confirmation guard — same safety pattern as destroy().
+        $confirmation = trim((string) $request->input('confirm', ''));
+        if (strcasecmp($confirmation, 'PURGE') !== 0) {
+            return redirect()->route('admin.tenants.index')
+                ->with('error', 'Cleanup aborted: confirmation phrase did not match.');
+        }
+
+        $minAgeDays = (int) $request->input('min_age_days', 7);
+        if ($minAgeDays < 1) {
+            $minAgeDays = 1;
+        }
+
+        $cutoff = now()->subDays($minAgeDays);
+
+        $victims = Tenant::query()
+            ->whereIn('status', ['provisioning', 'failed', 'pending_activation', 'awaiting_activation'])
+            ->where('created_at', '<', $cutoff)
+            ->whereDoesntHave('activationCodes', fn ($q) => $q->where('status', 'redeemed'))
+            ->get();
+
+        $removed = 0;
+        $errors  = [];
+
+        foreach ($victims as $tenant) {
+            try {
+                $this->dropTenantDatabase($tenant);
+                $tenant->provisioningJobs()->delete();
+                $tenant->activationCodes()->delete();
+                $tenant->subscriptions()->delete();
+                $tenant->domains()->delete();
+                $tenant->delete();
+                $removed++;
+            } catch (\Throwable $e) {
+                $errors[] = "tenant {$tenant->id}: {$e->getMessage()}";
+                Log::error('Tenant purge failed for one row', [
+                    'tenant_id' => $tenant->id,
+                    'error'     => $e->getMessage(),
+                ]);
+            }
+        }
+
+        Log::info('Tenant zombie purge complete', [
+            'removed'      => $removed,
+            'attempted'    => $victims->count(),
+            'errors_count' => count($errors),
+            'min_age_days' => $minAgeDays,
+            'actor_id'     => optional($request->user())->id,
+        ]);
+
+        $message = "Removed {$removed} zombie tenant"
+            . ($removed === 1 ? '' : 's')
+            . " (older than {$minAgeDays} days).";
+
+        if ($errors) {
+            $message .= ' ' . count($errors) . ' errored — see logs.';
+            return redirect()->route('admin.tenants.index')->with('error', $message);
+        }
+
+        return redirect()->route('admin.tenants.index')->with('status', $message);
     }
 
     /**

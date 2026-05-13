@@ -19,6 +19,9 @@ Route::middleware('auth:super_admin')->group(function () {
     Route::get('/tenants', [TenantController::class, 'index'])->name('admin.tenants.index');
     Route::get('/tenants/create', [TenantController::class, 'create'])->name('admin.tenants.create');
     Route::post('/tenants', [TenantController::class, 'store'])->name('admin.tenants.store');
+    // Bulk-cleanup zombie tenants (non-active + old + never-redeemed). Form posts
+    // a typed-confirmation phrase; controller cascades children + drops per-tenant DBs.
+    Route::post('/tenants/purge-zombies', [TenantController::class, 'purgeZombies'])->name('admin.tenants.purge-zombies');
     Route::get('/tenants/{tenant}', [TenantController::class, 'show'])->name('admin.tenants.show');
     Route::post('/tenants/{tenant}/suspend', [TenantController::class, 'suspend'])->name('admin.tenants.suspend');
     Route::post('/tenants/{tenant}/resume', [TenantController::class, 'resume'])->name('admin.tenants.resume');

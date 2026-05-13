@@ -4,16 +4,101 @@
 ])
 
 @section('content')
+{{-- Flash messages --}}
+@if (session('status'))
+    <div class="mb-4 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700">
+        {{ session('status') }}
+    </div>
+@endif
+@if (session('error'))
+    <div class="mb-4 rounded-xl bg-rose-50 border border-rose-200 px-4 py-3 text-sm text-rose-700">
+        {{ session('error') }}
+    </div>
+@endif
+
+{{-- Zombie cleanup banner: only renders when there's something to clean. --}}
+@if (($zombieCount ?? 0) > 0)
+<div class="mb-5 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3.5 flex items-start gap-3 flex-wrap">
+    <div class="flex-1 min-w-[260px]">
+        <div class="flex items-center gap-2">
+            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+            <strong class="text-amber-900">Zombie tenants detected</strong>
+        </div>
+        <p class="text-sm text-amber-800 mt-1">
+            <strong>{{ $zombieCount }}</strong> tenants are stuck in
+            <code class="bg-white border border-amber-200 rounded px-1.5 py-0.5 text-xs">provisioning</code>,
+            <code class="bg-white border border-amber-200 rounded px-1.5 py-0.5 text-xs">failed</code>, or
+            <code class="bg-white border border-amber-200 rounded px-1.5 py-0.5 text-xs">pending_activation</code>,
+            older than 7 days, with no redeemed activation code. Almost certainly abandoned signups or bot submissions.
+        </p>
+        <p class="text-xs text-amber-700 mt-1">This will cascade-delete each tenant's child rows and drop the per-tenant MySQL database. <strong>Cannot be undone.</strong></p>
+    </div>
+    <button type="button"
+        onclick="document.getElementById('purgeZombiesModal').classList.remove('hidden')"
+        class="inline-flex items-center gap-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold px-4 py-2.5">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+        Purge zombies
+    </button>
+</div>
+
+{{-- Confirmation modal (hidden by default). Form posts to purge-zombies. --}}
+<div id="purgeZombiesModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md ring-1 ring-slate-200">
+        <div class="px-5 py-4 border-b border-slate-200 flex items-center gap-3">
+            <span class="w-9 h-9 rounded-full bg-rose-100 text-rose-600 grid place-items-center">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/></svg>
+            </span>
+            <div>
+                <h3 class="font-bold text-slate-900">Confirm zombie purge</h3>
+                <p class="text-xs text-slate-500">This removes {{ $zombieCount }} tenants and their databases.</p>
+            </div>
+        </div>
+        <form method="POST" action="{{ route('admin.tenants.purge-zombies') }}" class="p-5 space-y-4">
+            @csrf
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wider">Minimum age (days)</label>
+                <input type="number" name="min_age_days" value="7" min="1" max="365"
+                    class="w-32 rounded-lg border-slate-300 text-sm focus:border-brand-500 focus:ring-brand-500/30">
+                <p class="text-xs text-slate-500 mt-1">Only tenants created more than this many days ago are eligible.</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-600 mb-1.5 uppercase tracking-wider">
+                    Type <span class="font-mono text-rose-600">PURGE</span> to confirm
+                </label>
+                <input type="text" name="confirm" autocomplete="off" required
+                    placeholder="PURGE"
+                    class="w-full rounded-lg border-slate-300 font-mono text-sm focus:border-rose-500 focus:ring-rose-500/30">
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button"
+                    onclick="document.getElementById('purgeZombiesModal').classList.add('hidden')"
+                    class="px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-100">
+                    Cancel
+                </button>
+                <button type="submit"
+                    class="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-sm font-semibold">
+                    Yes, purge {{ $zombieCount }} tenants
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+@endif
+
 {{-- KPI cards --}}
-<div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3 mb-8">
+<div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-3 mb-8">
     @php
         $kpis = [
-            ['label' => 'Total schools',  'value' => $stats['total'],              'tone' => 'slate',   'href' => route('admin.tenants.index')],
-            ['label' => 'Active',         'value' => $stats['active'],             'tone' => 'emerald', 'href' => route('admin.tenants.index', ['status' => 'active'])],
-            ['label' => 'Pending',        'value' => $stats['pending_activation'], 'tone' => 'amber',   'href' => route('admin.tenants.index', ['status' => 'pending_activation'])],
-            ['label' => 'Awaiting pay',   'value' => $stats['awaiting_payment'],   'tone' => 'indigo',  'href' => route('admin.tenants.index', ['status' => 'awaiting_payment'])],
-            ['label' => 'Suspended',      'value' => $stats['suspended'],          'tone' => 'slate',   'href' => route('admin.tenants.index', ['status' => 'suspended'])],
-            ['label' => 'Failed',         'value' => $stats['failed'],             'tone' => 'rose',    'href' => route('admin.tenants.index', ['status' => 'failed'])],
+            ['label' => 'Total schools',     'value' => $stats['total'],               'tone' => 'slate',   'href' => route('admin.tenants.index')],
+            ['label' => 'Active',            'value' => $stats['active'],              'tone' => 'emerald', 'href' => route('admin.tenants.index', ['status' => 'active'])],
+            ['label' => 'Awaiting act.',     'value' => $stats['awaiting_activation'] ?? 0, 'tone' => 'amber', 'href' => route('admin.tenants.index', ['status' => 'awaiting_activation'])],
+            ['label' => 'Pending',           'value' => $stats['pending_activation'],  'tone' => 'amber',   'href' => route('admin.tenants.index', ['status' => 'pending_activation'])],
+            ['label' => 'Awaiting pay',      'value' => $stats['awaiting_payment'],    'tone' => 'indigo',  'href' => route('admin.tenants.index', ['status' => 'awaiting_payment'])],
+            ['label' => 'Suspended',         'value' => $stats['suspended'],           'tone' => 'slate',   'href' => route('admin.tenants.index', ['status' => 'suspended'])],
+            ['label' => 'Failed',            'value' => $stats['failed'],              'tone' => 'rose',    'href' => route('admin.tenants.index', ['status' => 'failed'])],
         ];
         $tones = [
             'slate'   => ['ring' => 'ring-slate-200',   'icon' => 'bg-slate-100   text-slate-700'],
@@ -52,7 +137,7 @@
 
         <select name="status" class="rounded-lg border-slate-300 text-sm focus:border-brand-500 focus:ring-brand-500/30">
             <option value="">All statuses</option>
-            @foreach (['active', 'pending_activation', 'awaiting_payment', 'provisioning', 'suspended', 'failed'] as $s)
+            @foreach (['active', 'awaiting_activation', 'pending_activation', 'awaiting_payment', 'provisioning', 'suspended', 'failed'] as $s)
                 <option value="{{ $s }}" @selected($statusFilter === $s)>{{ str_replace('_', ' ', $s) }}</option>
             @endforeach
         </select>
@@ -88,13 +173,14 @@
                             default      => 'bg-slate-100 text-slate-700 ring-slate-200',
                         };
                         $statusColor = match($tenant->status) {
-                            'active'             => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-                            'provisioning'       => 'bg-amber-50 text-amber-700 ring-amber-200',
-                            'pending_activation' => 'bg-amber-50 text-amber-700 ring-amber-200',
-                            'awaiting_payment'   => 'bg-indigo-50 text-indigo-700 ring-indigo-200',
-                            'suspended'          => 'bg-slate-100 text-slate-700 ring-slate-200',
-                            'failed'             => 'bg-rose-50 text-rose-700 ring-rose-200',
-                            default              => 'bg-slate-100 text-slate-700 ring-slate-200',
+                            'active'              => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+                            'provisioning'        => 'bg-amber-50 text-amber-700 ring-amber-200',
+                            'pending_activation'  => 'bg-amber-50 text-amber-700 ring-amber-200',
+                            'awaiting_activation' => 'bg-yellow-50 text-yellow-700 ring-yellow-200',
+                            'awaiting_payment'    => 'bg-indigo-50 text-indigo-700 ring-indigo-200',
+                            'suspended'           => 'bg-slate-100 text-slate-700 ring-slate-200',
+                            'failed'              => 'bg-rose-50 text-rose-700 ring-rose-200',
+                            default               => 'bg-slate-100 text-slate-700 ring-slate-200',
                         };
                     @endphp
                     <tr class="hover:bg-slate-50/60 transition">

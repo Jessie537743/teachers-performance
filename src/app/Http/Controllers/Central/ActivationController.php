@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Central;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProvisionTenantJob;
 use App\Models\ActivationCode;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class ActivationController extends Controller
@@ -69,12 +71,54 @@ class ActivationController extends Controller
         }
 
         $tenant = $code->tenant;
-        if ($tenant->status !== 'pending_activation') {
+
+        // Two valid entry states:
+        //   awaiting_activation → self-service signup, DB not yet provisioned. We
+        //                         provision below, then create the admin user.
+        //   pending_activation  → super-admin manually onboarded; DB already exists.
+        //                         Skip straight to admin user creation.
+        if (! in_array($tenant->status, ['awaiting_activation', 'pending_activation'], true)) {
             return back()
                 ->withInput($request->only('code'))
                 ->withErrors([
                     'code' => "This school's status is '{$tenant->status}' — activation is no longer accepted.",
                 ]);
+        }
+
+        // If this is a deferred self-service signup, do the heavy work now
+        // (creates the per-tenant DB, runs ~80 migrations, seeds template
+        // data). On failure, leave the tenant in `awaiting_activation` so
+        // the user can click the email link again to retry without losing
+        // their code.
+        if ($tenant->status === 'awaiting_activation') {
+            // Lock in the final database name now that we know the tenant id.
+            // The signup flow stored a placeholder; replace it before
+            // ProvisionTenantJob reads it.
+            if (! str_starts_with((string) $tenant->getAttribute('database'), 'tenant_' . $tenant->id)) {
+                $tenant->update(['database' => 'tenant_' . $tenant->id]);
+                $tenant->refresh();
+            }
+
+            $tenant->update(['status' => 'provisioning']);
+
+            try {
+                (new ProvisionTenantJob($tenant))->handle();
+            } catch (\Throwable $e) {
+                // Roll back the status flag so a retry from the email link
+                // hits the same code path cleanly. Don't delete the tenant
+                // row — the activation code is still valid and we want the
+                // user to be able to retry without re-paying.
+                Log::error('Deferred provisioning failed at activation', [
+                    'tenant_id' => $tenant->id,
+                    'error'     => $e->getMessage(),
+                ]);
+                $tenant->update(['status' => 'awaiting_activation']);
+                return back()
+                    ->withInput($request->only('code'))
+                    ->withErrors([
+                        'code' => 'We hit a snag setting up your school. Please try the activation link again in a minute. If it keeps failing, contact support.',
+                    ]);
+            }
         }
 
         tenancy()->initialize($tenant);

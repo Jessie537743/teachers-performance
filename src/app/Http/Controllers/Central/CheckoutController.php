@@ -71,29 +71,29 @@ class CheckoutController extends Controller
                 ->withErrors(['card_number' => 'Your card was declined. Try a different card.']);
         }
 
+        // Deferred-provisioning flow: we DO NOT create the tenant database
+        // here. The row is parked in `awaiting_activation` so a bot signup
+        // (or a real prospect who never clicks the email link) costs us only
+        // a single central row, not 80 migrations + a per-tenant schema.
+        //
+        // Heavy provisioning happens in ActivationController::submit() once
+        // the user has proven intent by clicking the email link and posting
+        // a valid activation code.
         $tenant = Tenant::create([
             'name'      => $data['name'],
             'subdomain' => strtolower($data['subdomain']),
-            'database'  => 'tenant_' . Str::random(8),
-            'status'    => 'provisioning',
+            'database'  => 'tenant_pending_' . Str::random(8), // placeholder; finalized on activation
+            'status'    => 'awaiting_activation',
             'plan'      => $data['plan'],
         ]);
 
         $tenant->domains()->create(['domain' => strtolower($data['subdomain'])]);
-        $tenant->update(['database' => 'tenant_' . $tenant->id]);
-        $tenant->refresh();
+        // The final per-tenant DB name is locked to the tenant's id at
+        // activation time. The placeholder above ensures the `database`
+        // column is never empty (the column is NOT NULL).
 
-        try {
-            (new ProvisionTenantJob($tenant))->handle();
-        } catch (\Throwable $e) {
-            return back()
-                ->withInput($request->except(['card_number', 'card_cvc']))
-                ->withErrors(['name' => 'Provisioning failed: ' . $e->getMessage()]);
-        }
-
-        $tenant->update(['status' => 'pending_activation']);
-
-        // Start the recurring subscription (records first paid period + next_charge_at).
+        // Subscription record is still created so finance has a paper trail
+        // for the payment we just simulated. No DB needed for this.
         $billing->startSubscription($tenant, $data['billing_cycle']);
 
         $code = ActivationCode::create([

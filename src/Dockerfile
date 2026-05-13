@@ -206,8 +206,12 @@ if [ "${RUN_MIGRATIONS:-true}" = "true" ] && [ -n "${DB_HOST:-}" ]; then
         || echo "[entrypoint] WARNING: Central seeder failed — check logs above."
 
     if [ "${RUN_TENANT_MIGRATIONS:-true}" = "true" ]; then
-        echo "[entrypoint] Running tenant migrations across all tenants..."
-        php artisan tenants:migrate --force
+        echo "[entrypoint] Running tenant migrations across provisioned tenants..."
+        # Custom wrapper that filters out tenants whose per-tenant DB isn't
+        # provisioned yet (status = awaiting_activation). Required since the
+        # deferred-provisioning flow lets tenant rows exist before their
+        # databases do; stancl's raw tenants:migrate would crash on those.
+        php artisan tenants:migrate-provisioned --force
     fi
 fi
 

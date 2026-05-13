@@ -26,3 +26,12 @@ Artisan::command('evaluation:process-ended-periods', function (): void {
     ->dailyAt('03:00')
     ->withoutOverlapping()
     ->onOneServer();
+
+// Stale signup cleanup — runs weekly. Removes tenant rows that signed up via
+// /subscribe but never redeemed their activation code within 7 days. These
+// rows have no per-tenant database (status = awaiting_activation), so this
+// is a simple row delete with no DB drops.
+\Illuminate\Support\Facades\Schedule::command('tenants:expire-awaiting --days=7')
+    ->weeklyOn(0, '04:00')   // every Sunday at 04:00
+    ->withoutOverlapping()
+    ->onOneServer();
