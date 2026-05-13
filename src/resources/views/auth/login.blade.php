@@ -239,7 +239,7 @@
                 </form>
 
                 <div class="mt-4 flex items-center justify-between gap-3" style="animation: fadeInUp 0.5s ease-out 0.65s both;">
-                    <a href="{{ route('forgot-password.form') }}" class="text-sm text-blue-600 hover:text-blue-800 font-medium transition">Forgot Password?</a>
+                    <a href="{{ route('password.request') }}" class="text-sm text-blue-600 hover:text-blue-800 font-medium transition">Forgot Password?</a>
                     <a href="{{ route('register.show') }}" class="text-sm text-blue-600 hover:text-blue-800 font-medium transition">Don't have an account? Register</a>
                 </div>
 

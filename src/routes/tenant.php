@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\Auth\ChangePasswordController;
-use App\Http\Controllers\Auth\ForgotPasswordRequestController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\DashboardController;
@@ -25,13 +24,10 @@ Route::middleware([
 // Root: redirect unauthenticated visitors to the login page
 Route::get('/', fn() => redirect()->route('login'));
 
-// Forgot Password Request (guest)
+// Guest registration (Dean approves students, Admin approves personnel).
+// The legacy /forgot-password-request verify-identity flow has been replaced
+// by Laravel's built-in email-link reset (see routes/auth.php).
 Route::middleware('guest')->group(function () {
-    Route::get('/forgot-password-request', [ForgotPasswordRequestController::class, 'showForm'])->name('forgot-password.form');
-    Route::post('/forgot-password-request/verify', [ForgotPasswordRequestController::class, 'verify'])->name('forgot-password.verify');
-    Route::post('/forgot-password-request/submit', [ForgotPasswordRequestController::class, 'submit'])->name('forgot-password.submit');
-
-    // Self-service registration — Dean approves students, Admin approves personnel
     Route::get('/register', [\App\Http\Controllers\Auth\RegistrationController::class, 'show'])->name('register.show');
     Route::post('/register', [\App\Http\Controllers\Auth\RegistrationController::class, 'store'])
         ->middleware('throttle:5,1')
