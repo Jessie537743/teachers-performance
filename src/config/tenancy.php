@@ -54,6 +54,13 @@ return [
             'local'  => '%storage_path%/app/',
             'public' => '%storage_path%/app/public/',
         ],
+        // Do NOT rewrite Laravel's asset() helper to prepend `/tenant{id}/`.
+        // All static JS/CSS/images live under public/ and are identical
+        // across tenants. Leaving this on causes URLs like
+        // /tenant1/js/custom.js → 404. Tenant-uploaded files (logos, etc.)
+        // still work via Storage::disk('public')->url() because that path
+        // uses the disk's root, not the URL helper.
+        'asset_helper_tenancy' => false,
     ],
 
     'queue' => [

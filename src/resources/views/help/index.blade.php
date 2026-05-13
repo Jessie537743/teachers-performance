@@ -140,11 +140,13 @@
                     <ul class="list-disc pl-5 text-sm text-gray-600 space-y-1">
                         <li>Manage departments, faculty, students, courses, and subjects</li>
                         <li>Create and manage evaluation periods (open/close)</li>
-                        <li>Configure evaluation criteria and questions</li>
+                        <li>Configure evaluation criteria, questions, and per-evaluator weights</li>
                         <li>View all reports: individual, department, low performance, and sustained low performance</li>
                         <li>Access system-wide analytics and performance distribution</li>
-                        <li>Manage roles and permissions for all user types</li>
+                        <li>Manage roles and permissions; assign multiple roles per user</li>
                         <li>Configure system settings (app name, logo)</li>
+                        <li><strong>Generate and manage Individual Development Plans (IDPs)</strong> for any faculty</li>
+                        <li>Publish announcements and review the audit log</li>
                         <li>Train the ML model and view prediction accuracy</li>
                         <li>Monitor evaluation compliance across all departments</li>
                     </ul>
@@ -162,7 +164,8 @@
                         <li>Submit supervisor evaluations for each faculty member</li>
                         <li>View department-level analytics and performance trends</li>
                         <li>Access individual evaluation reports for faculty in your department</li>
-                        <li>Generate performance reports and intervention suggestions</li>
+                        <li>Generate performance reports and intervention plans</li>
+                        <li><strong>Generate and update Individual Development Plans (IDPs)</strong> for faculty in your department</li>
                         <li>Monitor evaluation compliance within your department</li>
                     </ul>
                 </div>
@@ -210,6 +213,8 @@
                         <li>Monitor evaluation compliance across all departments</li>
                         <li>Access reports: department performance, low-performance personnel, sustained low performance</li>
                         <li>View analytics with performance distribution and trends</li>
+                        <li><strong>Generate and certify Individual Development Plans (IDPs)</strong> for any faculty as part of HR documentation</li>
+                        <li>Publish announcements targeted to specific roles or departments</li>
                         <li>Roles include: Human Resource, VP Academic, VP Admin, School President</li>
                     </ul>
                 </div>
@@ -242,7 +247,7 @@
                     <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
                 <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
-                    <strong>Students</strong> evaluate faculty who teach their subjects. <strong>Deans/Heads</strong> evaluate faculty in their department. <strong>Faculty</strong> complete self-evaluations and peer evaluations for colleagues in the same department. The weighted formula is: Student (40%) + Dean/Supervisor (40%) + Self (10%) + Peer (10%).
+                    <strong>Students</strong> evaluate faculty who teach their subjects. <strong>Deans/Heads</strong> evaluate faculty in their department. <strong>Faculty</strong> complete self-evaluations and peer evaluations for colleagues in the same department. Weighting between evaluator groups is <strong>configurable per criterion</strong> from the Criteria page; individual questions inside a criterion can also be weighted. The system normalizes weights at compute time, so they don&rsquo;t have to sum to exactly 100. Default starting balance is Student 40%, Dean 40%, Self 10%, Peer 10% when no custom weights are set.
                 </div>
             </div>
 
@@ -289,13 +294,23 @@
                 </div>
             </div>
 
-            <div class="border border-gray-200 rounded-xl overflow-hidden mb-6">
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
                 <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
                     <span>How do I update my profile information?</span>
                     <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
                 <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
                     Click your name in the top-right corner and select <strong>My Account</strong>. You can update your display name and email address. Role assignments and department changes can only be made by an administrator.
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-6">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>Can a user have more than one role?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    Yes. The system supports <strong>multiple roles per user</strong>. For example, a dean who is also a teaching faculty can hold both <code class="bg-gray-100 px-1.5 py-0.5 rounded text-xs">dean</code> and <code class="bg-gray-100 px-1.5 py-0.5 rounded text-xs">faculty</code> roles, and their permissions are the union of both. Administrators assign roles from the user&rsquo;s account page. Dean / Head / Program Chair assignments are still scoped to one department per user, but role <em>tags</em> can be combined freely.
                 </div>
             </div>
 
@@ -318,7 +333,7 @@
                     <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
                 <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
-                    Performance levels are determined by the weighted average score. For <strong>teaching</strong> personnel: Excellent (4.50&ndash;5.00), Very Satisfactory (3.50&ndash;4.49), Satisfactory (2.50&ndash;3.49), Fair (1.50&ndash;2.49), Poor (below 1.50). Non-teaching and academic administrator personnel use different label sets but similar numerical thresholds. The weights are Student (40%), Dean (40%), Self (10%), Peer (10%).
+                    Performance levels are determined by the weighted average score (GWA). For <strong>teaching</strong> personnel: Excellent (4.50&ndash;5.00), Very Satisfactory (3.50&ndash;4.49), Satisfactory (2.50&ndash;3.49), Fair (1.50&ndash;2.49), Poor (below 1.50). Non-teaching and academic administrator personnel use different label sets but similar numerical thresholds. Weights are <strong>configurable per criterion and per evaluator group</strong> from the Criteria page; you can also weight individual questions inside a criterion. Out of the box the system starts at Student 40%, Dean 40%, Self 10%, Peer 10%, but admins can rebalance to match institutional policy.
                 </div>
             </div>
 
@@ -329,6 +344,102 @@
                 </button>
                 <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
                     Report access is controlled by permissions. Administrators can view all reports system-wide. Deans and department heads can view reports for their department. HR officers and institutional leaders (VP Academic, School President) can access institution-wide reports. Faculty and students do not have access to administrative reports.
+                </div>
+            </div>
+
+            {{-- Individual Development Plans (IDP) --}}
+            <h3 class="text-base font-bold text-slate-900 mb-3">Individual Development Plans (IDP)</h3>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>What is an Individual Development Plan?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    An <strong>IDP</strong> is a per-faculty growth plan generated from their evaluation results for a specific school year and semester. It identifies the faculty member&rsquo;s strengths (criteria they scored well on) and growth areas (criteria where they fell below target), and proposes SMART goals, phased action items, expected outcomes, and recommended resources. Every faculty member can have an IDP &mdash; it is a standard development workflow, not gated to at-risk performers only.
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>How do I generate an IDP for a faculty member?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    Open <strong>Department Report</strong> from the sidebar, select the faculty&rsquo;s department, and then pick a <strong>specific school year and semester</strong> from the filters &mdash; the &ldquo;All (aggregated)&rdquo; option does not enable IDP because plans are scoped to one period. Each row in the faculty detail table will show a purple <strong>IDP</strong> badge. Click it to open the faculty&rsquo;s IDP page, then click <strong>Generate</strong>. Regenerating supersedes any prior draft for the same period.
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>Who can view and generate IDPs?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    Administrators and HR officers can view and generate IDPs for any faculty. <strong>Deans/Heads</strong> can do the same for faculty in their own department. Faculty members and students do not have IDP management access. Visibility to the faculty themselves is handled separately through their development dashboard.
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>What does an IDP contain?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    Each plan includes a <strong>summary</strong>, identified <strong>strengths</strong> (with evidence and score), <strong>growth areas</strong> (current level, target level, gap, supporting evidence), <strong>SMART goals</strong>, <strong>phased action items</strong> (with resources, owner, and due dates), expected outcomes, and recommended resources. The plan also records which engine produced it (e.g. <code class="bg-gray-100 px-1.5 py-0.5 rounded text-xs">local-template-v1</code>) so the artifact is traceable when AI providers are swapped in later.
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>How are strengths and growth areas identified?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    The local template generator ranks criteria by their category average for the period. By default, criteria with an average of <strong>4.5 or higher</strong> are flagged as strengths, and criteria below <strong>4.0</strong> are flagged as growth areas. The system surfaces the <strong>top 3</strong> of each. These thresholds are configurable in <code class="bg-gray-100 px-1.5 py-0.5 rounded text-xs">config/idp.php</code>. If a faculty has no evaluation answers yet, the strengths and growth lists will be empty &mdash; generate again once evaluations have been submitted.
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>Can I update or close out an IDP?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    Yes. After generation, an IDP moves through three statuses: <strong>draft</strong>, <strong>active</strong>, and <strong>completed</strong>. Marking it as completed records the completion timestamp. You can also regenerate the plan at any time, which supersedes the prior draft &mdash; useful after a new evaluation period closes and updated scores become available.
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-6">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>How is an IDP different from an Intervention Plan?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    Both are development artifacts, but their scope differs. An <strong>IDP</strong> is generated for <em>every</em> faculty member as part of a regular growth-planning workflow. An <strong>Intervention Plan</strong> is a more focused remediation document created when a faculty member is flagged as low-performing in the Low Performance or Sustained Low Performance reports. The two can coexist for the same faculty &mdash; IDP for general development, intervention plan for targeted remediation.
+                </div>
+            </div>
+
+            {{-- Announcements & Activity --}}
+            <h3 class="text-base font-bold text-slate-900 mb-3">Announcements &amp; Activity</h3>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>How do announcements work?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    Administrators and authorized roles (HR, VP Academic, School President) can publish <strong>announcements</strong> targeted at specific roles, departments, or the whole institution. Recipients see unread announcements highlighted on their dashboard and in the notification bell, and each view is tracked &mdash; an announcement is shown as &ldquo;new&rdquo; only until the user has opened it.
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-6">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>Does the system keep an audit trail?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    Yes. Sensitive actions &mdash; account creation, role changes, evaluation period open/close, criteria edits, report exports &mdash; are written to an <strong>audit log</strong>. Administrators can review the log to see who did what and when. Audit entries include the actor, the affected record, the action, and timestamp + IP/user-agent metadata for traceability.
                 </div>
             </div>
 

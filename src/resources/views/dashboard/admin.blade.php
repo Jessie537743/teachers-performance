@@ -264,7 +264,7 @@ document.addEventListener('turbo:load', function() {
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{-- Chart.js is loaded globally in layouts/app.blade.php (Turbo-safe). --}}
 <script>
 (function () {
     const canvas = document.getElementById('performanceChart');

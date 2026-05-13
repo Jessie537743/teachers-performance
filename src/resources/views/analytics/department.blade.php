@@ -173,7 +173,7 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{-- Chart.js is loaded globally in layouts/app.blade.php (Turbo-safe). --}}
 <script>
 (function () {
     const ctx = document.getElementById('deanDistChart');

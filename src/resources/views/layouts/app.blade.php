@@ -85,6 +85,17 @@
         }
     </style>
     @stack('styles')
+
+    {{--
+        Chart.js loaded globally so it survives Turbo Drive navigations.
+        data-turbo-track="reload" forces a full reload if the URL ever changes
+        (e.g. version bump). data-turbo-eval="false" prevents Turbo from
+        re-evaluating it on each soft navigation. Loading in <head> guarantees
+        `Chart` is defined before any @stack('scripts') block runs.
+    --}}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"
+            data-turbo-track="reload"
+            data-turbo-eval="false"></script>
 </head>
 <body class="bg-gray-50 font-sans text-slate-900 antialiased">
 

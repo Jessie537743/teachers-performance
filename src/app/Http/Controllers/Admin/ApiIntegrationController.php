@@ -7,13 +7,26 @@ use App\Models\ApiIntegration;
 use App\Services\ApiIntegrationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controllers\HasMiddleware;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\View\View;
 
-class ApiIntegrationController extends Controller
+class ApiIntegrationController extends Controller implements HasMiddleware
 {
+    /**
+     * Laravel 11+ replaces $this->middleware() in the constructor.
+     * Every action on this controller requires the manage-integrations
+     * permission (admin / HR with explicit grant).
+     */
+    public static function middleware(): array
+    {
+        return [
+            new Middleware('can:manage-integrations'),
+        ];
+    }
+
     public function __construct(private ApiIntegrationService $service)
     {
-        $this->middleware('can:manage-integrations');
     }
 
     public function index(): View

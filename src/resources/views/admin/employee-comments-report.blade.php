@@ -430,7 +430,7 @@
 @push('scripts')
 
 @if($selectedFaculty)
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{-- Chart.js is loaded globally in layouts/app.blade.php (Turbo-safe). --}}
 @php
     $sentimentChartData = [
         'positive' => (int) $sentimentCounts->get('positive', 0),
