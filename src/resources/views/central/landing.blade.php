@@ -81,8 +81,8 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
                         New • AI performance insights
                     </span>
-                    <h1 class="text-4xl md:text-6xl font-extrabold leading-[1.05] tracking-tight mb-6">
-                        A DECISION SUPPORT SYSTEM FOR <span class="gradient-text">EMPLOYEE PERFORMANCE</span> EVALUATION WITH PREDICTIVE ANALYTICS.
+                    <h1 class="text-3xl md:text-4xl font-extrabold leading-[1.05] tracking-tight mb-6">
+                        A Decision Support System for <span class="gradient-text">Employee Performance Evaluation</span> Using Predictive Analytics.
                     </h1>
                     <p class="text-lg md:text-xl text-blue-100/90 mb-8 max-w-xl">
                         Run peer, dean, self, and student evaluations from one console. Get AI-powered performance predictions, sentiment analysis, and a dedicated workspace per school.

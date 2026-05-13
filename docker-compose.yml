@@ -2,7 +2,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: src/Dockerfile
     container_name: tp-app
     restart: unless-stopped
     ports:

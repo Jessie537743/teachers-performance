@@ -98,22 +98,52 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer(['layouts.app', 'layouts.guest', 'auth.login'], AnnouncementComposer::class);
 
-        // Tenant-aware logo: every view receives $appLogo as an absolute URL,
-        // resolved from Setting('app_logo') with config('app.default_logo') fallback.
-        // Use Storage::disk('public')->url() so tenant filesystem rewrites apply.
-        View::composer('*', function ($view) {
+        // Tenant-aware logo: every view receives $appLogo as a URL the <img>
+        // tag can render. When a tenant has uploaded a custom logo via
+        // Settings → app_logo, we point at that file via the public disk
+        // (so tenant filesystem rewrites apply). When no custom logo is set,
+        // we inline the default SVG as a base64 data URI — bulletproof against
+        // static-asset routing or asset()/APP_URL drift across tenant
+        // subdomains, since data URIs don't need a network request.
+        $defaultLogoDataUri = null; // memoized inside the closure below
+        View::composer('*', function ($view) use (&$defaultLogoDataUri) {
             try {
                 $custom = Setting::get('app_logo');
             } catch (\Throwable $e) {
                 $custom = null;
             }
-            try {
-                $url = $custom
-                    ? Storage::disk('public')->url($custom)
-                    : asset(config('app.default_logo'));
-            } catch (\Throwable $e) {
-                $url = asset(config('app.default_logo'));
+
+            $url = null;
+            if ($custom) {
+                try {
+                    $url = Storage::disk('public')->url($custom);
+                } catch (\Throwable $e) {
+                    $url = null;
+                }
             }
+
+            if (!$url) {
+                if ($defaultLogoDataUri === null) {
+                    try {
+                        $path = public_path(config('app.default_logo'));
+                        if (is_file($path)) {
+                            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+                            $mime = $ext === 'svg' ? 'image/svg+xml'
+                                  : ($ext === 'png' ? 'image/png'
+                                  : ($ext === 'jpg' || $ext === 'jpeg' ? 'image/jpeg'
+                                  : 'application/octet-stream'));
+                            $defaultLogoDataUri = 'data:' . $mime . ';base64,'
+                                . base64_encode(file_get_contents($path));
+                        } else {
+                            $defaultLogoDataUri = asset(config('app.default_logo'));
+                        }
+                    } catch (\Throwable $e) {
+                        $defaultLogoDataUri = asset(config('app.default_logo'));
+                    }
+                }
+                $url = $defaultLogoDataUri;
+            }
+
             $view->with('appLogo', $url);
         });
 

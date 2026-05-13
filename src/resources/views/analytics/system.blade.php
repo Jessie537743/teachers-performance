@@ -425,54 +425,73 @@
         };
 
         new Chart(personnelTrendCtx, {
+            type: 'line',
             plugins: [performanceBandPlugin],
             data: {
                 labels: trendLabels,
                 datasets: [
                     {
-                        type: 'bar',
                         label: 'Student Avg',
                         data: trendStudent,
-                        backgroundColor: '#3b82f6',
-                        stack: 'components',
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.10)',
+                        borderWidth: 2,
+                        tension: 0.25,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        spanGaps: true,
                     },
                     {
-                        type: 'bar',
                         label: 'Dean Avg',
                         data: trendDean,
-                        backgroundColor: '#8b5cf6',
-                        stack: 'components',
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.10)',
+                        borderWidth: 2,
+                        tension: 0.25,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        spanGaps: true,
                     },
                     {
-                        type: 'bar',
                         label: 'Self Avg',
                         data: trendSelf,
-                        backgroundColor: '#06b6d4',
-                        stack: 'components',
+                        borderColor: '#06b6d4',
+                        backgroundColor: 'rgba(6, 182, 212, 0.10)',
+                        borderWidth: 2,
+                        tension: 0.25,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        spanGaps: true,
                     },
                     {
-                        type: 'bar',
                         label: 'Peer Avg',
                         data: trendPeer,
-                        backgroundColor: '#a78bfa',
-                        stack: 'components',
+                        borderColor: '#a78bfa',
+                        backgroundColor: 'rgba(167, 139, 250, 0.10)',
+                        borderWidth: 2,
+                        tension: 0.25,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        spanGaps: true,
                     },
                     {
-                        type: 'line',
                         label: 'Weighted GWA Trend',
                         data: trendWeighted,
                         borderColor: '#111827',
                         backgroundColor: '#111827',
-                        borderWidth: 2,
+                        borderWidth: 3,
+                        borderDash: [],
                         tension: 0.25,
-                        pointRadius: 3,
-                        yAxisID: 'y',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        spanGaps: true,
                     }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
                 plugins: {
                     legend: { position: 'bottom' },
                     tooltip: {
@@ -486,8 +505,8 @@
                     }
                 },
                 scales: {
-                    x: { stacked: true, grid: { display: false } },
-                    y: { beginAtZero: true, max: 5, stacked: true, grid: { color: '#f0f4f8' } }
+                    x: { grid: { display: false } },
+                    y: { beginAtZero: true, max: 5, grid: { color: '#f0f4f8' } }
                 }
             }
         });

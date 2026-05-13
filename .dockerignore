@@ -12,6 +12,11 @@ src/storage/framework/cache/*
 src/storage/framework/sessions/*
 src/storage/framework/views/*
 src/bootstrap/cache/*
+# Storage symlink — created via `php artisan storage:link` inside the
+# container. The on-disk symlink points to an absolute container path
+# (/var/www/storage/app/public), which BuildKit sees as broken when
+# loading the build context on Windows hosts.
+src/public/storage
 ml_api/models/*
 **/__pycache__
 **/*.pyc

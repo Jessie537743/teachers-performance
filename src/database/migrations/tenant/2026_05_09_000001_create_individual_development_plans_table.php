@@ -19,6 +19,14 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Self-heal from a half-built state: if a previous run created the
+        // table but crashed before recording the migration (e.g. due to the
+        // old 68-char index name violating MySQL's 64-char identifier limit),
+        // drop the orphan so we can recreate cleanly with the short names.
+        if (Schema::hasTable('individual_development_plans')) {
+            Schema::drop('individual_development_plans');
+        }
+
         Schema::create('individual_development_plans', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('faculty_id');
@@ -43,8 +51,10 @@ return new class extends Migration
             $table->timestamp('completed_at')->nullable();
 
             $table->foreign('faculty_id')->references('id')->on('faculty_profiles')->onDelete('cascade');
-            $table->index(['faculty_id', 'school_year', 'semester']);
-            $table->index('status');
+            // Explicit short names — MySQL caps identifiers at 64 chars and
+            // the auto-generated name from these columns is 68.
+            $table->index(['faculty_id', 'school_year', 'semester'], 'idp_faculty_period_idx');
+            $table->index('status', 'idp_status_idx');
         });
     }
 
