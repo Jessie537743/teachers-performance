@@ -44,6 +44,7 @@ class User extends Authenticatable
         'must_change_password',
         'date_of_birth',
         'email_verified_at',
+        'completed_tours',
     ];
 
     protected $hidden = [
@@ -60,6 +61,7 @@ class User extends Authenticatable
             'must_change_password' => 'boolean',
             'date_of_birth'        => 'date',
             'roles'                => 'array',
+            'completed_tours'      => 'array',
         ];
     }
 

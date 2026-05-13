@@ -74,6 +74,12 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     // Help Center — accessible to all authenticated users
     Route::get('/help', [HelpController::class, 'index'])->name('help.index');
 
+    // Guided app tour — JS POSTs here when the user finishes or skips a tour
+    // so we don't auto-show it again. Manual replay from the user menu does
+    // not call this endpoint.
+    Route::post('/tour/complete', [\App\Http\Controllers\TourController::class, 'complete'])
+        ->name('tour.complete');
+
     // Announcements — visible to every authenticated user
     Route::get('/announcements',                           [AnnouncementController::class, 'index'])->name('announcements.index');
     Route::post('/announcements/mark-read-batch',          [AnnouncementController::class, 'markReadBatch'])->name('announcements.read-batch');

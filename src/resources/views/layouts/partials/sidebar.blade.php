@@ -1,9 +1,9 @@
 {{-- Overview --}}
 <div class="px-3.5 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-widest text-white/50">Overview</div>
-<a href="{{ route('dashboard') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('dashboard') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Dashboard</a>
+<a href="{{ route('dashboard') }}" data-tour="dashboard" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('dashboard') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Dashboard</a>
 @can('view-analytics')
     @plan('ai_predictions')
-        <a href="{{ route('analytics.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('analytics.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Analytics</a>
+        <a href="{{ route('analytics.index') }}" data-tour="analytics" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('analytics.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Analytics</a>
         <a href="{{ route('intervention-recommendations.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('intervention-recommendations.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Interventions</a>
     @else
         <a href="{{ route('plan.upgrade', ['feature' => 'ai_predictions']) }}" class="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm text-white/55 hover:bg-white/10 hover:text-white/85 transition group">
@@ -18,7 +18,7 @@
 <div class="px-3.5 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-widest text-white/50">Evaluation</div>
 @endcanany
 @canany(['submit-dean-evaluation', 'submit-self-evaluation', 'submit-peer-evaluation', 'submit-student-evaluation', 'view-admin-dashboard', 'monitor-not-evaluated'])
-<a href="{{ route('evaluate.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('evaluate.*', 'certificates.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Evaluations</a>
+<a href="{{ route('evaluate.index') }}" data-tour="evaluate" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('evaluate.*', 'certificates.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Evaluations</a>
 @endcanany
 @can('print-or-generate-comment')
 <a href="{{ route('reports.employee-comments') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('reports.employee-comments') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Employee Comments</a>
@@ -55,10 +55,10 @@
 <a href="{{ route('departments.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('departments.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Departments</a>
 @endcan
 @can('manage-faculty')
-<a href="{{ route('faculty.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('faculty.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Faculty</a>
+<a href="{{ route('faculty.index') }}" data-tour="faculty" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('faculty.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Faculty</a>
 @endcan
 @can('manage-students')
-<a href="{{ route('students.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('students.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Students</a>
+<a href="{{ route('students.index') }}" data-tour="students" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('students.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Students</a>
 @endcan
 
 {{-- Approvals --}}
@@ -84,7 +84,7 @@
 {{-- Settings --}}
 <div class="px-3.5 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-widest text-white/50">Settings</div>
 @can('manage-settings')
-<a href="{{ route('settings.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('settings.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Settings</a>
+<a href="{{ route('settings.index') }}" data-tour="settings" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('settings.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Settings</a>
 <a href="{{ route('billing.show') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('billing.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Billing</a>
 @endcan
 @can('manage-roles')
@@ -126,8 +126,14 @@
 
 {{-- Help Center (visible to all users) --}}
 <div class="mt-6 pt-4 border-t border-white/10">
-    <a href="{{ route('help.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('help.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/50 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">
+    <a href="{{ route('help.index') }}" data-tour="help" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('help.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/50 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0 opacity-70"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         Help Center
     </a>
+
+    {{-- "Take the tour" trigger — wired in app-tour.blade.php --}}
+    <button type="button" data-tour-launcher class="w-full text-left flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm text-white/50 hover:bg-white/10 hover:text-white transition">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="shrink-0 opacity-70"><circle cx="12" cy="12" r="9"/><path d="M9 11l2 2 4-4"/></svg>
+        Take the Tour
+    </button>
 </div>

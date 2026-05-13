@@ -429,5 +429,9 @@ function doConfirm() {
 @endif
 
 @stack('scripts')
+
+{{-- Guided in-app tour (Driver.js). Auto-starts on first dashboard visit per
+     role; replay via the "Take the Tour" item in the sidebar. --}}
+@include('layouts.partials.app-tour')
 </body>
 </html>

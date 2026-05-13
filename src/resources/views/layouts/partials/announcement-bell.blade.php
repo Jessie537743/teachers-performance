@@ -1,6 +1,7 @@
 @auth
 <div
     class="relative"
+    data-tour="announcements"
     x-data="announcementBell({
         unreadCount: {{ (int) ($unreadAnnouncementCount ?? 0) }},
         visibleIds: @js(($activeAnnouncements ?? collect())->pluck('id')->all()),
