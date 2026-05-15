@@ -4,9 +4,11 @@ use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DepartmentalPlanController;
 use App\Http\Controllers\EvaluateController;
 use App\Http\Controllers\HelpController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TopPerformerController;
 use App\Http\Controllers\Admin;
 use App\Http\Controllers\AnnouncementController;
 use Illuminate\Support\Facades\Route;
@@ -124,6 +126,17 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     Route::get('faculty-profiles/{faculty_profile}/intervention-suggestions', [Admin\FacultyInterventionSuggestionController::class, 'show'])
         ->name('faculty.intervention-suggestions');
 
+    // Departmental Plan — dean/head roll-up of action items for their department.
+    // Generation pulls from existing evaluation results + dean recommendations.
+    Route::get('departmental-plan', [DepartmentalPlanController::class, 'index'])
+        ->name('departmental-plan.index');
+    Route::post('departmental-plan/generate', [DepartmentalPlanController::class, 'generate'])
+        ->name('departmental-plan.generate');
+    Route::post('departmental-plan/{plan}/status', [DepartmentalPlanController::class, 'updateStatus'])
+        ->name('departmental-plan.status');
+    Route::post('departmental-plan/items/{item}/status', [DepartmentalPlanController::class, 'updateItemStatus'])
+        ->name('departmental-plan.item.status');
+
     // Intervention Recommendation Module — roster of all faculty + mapped HR intervention
     Route::get('intervention-recommendations', [Admin\InterventionRecommendationController::class, 'index'])
         ->name('intervention-recommendations.index');
@@ -164,6 +177,12 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
 
     Route::get('certificates/performance/{faculty_profile}', [Admin\PerformanceCertificateController::class, 'show'])
         ->name('certificates.performance-excellent');
+
+    // Top Performer of the Department — one #1 award per (department, period).
+    Route::get('top-performers', [TopPerformerController::class, 'index'])
+        ->name('top-performers.index');
+    Route::get('top-performers/{faculty_profile}/certificate', [TopPerformerController::class, 'certificate'])
+        ->name('top-performers.certificate');
     Route::get('reports/employee-comments', [Admin\EmployeeCommentReportController::class, 'index'])
         ->name('reports.employee-comments');
     Route::get('reports/individual-evaluation', [Admin\IndividualEvaluationReportController::class, 'index'])

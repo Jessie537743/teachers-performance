@@ -20,6 +20,12 @@
 @canany(['submit-dean-evaluation', 'submit-self-evaluation', 'submit-peer-evaluation', 'submit-student-evaluation', 'view-admin-dashboard', 'monitor-not-evaluated'])
 <a href="{{ route('evaluate.index') }}" data-tour="evaluate" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('evaluate.*', 'certificates.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Evaluations</a>
 @endcanany
+@can('submit-dean-evaluation')
+<a href="{{ route('departmental-plan.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('departmental-plan.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Departmental Plan</a>
+@endcan
+@can('view-analytics')
+<a href="{{ route('top-performers.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('top-performers.*') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Top Performers</a>
+@endcan
 @can('print-or-generate-comment')
 <a href="{{ route('reports.employee-comments') }}" class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl mb-1 text-sm transition-all duration-200 {{ request()->routeIs('reports.employee-comments') ? 'bg-white/15 text-white border-l-[3px] border-blue-400 pl-[11px]' : 'text-white/85 hover:bg-white/10 hover:text-white hover:translate-x-1' }}">Employee Comments</a>
 @endcan

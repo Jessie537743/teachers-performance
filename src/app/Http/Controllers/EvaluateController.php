@@ -100,7 +100,7 @@ class EvaluateController extends Controller
     /**
      * Show the evaluation form for a specific type.
      */
-    public function show(Request $request, string $type, int $facultyId, ?int $subjectId = null): View
+    public function show(Request $request, string $type, int $facultyId, ?int $subjectId = null): View|RedirectResponse
     {
         return match ($type) {
             'dean'    => $this->deanShow($facultyId),
@@ -401,7 +401,7 @@ class EvaluateController extends Controller
         ));
     }
 
-    private function deanShow(int $facultyId): View
+    private function deanShow(int $facultyId): View|RedirectResponse
     {
         $dean        = auth()->user();
         $period      = EvaluationService::getOpenEvaluationPeriod();
@@ -411,11 +411,10 @@ class EvaluateController extends Controller
         abort_if(!$profile, 404, 'Faculty profile not found.');
 
         $policy = app(EvaluationPolicy::class);
-        abort_unless(
-            $policy->submitDeanEvaluation($dean, $profile),
-            403,
-            'Cannot evaluate: either already evaluated, period closed, or faculty not in your department.'
-        );
+        if (!$policy->submitDeanEvaluation($dean, $profile)) {
+            return redirect()->route('evaluate.index')
+                ->with('evaluate_error', 'Cannot evaluate: either already evaluated, period closed, or faculty not in your department.');
+        }
 
         if ($period) {
             $alreadyDone = DeanEvaluationFeedback::where('faculty_id', $profile->id)
@@ -494,11 +493,10 @@ class EvaluateController extends Controller
 
         $facultyProfile = FacultyProfile::with('department')->findOrFail($facultyId);
         $policy = app(EvaluationPolicy::class);
-        abort_unless(
-            $policy->submitDeanEvaluation($dean, $facultyProfile),
-            403,
-            'Cannot evaluate: either already evaluated, period closed, or faculty not in your department.'
-        );
+        if (!$policy->submitDeanEvaluation($dean, $facultyProfile)) {
+            return redirect()->route('evaluate.index')
+                ->with('evaluate_error', 'Cannot evaluate: either already evaluated, period closed, or faculty not in your department.');
+        }
 
         $alreadyDone = DeanEvaluationFeedback::where('faculty_id', $facultyId)
             ->where('dean_user_id', $dean->id)

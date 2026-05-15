@@ -327,4 +327,35 @@
     </div>
 </div>
 @endif
+
+@if(session('evaluate_error'))
+<div
+    x-data="{ show: true }"
+    x-show="show"
+    x-on:keydown.escape.window="show = false"
+    class="fixed inset-0 z-50 overflow-y-auto px-4 py-6 sm:px-0"
+    style="display: none;"
+>
+    <div x-show="show" x-on:click="show = false" class="fixed inset-0 bg-gray-500/75 transition-opacity"></div>
+    <div x-show="show" class="relative mx-auto mt-24 w-full sm:max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-200 flex items-start gap-3">
+            <div class="w-10 h-10 rounded-full bg-red-100 text-red-600 grid place-items-center shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                </svg>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-base font-semibold text-gray-900">Cannot evaluate</h3>
+                <p class="mt-1 text-sm text-gray-600">{{ session('evaluate_error') }}</p>
+            </div>
+        </div>
+        <div class="px-5 py-3 bg-gray-50 flex justify-end">
+            <button type="button" x-on:click="show = false"
+                class="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition shadow-sm">
+                Got it
+            </button>
+        </div>
+    </div>
+</div>
+@endif
 @endsection

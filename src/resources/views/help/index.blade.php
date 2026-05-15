@@ -146,6 +146,8 @@
                         <li>Manage roles and permissions; assign multiple roles per user</li>
                         <li>Configure system settings (app name, logo)</li>
                         <li><strong>Generate and manage Individual Development Plans (IDPs)</strong> for any faculty</li>
+                        <li><strong>Generate Departmental Plans</strong> across all departments and update item status</li>
+                        <li><strong>Issue Top Performer certificates</strong> for the #1 faculty in any department</li>
                         <li>Publish announcements and review the audit log</li>
                         <li>Train the ML model and view prediction accuracy</li>
                         <li>Monitor evaluation compliance across all departments</li>
@@ -166,6 +168,8 @@
                         <li>Access individual evaluation reports for faculty in your department</li>
                         <li>Generate performance reports and intervention plans</li>
                         <li><strong>Generate and update Individual Development Plans (IDPs)</strong> for faculty in your department</li>
+                        <li><strong>Generate a Departmental Plan</strong> for your department &mdash; a roll-up of action items per faculty, including suggested promotion/reassignment/coaching tracks based on your evaluations</li>
+                        <li><strong>Issue Top Performer certificate</strong> for the #1 faculty in your department for each evaluation period</li>
                         <li>Monitor evaluation compliance within your department</li>
                     </ul>
                 </div>
@@ -214,6 +218,8 @@
                         <li>Access reports: department performance, low-performance personnel, sustained low performance</li>
                         <li>View analytics with performance distribution and trends</li>
                         <li><strong>Generate and certify Individual Development Plans (IDPs)</strong> for any faculty as part of HR documentation</li>
+                        <li><strong>Generate and review Departmental Plans</strong> across any department; supersede or close out items as actions are completed</li>
+                        <li><strong>Issue Top Performer certificates</strong> for the #1 faculty in any department per period</li>
                         <li>Publish announcements targeted to specific roles or departments</li>
                         <li>Roles include: Human Resource, VP Academic, VP Admin, School President</li>
                     </ul>
@@ -417,6 +423,133 @@
                 </button>
                 <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
                     Both are development artifacts, but their scope differs. An <strong>IDP</strong> is generated for <em>every</em> faculty member as part of a regular growth-planning workflow. An <strong>Intervention Plan</strong> is a more focused remediation document created when a faculty member is flagged as low-performing in the Low Performance or Sustained Low Performance reports. The two can coexist for the same faculty &mdash; IDP for general development, intervention plan for targeted remediation.
+                </div>
+            </div>
+
+            {{-- Departmental Plan --}}
+            <h3 class="text-base font-bold text-slate-900 mb-3">Departmental Plan</h3>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>What is a Departmental Plan?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    A <strong>Departmental Plan</strong> is a dean/head&rsquo;s roll-up of action items for an entire department for a given evaluation period. It combines each faculty&rsquo;s computed performance level (from the existing Intervention Recommendation mapping) with the dean&rsquo;s own per-faculty recommendation (retention / promotion / reassignment) and emits one action item per faculty plus a department-wide synthesis item. The summary card shows total faculty in scope, how many fall into each priority bucket (high / medium / low), and the period&rsquo;s performance distribution.
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>How do I generate a Departmental Plan?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    Open <strong>Departmental Plan</strong> from the sidebar. Pick a school year and semester; admin / HR / VP viewers can also pick any department, while deans / heads are scoped automatically to their own department. Click <strong>Generate Departmental Plan</strong> to build a fresh plan from the latest evaluation results. Regenerating supersedes (archives) any prior draft for the same period, so you keep a clean history while always seeing the current canonical plan.
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>Who can view and edit Departmental Plans?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    <strong>Deans / Heads</strong> can view, generate, and edit plans for their own department only. <strong>Admin / HR / School President / VPs</strong> can pick any department, view that department&rsquo;s plan, generate new ones, and edit any item&rsquo;s status. Faculty and students do not have access. Permission is gated by <code class="bg-gray-100 px-1.5 py-0.5 rounded text-xs">submit-dean-evaluation</code>; admins bypass the gate as usual.
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>What is in a Departmental Plan item?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    Each item carries a <strong>category</strong> (recognition, sustained excellence, training, coaching, PIP, promotion, reassignment, retention, or department-wide), a <strong>priority</strong> (high / medium / low), a <strong>title</strong> tying it to a specific faculty, a <strong>description</strong> of the recommended action, a list of <strong>suggested programs</strong>, and a <strong>source</strong> snapshot showing the faculty&rsquo;s performance level, weighted average, and the dean&rsquo;s explicit recommendation if one was given. Items have their own status track: pending &rarr; in_progress &rarr; completed (or cancelled), with optional notes.
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>How does the dean&rsquo;s recommendation affect plan items?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    The dean&rsquo;s explicit choice <strong>overrides</strong> the default performance-bucket mapping. If you recommended <strong>Promotion</strong> for a faculty, that becomes a Promotion item regardless of their performance level. <strong>Reassignment</strong> becomes a reassignment conference item. <strong>Retention</strong> keeps the performance-bucket action (e.g. Skills Enhancement Training) but explicitly notes the retention stance in the title. If no recommendation was given, the plan falls back purely to the performance level.
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-6">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>How is a Departmental Plan different from an IDP or Intervention Plan?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    <strong>Scope is the key difference.</strong> An <strong>IDP</strong> is one document per faculty member. An <strong>Intervention Plan</strong> is one document per at-risk faculty member. A <strong>Departmental Plan</strong> is one document covering an entire department for a period &mdash; you get a roll-up view (counts, theme) plus a per-faculty action list in a single artifact. It is the dean&rsquo;s operating plan for the term, while IDPs and Intervention Plans are owned per-faculty.
+                </div>
+            </div>
+
+            {{-- Top Performer Certificate --}}
+            <h3 class="text-base font-bold text-slate-900 mb-3">Top Performer Certificate</h3>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>What is the Top Performer certificate?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    A printable certificate awarded to the <strong>single highest-ranking faculty member</strong> in each department for a given evaluation period. The roster page (<strong>Top Performers</strong> in the sidebar) lists one winner per department. Click <strong>Issue Certificate</strong> on a row to open a printable certificate showing the recipient&rsquo;s name, department, GWA, performance level, period, and an HR signatory block.
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>How do I issue a Top Performer certificate?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    <ol class="list-decimal pl-5 space-y-1.5 mb-3">
+                        <li>Open <strong>Top Performers</strong> from the sidebar.</li>
+                        <li>Pick a <strong>School Year</strong> and <strong>Semester</strong> from the filters, then click <strong>Apply</strong>. The roster lists one winner per department (dean/head viewers see only their own department).</li>
+                        <li>Click the amber <strong>Issue Certificate</strong> button on the winning faculty&rsquo;s row. A new tab opens with the printable certificate &mdash; recipient&rsquo;s name, department, GWA, performance level, period, and HR signatory block.</li>
+                        <li>On the certificate page, click <strong>Print / Save as PDF</strong> at the top to send to a printer or save a PDF copy.</li>
+                    </ol>
+                    <p class="mb-2"><strong>If the Issue Certificate button isn&rsquo;t there:</strong></p>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li>No evaluation data exists yet for that period &mdash; student / dean / self / peer submissions must be in before a #1 can be computed.</li>
+                        <li>No evaluation period is configured &mdash; the year dropdown falls back to a sensible default, but rows still need actual feedback data to appear.</li>
+                        <li>You&rsquo;re a dean/head and the dept #1 is in a different department &mdash; you can only issue for your own department.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>How is the Top Performer chosen?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    Strictly by the <strong>highest weighted average (GWA)</strong> within the department for the selected period. The GWA is the same composite used elsewhere &mdash; the configured weighted blend of student, dean, self, and peer averages. Only faculty with actual evaluation data for the period are eligible; faculty with zero submissions are excluded so an empty record doesn&rsquo;t win by default.
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>Who can issue the Top Performer certificate?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    <strong>Admin / HR / VP / School President</strong> can issue for any department. <strong>Deans / Heads</strong> can only issue for their own department. The certificate route also re-checks server-side that the requested faculty actually <em>is</em> the dept #1 for that period &mdash; you cannot URL-tamper to issue a certificate to a 2nd-ranked faculty, regardless of role.
+                </div>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-6">
+                <button onclick="this.nextElementSibling.classList.toggle('hidden'); this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between px-5 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-gray-50 transition">
+                    <span>How is this different from the Excellent / Outstanding certificate?</span>
+                    <svg class="w-4 h-4 shrink-0 transition-transform text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="hidden px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                    The <strong>Excellent / Outstanding</strong> certificate is band-based &mdash; <em>every</em> faculty whose performance level lands in the top tier gets one, however many that is. The <strong>Top Performer</strong> certificate is rank-based &mdash; exactly <em>one</em> per department per period, the #1 only, even if several faculty share the same band. The two are complementary: the band cert recognises a level of excellence, while the Top Performer cert recognises the relative standout in the department.
                 </div>
             </div>
 
